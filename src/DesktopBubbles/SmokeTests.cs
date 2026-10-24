@@ -358,6 +358,14 @@ internal static class SmokeTests
         Check("Fehlgeschlagene Desktop-Rückgabe erhält den Gruppeneintrag", returnGroup.Items.Contains(failedEntry) && File.Exists(launchLink));
         app.State.Groups.Remove(returnGroup); app.Changed();
         outbound.Cleanup(); programDrag.Cleanup();
+        var missingEntry = Targets.Create(Path.Combine(app.DataDirectory, "missing-shortcut.lnk"), "Defekter Eintrag");
+        var deleteGroup = app.State.Groups[0]; deleteGroup.Items.Add(missingEntry); app.Changed(); app.Open(app.Bubbles[0]); await Task.Delay(250);
+        var missingButton = Descendants(app.CurrentFlyout!).OfType<System.Windows.Controls.Button>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == missingEntry.Name);
+        var entryMenu = missingButton.ContextMenu!.Items.OfType<System.Windows.Controls.MenuItem>().ToArray();
+        Check("Symbolmenü bietet Starten, Zurück zum Desktop und Aus Gruppe löschen", entryMenu.Select(m => (string)m.Header).SequenceEqual(new[] { "Starten", "Zurück zum Desktop", "Aus Gruppe löschen" }));
+        entryMenu[2].RaiseEvent(new RoutedEventArgs(System.Windows.Controls.MenuItem.ClickEvent)); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        Check("Defekter Eintrag lässt sich über das echte Symbolmenü dauerhaft löschen", !deleteGroup.Items.Contains(missingEntry) && !StateStore.Read(app.Store.Path).Groups.SelectMany(g => g.Items).Any(e => e.Id == missingEntry.Id) && !Descendants(app.CurrentFlyout!).OfType<System.Windows.Controls.Button>().Any(b => System.Windows.Automation.AutomationProperties.GetName(b) == missingEntry.Name));
+        app.CloseFlyout();
         // Native vault workflow on a fixture desktop only; never touch the user's desktop files.
         var fixtureDesktop = Path.Combine(app.DataDirectory, "fixture-desktop"); Directory.CreateDirectory(fixtureDesktop);
         var fixtureData = Path.Combine(app.DataDirectory, "fixture-vault");

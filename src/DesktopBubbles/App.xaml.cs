@@ -374,6 +374,11 @@ public partial class App : System.Windows.Application
         try { ReturnToDesktop(group, entry); }
         catch (Exception ex) { Ui.Error(ex); }
     }
+    internal void DeleteEntry(BubbleGroup group, AppEntry entry)
+    {
+        try { Shortcuts.RemoveFromGroup(State, group, entry); Changed(); }
+        catch (Exception ex) { Ui.Error(ex); }
+    }
     internal string ReturnToDesktop(BubbleGroup group, AppEntry entry, string? desktopOverride = null)
     {
         if (!State.Groups.Contains(group) || !group.Items.Contains(entry)) throw new InvalidOperationException("Der Eintrag gehört nicht mehr zu dieser Gruppe.");

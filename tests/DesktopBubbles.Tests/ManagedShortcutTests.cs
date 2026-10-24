@@ -84,6 +84,36 @@ internal static class ManagedShortcutTests
         {
             var f = New(); var source = f.Link(); f.Manager.Add(f.State, f.Group, source); f.Manager.Add(f.State, f.Group, source); assert(f.Group.Items.Count == 1);
         });
+        test("Aus Gruppe löschen entfernt fehlende externe Ziele dauerhaft ohne Desktop-Kopie", () =>
+        {
+            var f = New(); var entry = Targets.Create(Path.Combine(f.Root, "missing.lnk")); f.Group.Items.Add(entry); f.Store.Save(f.State);
+            f.Manager.RemoveFromGroup(f.State, f.Group, entry);
+            assert(f.Group.Items.Count == 0 && f.Store.Load().Groups[0].Items.Count == 0 && !Directory.EnumerateFiles(f.Platform.PersonalDesktop).Any());
+        });
+        test("Aus Gruppe löschen funktioniert auch bei fehlender Kopie oder kaputtem Journal", () =>
+        {
+            foreach (bool missingCopy in new[] { true, false })
+            {
+                var f = New(); f.Manager.Add(f.State, f.Group, f.Link()); var entry = f.Group.Items.Single(); string copy = f.Manager.Resolve(entry.Target);
+                if (missingCopy) File.Delete(copy); else File.WriteAllText(copy + ".json", "broken");
+                f.Manager.RemoveFromGroup(f.State, f.Group, entry);
+                assert(f.Store.Load().Groups[0].Items.Count == 0 && File.Exists(copy) == !missingCopy && !Directory.EnumerateFiles(f.Platform.PersonalDesktop).Any());
+            }
+        });
+        test("Nur Gruppenreferenz löschen erhält Sicherung und andere Gruppen", () =>
+        {
+            var f = New(); string source = f.Link(); f.Manager.Add(f.State, f.Group, source); var entry = f.Group.Items.Single(); var second = new BubbleGroup { Items = [Targets.Create(entry.Target)] }; f.State.Groups.Add(second);
+            string copy = f.Manager.Resolve(entry.Target); var bytes = File.ReadAllBytes(copy); var journal = File.ReadAllBytes(copy + ".json");
+            f.Manager.RemoveFromGroup(f.State, f.Group, entry);
+            assert(f.Group.Items.Count == 0 && second.Items.Count == 1 && !File.Exists(source) && bytes.SequenceEqual(File.ReadAllBytes(copy)) && journal.SequenceEqual(File.ReadAllBytes(copy + ".json")) && f.Manager.CanRestore(entry.Target));
+            f.Manager.Recover(f.Store.Load()); assert(!File.Exists(source));
+        });
+        test("Speicherfehler beim Löschen stellt Eintrag an ursprünglicher Position wieder her", () =>
+        {
+            var f = New(); var entries = Enumerable.Range(0, 3).Select(i => Targets.Create(Path.Combine(f.Root, "missing-" + i + ".lnk"))).ToList(); f.Group.Items.AddRange(entries); f.Store.Save(f.State);
+            var manager = new ShortcutManager(f.Vault, _ => throw new IOException("disk full")); Fail(() => manager.RemoveFromGroup(f.State, f.Group, entries[1]));
+            assert(f.Group.Items.SequenceEqual(entries) && f.Store.Load().Groups[0].Items.Select(e => e.Id).SequenceEqual(entries.Select(e => e.Id)));
+        });
         test("Letzte Referenz entfernen stellt Desktop-Datei wieder her", () =>
         {
             var f = New(); var source = f.Link(); f.Manager.Add(f.State, f.Group, source); var target = f.Group.Items[0].Target;

@@ -68,6 +68,15 @@ public sealed class ShortcutManager(IShortcutVault vault, Action<BubbleState> pe
         try { persist(state); } catch { group.Items.Insert(index, entry); throw; }
     }
 
+    /// <summary>Remove only the group reference; never resolve, restore or delete the target or recovery files.</summary>
+    public void RemoveFromGroup(BubbleState state, BubbleGroup group, AppEntry entry)
+    {
+        if (!state.Groups.Contains(group)) throw new InvalidOperationException("Unbekannte Gruppe.");
+        int index = group.Items.IndexOf(entry); if (index < 0) return;
+        group.Items.RemoveAt(index);
+        try { persist(state); } catch { group.Items.Insert(index, entry); throw; }
+    }
+
     public void RemoveGroup(BubbleState state, BubbleGroup group)
     {
         int index = state.Groups.IndexOf(group); if (index < 0) return;

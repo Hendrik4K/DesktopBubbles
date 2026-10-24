@@ -1,4 +1,4 @@
-# DesktopBubbles · 1.5.0
+# DesktopBubbles · 1.5.1
 
 <img src="https://raw.githubusercontent.com/Hendrik4K/DesktopBubbles/v1.5.0/src/DesktopBubbles/Assets/DesktopBubbles.png" width="88" height="88" alt="DesktopBubbles Rauchglas-Logo">
 
@@ -12,6 +12,7 @@ Native App-Ordner für den vorhandenen Windows-Desktop. Statt vieler einzelner V
 
 ## Funktionen
 
+- **Neu in 1.5.1:** Defekte Einträge über **Aus Gruppe löschen** entfernen, ohne das Ziel prüfen oder auf den Desktop zurücklegen zu müssen. Dateien und interne Sicherungskopien bleiben erhalten.
 - Verknüpfungen, Programme, Ordner, Webadressen und installierte Store-Apps in Desktop-Bubbles organisieren.
 - Einträge per Drag & Drop hinzufügen, sortieren, zwischen Gruppen verschieben und zurück auf den Desktop ziehen.
 - Über **Zurück zum Desktop** eine geprüfte Verknüpfung zurücklegen. Programme werden nicht verschoben; bestehende Dateien bleiben erhalten.
@@ -43,6 +44,7 @@ Die portable Ausgabe ist nicht signiert und enthält keinen Installer oder autom
 | Einträge hinzufügen | Drag & Drop oder Gruppenmenü → Hinzufügen |
 | Sortieren / andere Bubble | Symbol auf anderes Symbol beziehungsweise Ziel-Bubble ziehen |
 | Zurück auf den Desktop | Symbol hinausziehen oder Rechtsklick → Zurück zum Desktop |
+| Nur aus der Gruppe entfernen | Rechtsklick auf Symbol → Aus Gruppe löschen; funktioniert auch bei fehlendem oder defektem Ziel |
 | Einstellungen verlassen | Erneut Zahnrad unten rechts oder Zurück-Pfeil → Miniaturansicht |
 | Tastatur | Tab / Umschalt+Tab, Enter / Leertaste; Strg+N erstellt eine Gruppe |
 
@@ -81,11 +83,11 @@ Vor Löschen der App **Einstellungen → Verknüpfungen auf Desktop zurücklegen
 Windows 11 x64 und .NET-8-SDK beziehungsweise Visual Studio mit .NET-Desktopentwicklung. Keine Drittanbieter-NuGet-Laufzeitabhängigkeiten.
 
 ```powershell
-.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.5.0
+.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.5.1
 # Mit vorhandenem SDK:
-.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.5.0
+.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.5.1
 # Native Tests mit isolierten Testdaten auf interaktivem Windows-Desktop:
-.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.5.0\DesktopBubbles.exe
+.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.5.1\DesktopBubbles.exe
 ```
 
 Build erstellt die portable Ausgabe, führt die Kernprüfungen aus und packt ZIPs sowie SHA-256-Prüfsummen. Native Tests laufen separat. `dotnet test` ist nicht der Einstieg für die ausführbare Konsolensuite. CI baut und prüft den Core auf GitHub Actions. [Architektur](docs/ARCHITECTURE.md), [Entwicklerregeln](docs/DEVELOPMENT.md), [Release](docs/RELEASE.md), [Design-QA](design-qa.md).

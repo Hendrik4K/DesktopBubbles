@@ -1,5 +1,11 @@
 # Änderungen
 
+## 1.5.1 · 24.10.2026
+
+- Symbolmenü um **Aus Gruppe löschen** ergänzt. Entfernt nur den Gruppeneintrag, auch wenn Ziel, interne Kopie oder Metadaten fehlen beziehungsweise defekt sind.
+- Die neue Aktion legt nichts auf den Desktop zurück und löscht keine Programme, Verknüpfungsdateien oder Sicherungskopien. Andere Gruppen bleiben unverändert. Bei Speicherfehler wird der Eintrag an seiner bisherigen Position wieder eingesetzt.
+- **Starten** und **Zurück zum Desktop** bleiben eigene Aktionen.
+
 ## 1.5.0 · 24.10.2026
 
 - Optionale Farbkopplung für alle Miniaturen und Ordner, separater Farbreset.

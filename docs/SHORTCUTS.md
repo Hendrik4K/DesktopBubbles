@@ -1,5 +1,11 @@
 # Sichere Verknüpfungsverwaltung
 
+## Nur aus der Gruppe löschen · ab 1.5.1
+
+Das Symbolmenü enthält Starten, Zurück zum Desktop und **Aus Gruppe löschen**. Die letzte Aktion entfernt ausschließlich die Referenz in dieser Gruppe. Sie löst das Ziel nicht auf, prüft keine Datei und ruft weder Wiederherstellung noch Exportbestätigung auf. Damit lassen sich auch fehlende Ziele, fehlende interne Kopien und defekte Metadaten entfernen. Dateien, Programme, Sicherungskopien und Referenzen anderer Gruppen bleiben erhalten. Bestehende Rückgabehistorie bleibt ebenfalls erhalten; eine noch nutzbare Sicherung kann daher später über das zusätzliche Rücklege-Werkzeug wiederhergestellt werden.
+
+Die Zustandsänderung wird sofort gespeichert. Scheitert das Speichern, wird der Eintrag an derselben Listenposition wieder eingesetzt. Zurück zum Desktop bleibt der getrennte Ablauf mit geprüfter Dateirückgabe. Die folgenden Abschnitte beschreiben diese Datei- und Wiederherstellungsabläufe.
+
 ## Verhalten und Speicher
 
 `.lnk` und `.url` erhalten eine eigene bytegetreue Kopie. Bei Links direkt auf dem **persönlichen** Windows-Desktop ist standardmäßig zusätzlich „Original entfernen“ eingeschaltet. Unter **Zahnrad → Desktop-Originale nach Übernahme entfernen** lässt sich der Kopiermodus wählen. Links von anderen Orten, einschließlich des gemeinsamen Desktops, werden ausschließlich kopiert. Programme, Ordner und sonstige Dateien bleiben externe Referenzen.

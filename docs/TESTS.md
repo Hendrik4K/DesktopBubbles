@@ -1,5 +1,11 @@
 # Prüfstand
 
+## Patch 1.5.1 · 24.10.2026
+
+Release-Build ohne Warnungen/Fehler, **108 Kernprüfungen und 118 vollständige native Windows-Prüfungen bestanden** (AppearanceOnly=false). [Core-Bericht](results/core-tests-v1.5.1.txt), [Windows-Bericht](results/windows-smoke-v1.5.1.json).
+
+Neue Regressionen prüfen fehlende externe Ziele, fehlende interne Kopien, kaputte Journale, unveränderte Dateien/Sicherungen und andere Gruppen sowie Rollback an derselben Listenposition bei Speicherfehler. Der native Test ruft Aus Gruppe löschen über das tatsächliche Symbol-Kontextmenü für ein fehlendes Ziel auf und prüft unmittelbar Oberfläche und gespeicherte Konfiguration. Die übrigen vollständigen Desktop-, Rückgabe- und UI-Prüfungen bestanden ebenfalls. Die unten dokumentierten manuellen Plattformgrenzen bleiben bestehen.
+
 ## Release 1.5.0 · 24.10.2026
 
 Release-Build ohne Warnungen oder Fehler. **104 Kernprüfungen und 116 native Windows-Prüfungen bestanden**, vollständiger Modus (AppearanceOnly=false). Windows 10.0.26300.0, x64, .NET 8.0.32, SDK 8.0.426. Berichte: [Core](results/core-tests-v1.5.0.txt) und [Windows](results/windows-smoke-v1.5.0.json).

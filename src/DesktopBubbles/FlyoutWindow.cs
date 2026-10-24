@@ -116,6 +116,9 @@ internal sealed class FlyoutWindow : Window
             var menu = new ContextMenu(); button.ContextMenu = menu;
             menu.Items.Add(Ui.Menu("Starten", () => { try { app.Launch(entry); Close(); } catch (Exception ex) { Ui.Error(ex); } }));
             menu.Items.Add(Ui.Menu("Zurück zum Desktop", () => WithDialog(() => { app.RemoveEntry(Group, entry); _ = Populate(); Place(); })));
+            var delete = Ui.Menu("Aus Gruppe löschen", () => WithDialog(() => { app.DeleteEntry(Group, entry); _ = Populate(); Place(); }));
+            delete.ToolTip = "Entfernt nur diesen Eintrag. Keine Dateien oder Programme werden gelöscht und keine Verknüpfung wird auf dem Desktop angelegt.";
+            menu.Items.Add(delete);
             grid.Children.Add(button); buttons[entry.Id] = button;
             _ = SetImage(image, app.Resolve(entry.Target));
         }
