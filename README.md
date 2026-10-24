@@ -10,7 +10,16 @@ App folders for your Windows 11 desktop: group your shortcuts into a glass bubbl
 
 **[Windows 11 x64 herunterladen](https://github.com/Hendrik4K/DesktopBubbles/releases/latest)** · [Änderungen](CHANGELOG.md) · [MIT-Lizenz](LICENSE) · [Fehler melden](https://github.com/Hendrik4K/DesktopBubbles/issues)
 
-![Vorher: einzelne Launcher-Verknüpfungen. Nachher: eine DesktopBubble mit aufklappbarem App-Ordner.](docs/screenshots/desktopbubbles-before-after.gif)
+<table>
+  <tr>
+    <th>Vorher → Nachher</th>
+    <th>Desktop-Bubbles &amp; Einstellungen</th>
+  </tr>
+  <tr>
+    <td width="34%" valign="middle"><img src="docs/screenshots/desktopbubbles-before-after.gif" width="100%" alt="Vorher: einzelne Launcher-Verknüpfungen. Nachher: eine DesktopBubble mit aufklappbarem App-Ordner."></td>
+    <td width="66%" valign="middle"><img src="docs/screenshots/desktopbubbles-desktop-settings.png" width="100%" alt="DesktopBubbles auf dem Windows-Desktop: transparente App-Ordner und die Einstellungen für Farbe, Transparenz, Größe und Eckenrundung."></td>
+  </tr>
+</table>
 
 ## Funktionen
 
@@ -111,4 +120,4 @@ Feedback zu Bugs, Bedienung und Tests auf weiteren Windows-Systemen ist unter [I
 - WPF-Aufnahmen erfassen nicht den vom Desktop zusammengesetzten Hintergrund. Hoher Kontrast und verschiedene Skalierungen müssen zusätzlich visuell geprüft werden.
 - WPF hat einen Speichergrundbedarf. CPU-/RAM-Messungen belegen keine Spiele-Frametimes oder GPU-Leistung.
 
-Eigener Projektcode unter MIT. Das Rauchglas-Logo und das unverändert übernommene Demo-GIF wurden vom Projektinhaber bereitgestellt; App-Symbole stammen aus der lokalen Windows-Shell. Die portable Ausgabe enthält die Lizenzhinweise ihrer .NET-Laufzeit. [Branding](src/DesktopBubbles/Assets/README.md).
+Eigener Projektcode unter MIT. Das Rauchglas-Logo, das Demo-GIF und die Desktop-Aufnahme wurden vom Projektinhaber bereitgestellt und unverändert übernommen; App-Symbole stammen aus der lokalen Windows-Shell. Die portable Ausgabe enthält die Lizenzhinweise ihrer .NET-Laufzeit. [Branding](src/DesktopBubbles/Assets/README.md).
