@@ -1,19 +1,21 @@
-# DesktopBubbles · 1.5.2
+# DesktopBubbles · 1.6.0
 
 <img src="https://raw.githubusercontent.com/Hendrik4K/DesktopBubbles/v1.5.0/src/DesktopBubbles/Assets/DesktopBubbles.png" width="88" height="88" alt="DesktopBubbles Rauchglas-Logo">
 
-**App folders for your Windows 11 desktop.** Group your shortcuts into a small bubble, open it with one click, and launch the app you need.
+**Many shortcuts. One bubble. More room for your desktop. ✨**
 
-Native App-Ordner für den vorhandenen Windows-Desktop. Statt vieler einzelner Verknüpfungen liegt eine kompakte Miniatur auf dem Desktop. Ein Klick öffnet das App-Raster über der Bubble; nach dem Schließen erscheint wieder die Miniatur.
+App folders for your Windows 11 desktop: group your shortcuts into a glass bubble, click to open, and pick the app you want. Hold an icon to make it wiggle, then drop it onto another to swap their places.
+
+**Viele Launcher. Eine Bubble. Mehr Platz auf deinem Desktop.** Steam, Epic, Battle.net und Co. müssen nicht einzeln den Desktop belegen. Pack sie in einen App-Ordner, öffne ihn mit einem Klick und wähle, was du starten möchtest. Danach bleibt wieder die kleine Miniatur. Dein Hintergrund bekommt seinen Platz zurück. 🚀
 
 **[Windows 11 x64 herunterladen](https://github.com/Hendrik4K/DesktopBubbles/releases/latest)** · [Änderungen](CHANGELOG.md) · [MIT-Lizenz](LICENSE) · [Fehler melden](https://github.com/Hendrik4K/DesktopBubbles/issues)
 
-![DesktopBubbles – Miniatur und Einstellungen](docs/screenshots/v1.5.0-host.png)
+![Vorher: einzelne Launcher-Verknüpfungen. Nachher: eine DesktopBubble mit aufklappbarem App-Ordner.](docs/screenshots/desktopbubbles-before-after.gif)
 
 ## Funktionen
 
-- **Neu in 1.5.2:** Sicherer Benutzerdatenspeicher bei fehlenden Schreibrechten, automatische Übernahme bestehender Gruppen und Deckkraft im Hell-/Dunkel-Farbeditor.
-- **Neu in 1.5.1:** Defekte Einträge über **Aus Gruppe löschen** entfernen, ohne das Ziel prüfen oder auf den Desktop zurücklegen zu müssen. Dateien und interne Sicherungskopien bleiben erhalten.
+- **Neu in 1.6.0: Halten. Wackeln. Tauschen.** Ein Symbol etwa eine halbe Sekunde gedrückt halten und auf ein anderes ziehen. Genau diese beiden tauschen ihre Plätze; die Reihenfolge bleibt gespeichert.
+- Defekte Einträge über **Aus Gruppe löschen** entfernen, auch wenn das Ziel fehlt. Dateien und interne Sicherungskopien bleiben erhalten.
 - Verknüpfungen, Programme, Ordner, Webadressen und installierte Store-Apps in Desktop-Bubbles organisieren.
 - Einträge per Drag & Drop hinzufügen, sortieren, zwischen Gruppen verschieben und zurück auf den Desktop ziehen.
 - Über **Zurück zum Desktop** eine geprüfte Verknüpfung zurücklegen. Programme werden nicht verschoben; bestehende Dateien bleiben erhalten.
@@ -43,7 +45,9 @@ Die portable Ausgabe ist nicht signiert und enthält keinen Installer oder autom
 | Gruppe finden | Rechtsklick auf Gruppenzeile → Auf dem Desktop finden; zeigt den Desktop und setzt die Bubble in die Hauptmonitormitte |
 | Gruppe bearbeiten | Rechtsklick auf Miniatur oder Gruppenzeile; Umbenennen und Name unter Bubble anzeigen stehen oben |
 | Einträge hinzufügen | Drag & Drop oder Gruppenmenü → Hinzufügen |
-| Sortieren / andere Bubble | Symbol auf anderes Symbol beziehungsweise Ziel-Bubble ziehen |
+| Plätze tauschen | Symbol etwa ½ Sekunde halten, bis die Symbole wackeln; auf einem anderen Symbol loslassen |
+| Sortieren beenden | Esc oder eine freie Stelle im Ordner anklicken |
+| Andere Bubble / Desktop | Ohne Haltepause direkt auf die Ziel-Bubble beziehungsweise den Desktop ziehen |
 | Zurück auf den Desktop | Symbol hinausziehen oder Rechtsklick → Zurück zum Desktop |
 | Nur aus der Gruppe entfernen | Rechtsklick auf Symbol → Aus Gruppe löschen; funktioniert auch bei fehlendem oder defektem Ziel |
 | Einstellungen verlassen | Erneut Zahnrad unten rechts oder Zurück-Pfeil → Miniaturansicht |
@@ -54,6 +58,8 @@ Persönliche Desktop-`.lnk/.url` erhalten zuerst eine geprüfte eigene Kopie. St
 ## Aussehen
 
 Gruppe links auswählen. **Miniatur** enthält Farbe, Glas, globale Miniaturtransparenz und -größe sowie die gemeinsame Eckenrundung. **Ordner** enthält die getrennte globale Ordnertransparenz, Ordnergröße und Live-Vorschau mit 1:3-/1:1-Umschaltung. Bei 100 Prozent Transparenz verschwinden Fläche und Rahmen; die Symbole bleiben sichtbar.
+
+![DesktopBubbles – Miniatur und Einstellungen](docs/screenshots/v1.5.0-host.png)
 
 **Ändern** öffnet den Farbeditor über den unteren Reglern. Der Entwurf verändert keine gespeicherten Farben. **Anwenden** übernimmt, **Abbrechen** oder Esc verwirft die Auswahl. HEX akzeptiert sechs RGB-Stellen. Andere Regler wirken sofort und werden automatisch gespeichert.
 
@@ -86,11 +92,11 @@ Vor Löschen der App **Einstellungen → Verknüpfungen auf Desktop zurücklegen
 Windows 11 x64 und .NET-8-SDK beziehungsweise Visual Studio mit .NET-Desktopentwicklung. Keine Drittanbieter-NuGet-Laufzeitabhängigkeiten.
 
 ```powershell
-.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.5.2
+.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.6.0
 # Mit vorhandenem SDK:
-.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.5.2
+.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.6.0
 # Native Tests mit isolierten Testdaten auf interaktivem Windows-Desktop:
-.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.5.2\DesktopBubbles.exe
+.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.6.0\DesktopBubbles.exe
 ```
 
 Build erstellt die portable Ausgabe, führt die Kernprüfungen aus und packt ZIPs sowie SHA-256-Prüfsummen. Native Tests laufen separat. `dotnet test` ist nicht der Einstieg für die ausführbare Konsolensuite. CI baut und prüft den Core auf GitHub Actions. [Architektur](docs/ARCHITECTURE.md), [Entwicklerregeln](docs/DEVELOPMENT.md), [Release](docs/RELEASE.md), [Design-QA](design-qa.md).
@@ -105,4 +111,4 @@ Feedback zu Bugs, Bedienung und Tests auf weiteren Windows-Systemen ist unter [I
 - WPF-Aufnahmen erfassen nicht den vom Desktop zusammengesetzten Hintergrund. Hoher Kontrast und verschiedene Skalierungen müssen zusätzlich visuell geprüft werden.
 - WPF hat einen Speichergrundbedarf. CPU-/RAM-Messungen belegen keine Spiele-Frametimes oder GPU-Leistung.
 
-Eigener Projektcode unter MIT. Das Rauchglas-Logo wurde vom Projektinhaber bereitgestellt; App-Symbole stammen aus der lokalen Windows-Shell. Die portable Ausgabe enthält die Lizenzhinweise ihrer .NET-Laufzeit. [Branding](src/DesktopBubbles/Assets/README.md).
+Eigener Projektcode unter MIT. Das Rauchglas-Logo und das unverändert übernommene Demo-GIF wurden vom Projektinhaber bereitgestellt; App-Symbole stammen aus der lokalen Windows-Shell. Die portable Ausgabe enthält die Lizenzhinweise ihrer .NET-Laufzeit. [Branding](src/DesktopBubbles/Assets/README.md).

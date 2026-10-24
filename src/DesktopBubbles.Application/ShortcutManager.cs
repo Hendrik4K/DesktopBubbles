@@ -87,6 +87,15 @@ public sealed class ShortcutManager(IShortcutVault vault, Action<BubbleState> pe
     }
 
     public string? Restore(string target) => vault.Restore(target);
+    public void Swap(BubbleState state, BubbleGroup group, AppEntry first, AppEntry second)
+    {
+        int a = group.Items.IndexOf(first), b = group.Items.IndexOf(second);
+        if (!state.Groups.Contains(group) || a < 0 || b < 0) throw new InvalidOperationException("Die Einträge gehören nicht mehr zu dieser Gruppe.");
+        if (a == b) return;
+        (group.Items[a], group.Items[b]) = (group.Items[b], group.Items[a]);
+        try { persist(state); }
+        catch { (group.Items[a], group.Items[b]) = (group.Items[b], group.Items[a]); throw; }
+    }
     public void Transfer(BubbleState state, BubbleGroup source, BubbleGroup destination, AppEntry entry, int? index = null)
     {
         if (!state.Groups.Contains(source) || !state.Groups.Contains(destination) || !source.Items.Contains(entry)) throw new InvalidOperationException("Der gezogene Eintrag ist nicht mehr vorhanden.");

@@ -1,5 +1,13 @@
 # Änderungen
 
+## 1.6.0 · 25.10.2026
+
+- Ein Symbol im geöffneten Ordner etwa eine halbe Sekunde gedrückt halten aktiviert den Sortiermodus. Symbole wackeln dezent; bei deaktivierten Animationen bleiben sie ruhig.
+- Ein gegriffenes Symbol auf einem anderen ablegen tauscht genau diese beiden Plätze. Die Reihenfolge wird gespeichert und in der Miniatur aktualisiert. Auch fehlende Ziele lassen sich sortieren; ein Speicherfehler stellt die bisherige Reihenfolge wieder her.
+- Der Sortiermodus bleibt für weitere Tauschaktionen aktiv. Esc, eine freie Stelle im Ordner oder das Schließen beendet ihn. Kurzes Klicken startet weiterhin, direktes Ziehen ohne Haltepause verwendet die bestehende Drag-&-Drop-Funktion.
+- Bedienung und technische Grenzen: docs/REORDERING.md.
+- Neue Vorher-nachher-Demo im README und ein direkter Einstieg in Download und Bedienung.
+
 ## 1.5.2 · 24.10.2026
 
 - Fehlende Schreibrechte im Datenordner werden beim Start erkannt. Gruppen, Einstellungen, Verknüpfungen und Rückgabehistorie werden geprüft in einen beschreibbaren Benutzerprofil-Pfad übernommen. Die Quelle bleibt unverändert; spätere Starts verwenden weiter die neuere Kopie. Unterschiedliche Ausgangsordner bleiben getrennt.

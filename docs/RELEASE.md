@@ -1,10 +1,10 @@
-# DesktopBubbles 1.5.2 veröffentlichen
+# DesktopBubbles 1.6.0 veröffentlichen
 
 Portable Windows-11-x64-Ausgabe, Projektcode unter MIT. Das Paket enthält die .NET-8-Desktop-Laufzeit und deren Lizenzhinweise. Es gibt keinen Installer, keine Codesignatur und keinen automatischen Updater. Die Desktop-Anbindung bleibt experimentell.
 
 ## Paket und Prüfung
 
-`Build.ps1 -OutputName DesktopBubbles-win-x64-v1.5.2` kompiliert die Lösung, führt die Konsolensuite aus und erzeugt portable Ausgabe, ZIP, Source-ZIP und SHA-256-Prüfsummen. Native Prüfungen laufen anschließend separat auf dem interaktiven Windows-Desktop über Test-Windows.ps1. Ergebnisse und Grenzen: [TESTS.md](TESTS.md).
+`Build.ps1 -OutputName DesktopBubbles-win-x64-v1.6.0` kompiliert die Lösung, führt die Konsolensuite aus und erzeugt portable Ausgabe, ZIP, Source-ZIP und SHA-256-Prüfsummen. Native Prüfungen laufen anschließend separat auf dem interaktiven Windows-Desktop über Test-Windows.ps1. Ergebnisse und Grenzen: [TESTS.md](TESTS.md).
 
 Vor dem Upload ZIP-Inhalte auf data, Benutzerverknüpfungen, Logs, SDK-Caches und Zugangsdaten prüfen. Die portable Paketierung schließt data aus; der Release wird aus einem frischen Ausgabeordner gebaut. GitHub-Release-Assets nach dem Upload anhand von Größe und SHA-256 prüfen. Erst danach den vorbereiteten Release veröffentlichen.
 

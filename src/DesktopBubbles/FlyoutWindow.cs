@@ -18,8 +18,7 @@ internal sealed class FlyoutWindow : Window
     private readonly Border surface;
     private bool busy;
     private bool placementQueued;
-    private Point down;
-    private bool dragged;
+    internal FolderReorder Reorder { get; }
     private readonly Dictionary<Guid, Button> buttons = [];
     public FlyoutWindow(App app, BubbleWindow anchor)
     {
@@ -32,6 +31,14 @@ internal sealed class FlyoutWindow : Window
         surface = new Border { CornerRadius = new CornerRadius(settings.WindowCornerRadius), Background = Ui.WindowGlass(settings, Group), BorderBrush = FrameBrush(), BorderThickness = new Thickness(1), Padding = new Thickness(22) };
         var root = new StackPanel(); surface.Child = root; Content = surface;
         scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = grid };
+        Reorder = new FolderReorder(this, scroll,
+            (first, second) => WithDialog(() => { try { app.SwapEntries(Group, first, second); } catch (Exception ex) { Ui.Error(ex); } _ = Populate(); }),
+            async (button, entry) =>
+            {
+                busy = true;
+                try { await app.DragEntry(button, Group, entry); }
+                finally { busy = false; if (IsVisible) { if (!IsActive && !HasContextMenu()) Close(); else await Populate(); } }
+            }, () => app.State.Settings.Animations);
         root.Children.Add(scroll);
         System.Windows.Automation.AutomationProperties.SetName(this, Group.Name);
         ContextMenu = CreateAddMenu();
@@ -42,8 +49,13 @@ internal sealed class FlyoutWindow : Window
             app.ReceiveDrop(Group, e.Data); _ = Populate();
             e.Handled = true;
         };
-        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { Close(); e.Handled = true; } };
-        Deactivated += (_, _) => Dispatcher.BeginInvoke(() => { if (!busy && !IsActive && !HasContextMenu() && IsVisible) Close(); });
+        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { if (Reorder.IsSorting) Reorder.Stop(); else Close(); e.Handled = true; } };
+        Deactivated += (_, _) =>
+        {
+            if (Reorder.IsSorting) Reorder.Stop(); else Reorder.CancelPress();
+            Dispatcher.BeginInvoke(() => { if (!busy && !IsActive && !HasContextMenu() && IsVisible) Close(); });
+        };
+        Closed += (_, _) => Reorder.Dispose();
         SourceInitialized += (_, _) => { Native.ToolWindow(this); Ui.Backdrop(this, settings); };
         SizeChanged += (_, _) =>
         {
@@ -86,7 +98,7 @@ internal sealed class FlyoutWindow : Window
     }
     public async Task Populate()
     {
-        grid.Children.Clear(); buttons.Clear();
+        Reorder.ClearButtons(); grid.Children.Clear(); buttons.Clear();
         var size = app.State.Settings.TileSize;
         grid.MinHeight = Group.Items.Count == 0 ? size * 2 : 0;
         foreach (var entry in Group.Items.ToList())
@@ -94,19 +106,10 @@ internal sealed class FlyoutWindow : Window
             var image = new Image { Width = Math.Min(112, size * 72 / 116), Height = Math.Min(112, size * 72 / 116), Stretch = Stretch.Uniform };
             var button = new Button { Style = (Style)FindResource("AppIcon"), Content = image, Width = size, Height = size, ToolTip = entry.Name + "\n" + app.EntryLocation(entry), AllowDrop = true };
             System.Windows.Automation.AutomationProperties.SetName(button, entry.Name);
-            button.PreviewMouseLeftButtonDown += (_, e) => { down = e.GetPosition(button); dragged = false; };
-            button.MouseMove += async (_, e) =>
-            {
-                if (e.LeftButton != MouseButtonState.Pressed || dragged) return;
-                var p = e.GetPosition(button);
-                if (Math.Abs(p.X - down.X) + Math.Abs(p.Y - down.Y) < 8) return;
-                dragged = true; busy = true;
-                try { await app.DragEntry(button, Group, entry); }
-                finally { busy = false; if (IsVisible) { if (!IsActive && !HasContextMenu()) Close(); else await Populate(); } }
-            };
+            Reorder.Attach(button, entry);
             button.Click += (_, _) =>
             {
-                if (dragged) { dragged = false; return; }
+                if (Reorder.ConsumeClick()) return;
                 try { app.Launch(entry); Close(); } catch (Exception ex) { busy = true; Ui.Error(ex); busy = false; }
             };
             button.Drop += (_, e) =>

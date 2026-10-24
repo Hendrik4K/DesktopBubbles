@@ -1,5 +1,19 @@
 # Prüfstand
 
+## Version 1.6.0 · 25.10.2026
+
+Finaler Build ohne Warnungen/Fehler, **122 Kernprüfungen und 124 native Fenster-/Integrationsprüfungen bestanden**. [Core](results/core-tests-v1.6.0.txt), [Windows](results/windows-smoke-v1.6.0.json). Der native Lauf verwendet `AppearanceOnly=true`: Die neun Desktop-Klickflächen-/MinimizeAll-Prüfungen sind ausdrücklich ausgelassen; für 1.5.2 ist weiter unten der damalige vollständige Plattformlauf dokumentiert.
+
+Die neuen Prüfungen decken den Halte-Timer, Sortiermodus, Wackelanimation, Zielkoordinaten, exakten Platztausch, gespeicherte Reihenfolge und Abbruch/Esc ab. Fehlende Ziele lassen sich ebenfalls sortieren. Bei Schreibfehlern bleibt die alte Reihenfolge erhalten. Eingaben werden im eigenen WPF-Fenster simuliert; physische Mausbedienung und die übrigen Plattformgrenzen unten sind damit nicht vollständig abgenommen. Die finale Ausgabe verwendet dasselbe Schema 6. Die bereitgestellte animierte Vorher-nachher-Demo zeigt die Bedienidee; sie ersetzt keinen Plattformtest.
+
+## Lokale Vorschau 1.6.0-preview.1 · Gedrückthalten und Platztausch
+
+Build ohne Warnungen/Fehler, **122 Kernprüfungen und 124 native Fenster-/Integrationsprüfungen bestanden**. Dieser Lauf verwendet ausdrücklich `AppearanceOnly=true` und überspringt die neun Desktop-Klickflächen-/MinimizeAll-Prüfungen. [Core](results/core-tests-swap-preview.txt), [Windows](results/windows-smoke-swap-preview.json).
+
+Neue Kernfälle prüfen den exakten Tausch zweier von neun Einträgen, dauerhaft gespeicherte Reihenfolge, Rücknahme bei Speicherfehler, fehlende Ziele ohne Datei-/Journaländerung, Tausch auf sich selbst und inzwischen entfernte Ziele. Native Fälle prüfen den 500-ms-Timer, kurzes Klicken ohne Sortiermodus, langes Halten ohne Start, Wackelanimation unter Beachtung der Bewegungseinstellungen, sofortiges Greifen im Sortiermodus, Ablegen anhand der Symbolkoordinaten, Speichern und aktualisierte Ansicht, Abbruch außerhalb des Ordners und Esc ohne Schließen des Fensters. Die Eingabeereignisse werden im eigenen WPF-Fenster simuliert; die physische Mausbedienung sowie gemischte DPI und mehrere Monitore bleiben manuell zu prüfen.
+
+Bedienung und Implementierung: [REORDERING.md](REORDERING.md). Diese Vorschau war noch nicht veröffentlicht und änderte die installierte stabile Version nicht. Persönliche Vorschau-Daten und deren Kopierbericht liegen ausschließlich im ignorierten artifacts-Ordner.
+
 ## Patch 1.5.2 · 24.10.2026
 
 Build ohne Warnungen/Fehler, **117 Kernprüfungen und 124 vollständige native Windows-Prüfungen bestanden**. [Core](results/core-tests-v1.5.2.txt), [Windows](results/windows-smoke-v1.5.2.json).

@@ -299,7 +299,12 @@ public partial class App : System.Windows.Application
     {
         if (IsInternalDrag(data) && activeDrag is { } drag)
         {
-            try { Shortcuts.Transfer(State, drag.Group, group, drag.Entry, index); drag.Internal = true; Changed(); }
+            try
+            {
+                if (drag.Group == group && index is { } position && position >= 0 && position < group.Items.Count) Shortcuts.Swap(State, group, drag.Entry, group.Items[position]);
+                else Shortcuts.Transfer(State, drag.Group, group, drag.Entry, index);
+                drag.Internal = true; Changed();
+            }
             catch (Exception ex) { Ui.Error(ex); }
         }
         else if (data.GetData(DataFormats.FileDrop) is string[] files) AddTargets(group, files, rebuild);
@@ -382,6 +387,10 @@ public partial class App : System.Windows.Application
     {
         try { Shortcuts.RemoveFromGroup(State, group, entry); Changed(); }
         catch (Exception ex) { Ui.Error(ex); }
+    }
+    internal void SwapEntries(BubbleGroup group, AppEntry first, AppEntry second)
+    {
+        Shortcuts.Swap(State, group, first, second); Changed();
     }
     internal string ReturnToDesktop(BubbleGroup group, AppEntry entry, string? desktopOverride = null)
     {

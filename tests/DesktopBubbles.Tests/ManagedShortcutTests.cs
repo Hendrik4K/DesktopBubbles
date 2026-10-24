@@ -125,6 +125,38 @@ internal static class ManagedShortcutTests
             f.Manager.Add(f.State, second, source); f.Manager.RemoveGroup(f.State, f.Group); assert(!File.Exists(source));
             f.Manager.RemoveGroup(f.State, second); assert(File.Exists(source));
         });
+        test("Platztausch vertauscht genau zwei Einträge und bleibt gespeichert", () =>
+        {
+            var f = New(); var entries = Enumerable.Range(0, 9).Select(i => Targets.Create(Path.Combine(f.Root, "app-" + i + ".exe"))).ToArray(); f.Group.Items.AddRange(entries);
+            var second = new BubbleGroup { Items = [Targets.Create(entries[0].Target)] }; f.State.Groups.Add(second);
+            f.Manager.Swap(f.State, f.Group, entries[1], entries[7]);
+            var expected = entries.ToArray(); (expected[1], expected[7]) = (expected[7], expected[1]);
+            assert(f.Group.Items.SequenceEqual(expected) && f.Store.Load().Groups[0].Items.Select(e => e.Id).SequenceEqual(expected.Select(e => e.Id)) && second.Items.Count == 1);
+        });
+        test("Speicherfehler beim Platztausch erhält die gesamte ursprüngliche Reihenfolge", () =>
+        {
+            var f = New(); var entries = Enumerable.Range(0, 4).Select(i => Targets.Create(Path.Combine(f.Root, "missing-" + i + ".lnk"))).ToArray(); f.Group.Items.AddRange(entries); f.Store.Save(f.State);
+            var manager = new ShortcutManager(f.Vault, _ => throw new IOException("disk full")); Fail(() => manager.Swap(f.State, f.Group, entries[0], entries[3]));
+            assert(f.Group.Items.SequenceEqual(entries) && f.Store.Load().Groups[0].Items.Select(e => e.Id).SequenceEqual(entries.Select(e => e.Id)));
+        });
+        test("Platztausch benötigt keine funktionierende Datei und verändert keine Sicherungen", () =>
+        {
+            var f = New(); string source = f.Link(); f.Manager.Add(f.State, f.Group, source); var saved = f.Group.Items.Single(); string copy = f.Manager.Resolve(saved.Target); byte[] content = File.ReadAllBytes(copy), journal = File.ReadAllBytes(copy + ".json");
+            var missing = Targets.Create(Path.Combine(f.Root, "dead.exe")); f.Group.Items.Add(missing);
+            f.Manager.Swap(f.State, f.Group, saved, missing);
+            assert(f.Group.Items[0] == missing && !File.Exists(source) && content.SequenceEqual(File.ReadAllBytes(copy)) && journal.SequenceEqual(File.ReadAllBytes(copy + ".json")));
+        });
+        test("Platztausch auf sich selbst speichert und verändert nichts", () =>
+        {
+            var f = New(); var entry = Targets.Create(Path.Combine(f.Root, "dead.exe")); f.Group.Items.Add(entry); int writes = 0;
+            new ShortcutManager(f.Vault, _ => writes++).Swap(f.State, f.Group, entry, entry); assert(writes == 0 && f.Group.Items.Single() == entry);
+        });
+        test("Platztausch lehnt inzwischen entfernte Ziele ohne Nebenwirkungen ab", () =>
+        {
+            var f = New(); var first = Targets.Create(Path.Combine(f.Root, "one.exe")); var removed = Targets.Create(Path.Combine(f.Root, "two.exe")); f.Group.Items.Add(first);
+            bool rejected = false; try { f.Manager.Swap(f.State, f.Group, first, removed); } catch (InvalidOperationException) { rejected = true; }
+            assert(rejected && f.Group.Items.Single() == first);
+        });
         test("Verschieben zwischen Bubbles stellt kein Desktop-Original wieder her", () =>
         {
             var f = New(); string source = f.Link(); f.Manager.Add(f.State, f.Group, source); var entry = f.Group.Items[0]; var other = new BubbleGroup(); f.State.Groups.Add(other);
