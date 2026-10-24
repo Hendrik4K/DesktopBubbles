@@ -1,5 +1,11 @@
 # Änderungen
 
+## 1.5.2 · 24.10.2026
+
+- Fehlende Schreibrechte im Datenordner werden beim Start erkannt. Gruppen, Einstellungen, Verknüpfungen und Rückgabehistorie werden geprüft in einen beschreibbaren Benutzerprofil-Pfad übernommen. Die Quelle bleibt unverändert; spätere Starts verwenden weiter die neuere Kopie. Unterschiedliche Ausgangsordner bleiben getrennt.
+- Eindeutige temporäre Dateinamen verhindern, dass eine alte blockierte groups.json.tmp neue Speicherung verhindert. Datenordner öffnen zeigt den aktiven Speicher.
+- Deckkraft im Modusfarbeditor macht Steuerelement-Hintergründe transparent, unabhängig von Helligkeit. Hell und Dunkel speichern getrennte Werte; Vorschau, Anwenden und Abbrechen bleiben erhalten.
+
 ## 1.5.1 · 24.10.2026
 
 - Symbolmenü um **Aus Gruppe löschen** ergänzt. Entfernt nur den Gruppeneintrag, auch wenn Ziel, interne Kopie oder Metadaten fehlen beziehungsweise defekt sind.

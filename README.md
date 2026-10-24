@@ -1,4 +1,4 @@
-# DesktopBubbles · 1.5.1
+# DesktopBubbles · 1.5.2
 
 <img src="https://raw.githubusercontent.com/Hendrik4K/DesktopBubbles/v1.5.0/src/DesktopBubbles/Assets/DesktopBubbles.png" width="88" height="88" alt="DesktopBubbles Rauchglas-Logo">
 
@@ -12,6 +12,7 @@ Native App-Ordner für den vorhandenen Windows-Desktop. Statt vieler einzelner V
 
 ## Funktionen
 
+- **Neu in 1.5.2:** Sicherer Benutzerdatenspeicher bei fehlenden Schreibrechten, automatische Übernahme bestehender Gruppen und Deckkraft im Hell-/Dunkel-Farbeditor.
 - **Neu in 1.5.1:** Defekte Einträge über **Aus Gruppe löschen** entfernen, ohne das Ziel prüfen oder auf den Desktop zurücklegen zu müssen. Dateien und interne Sicherungskopien bleiben erhalten.
 - Verknüpfungen, Programme, Ordner, Webadressen und installierte Store-Apps in Desktop-Bubbles organisieren.
 - Einträge per Drag & Drop hinzufügen, sortieren, zwischen Gruppen verschieben und zurück auf den Desktop ziehen.
@@ -68,11 +69,13 @@ Das Zahnrad enthält App-Farbe, Farbmodus und App-Transparenz. Die **quadratisch
 
 ## Aktualisieren, sichern und entfernen
 
-Die bisherige App **im Tray beenden**. Die neue Version in einen eigenen Ordner entpacken und den **vollständigen bisherigen `data`-Ordner** übernehmen. Alternativ eine `.bubbles`-Sicherung importieren. Release-ZIPs enthalten keine Benutzerdaten.
+Den aktiven Speicher unter **Einstellungen → Datenordner öffnen** ermitteln, dann die bisherige App **im Tray beenden**. Die neue Version in einen eigenen Ordner entpacken und den **vollständigen aktiven Datenordner** übernehmen oder mit --data-dir weiterverwenden. Alternativ eine `.bubbles`-Sicherung importieren. Release-ZIPs enthalten keine Benutzerdaten.
 
 Version 1.5.0 migriert ältere Konfigurationen auf **Schema 6**. Beide Transparenzen gelten danach global; bei alten Einzelwerten wird je Ansicht der wirksame Wert der ersten Gruppe übernommen. Gruppen und Verknüpfungen bleiben erhalten. Migrierte Daten anschließend nicht mit älteren Ausgaben öffnen. Alte Einträge werden beim Upgrade nicht automatisch vom Desktop verschoben.
 
-`portable.flag` aktiviert `data/groups.json` neben der EXE. Ohne Flag/`--portable` liegt der Zustand unter `%LOCALAPPDATA%\DesktopBubbles`. Eigene Datenpfade sind über `--data-dir "D:\Meine Einstellungen\DesktopBubbles"` möglich; `--background` startet ohne Verwaltung.
+`portable.flag` bevorzugt `data/groups.json` neben der EXE. Ist dieser Ordner nicht beschreibbar, etwa unter Program Files, übernimmt die App vorhandene Daten nach `%LOCALAPPDATA%\DesktopBubbles\profiles\<Kennung>`. Die Kennung trennt unterschiedliche Ausgangsordner; deren Daten werden nicht vermischt. Einmal umgeleitete Ordner verwenden weiter ihre neuere Kopie. Die Quelle bleibt unverändert. Ohne Flag/`--portable` liegt der Zustand unter `%LOCALAPPDATA%\DesktopBubbles`. Eigene Datenpfade sind über `--data-dir "D:\Meine Einstellungen\DesktopBubbles"` möglich; auch diese werden bei fehlenden Schreibrechten umgeleitet. `--background` startet ohne Verwaltung.
+
+**Einstellungen → Datenordner öffnen** zeigt den tatsächlich aktiven Speicher. Diesen vollständigen Ordner vor einem Umzug oder Upgrade sichern und mitnehmen beziehungsweise über --data-dir weiterverwenden. Im Hell-/Dunkel-Farbeditor steuert **Deckkraft** die Transparenz der Steuerelement-Hintergründe getrennt von Helligkeit und App-/Bubble-Transparenz. Nutzer älterer Ausgaben mit blockierter Speicherung sollten noch ungespeicherte Änderungen vor dem Beenden zusätzlich exportieren.
 
 Export enthält Gruppen, Einstellungen und referenzierte interne Verknüpfungen. Import ersetzt den Zustand nach Rückfrage und sichert den bisherigen Stand zusätzlich. Programme, externe Ziele und die ganze Rückgabehistorie sind nicht vollständig enthalten. Für eine vollständige Sicherung bei beendeter App den gesamten `data`-Ordner kopieren.
 
@@ -83,11 +86,11 @@ Vor Löschen der App **Einstellungen → Verknüpfungen auf Desktop zurücklegen
 Windows 11 x64 und .NET-8-SDK beziehungsweise Visual Studio mit .NET-Desktopentwicklung. Keine Drittanbieter-NuGet-Laufzeitabhängigkeiten.
 
 ```powershell
-.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.5.1
+.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.5.2
 # Mit vorhandenem SDK:
-.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.5.1
+.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.5.2
 # Native Tests mit isolierten Testdaten auf interaktivem Windows-Desktop:
-.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.5.1\DesktopBubbles.exe
+.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.5.2\DesktopBubbles.exe
 ```
 
 Build erstellt die portable Ausgabe, führt die Kernprüfungen aus und packt ZIPs sowie SHA-256-Prüfsummen. Native Tests laufen separat. `dotnet test` ist nicht der Einstieg für die ausführbare Konsolensuite. CI baut und prüft den Core auf GitHub Actions. [Architektur](docs/ARCHITECTURE.md), [Entwicklerregeln](docs/DEVELOPMENT.md), [Release](docs/RELEASE.md), [Design-QA](design-qa.md).

@@ -13,6 +13,8 @@ public sealed class BubbleSettings
     public string AppColor { get; set; } = "#7B6BFF";
     public string? LightModeColor { get; set; }
     public string? DarkModeColor { get; set; }
+    public double LightModeOpacity { get; set; } = 1;
+    public double DarkModeOpacity { get; set; } = 1;
     public string BubbleColor { get; set; } = "#7B6BFF";
     public bool LinkBubbleColors { get; set; }
     public double MiniatureSize { get; set; } = 76;

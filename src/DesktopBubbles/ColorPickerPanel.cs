@@ -69,6 +69,8 @@ internal sealed class ColorPickerPanel : UserControl
     internal TextBox HexInput { get; }
     internal Slider Brightness { get; }
     internal Slider Saturation { get; }
+    internal Slider? ColorOpacity { get; }
+    internal double SelectedOpacity => ColorOpacity?.Value ?? 1;
     public string SelectedHex { get; private set; }
     private readonly TextBlock percent;
     private readonly Border colorSample;
@@ -76,7 +78,7 @@ internal sealed class ColorPickerPanel : UserControl
     internal bool IsValid => ColorValue.TryParse(HexInput.Text, out _);
     internal event Action? Edited;
     internal event Action? CancelRequested;
-    public ColorPickerPanel(string initial)
+    public ColorPickerPanel(string initial, double? opacity = null)
     {
         SelectedHex = ColorValue.Normalize(initial);
         var root = new Grid(); root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(170) });
@@ -95,6 +97,17 @@ internal sealed class ColorPickerPanel : UserControl
         percent = Ui.Text("100 %", 12); percent.Width = 42; percent.TextAlignment = TextAlignment.Right; percent.VerticalAlignment = VerticalAlignment.Center; DockPanel.SetDock(percent, Dock.Right); level.Children.Add(percent);
         Brightness = new Slider { Minimum = 0, Maximum = 1, Value = 1, SmallChange = .01, LargeChange = .1, Foreground = Brushes.Transparent };
         System.Windows.Automation.AutomationProperties.SetName(Brightness, "Helligkeit"); level.Children.Add(Brightness); controls.Children.Add(level);
+        if (opacity is { } initialOpacity)
+        {
+            controls.Children.Add(Ui.Text("Deckkraft", 12));
+            var opacityRow = new DockPanel { Margin = new Thickness(0, 4, 0, 10) };
+            var amount = Ui.Text($"{initialOpacity:P0}", 12); amount.Width = 42; amount.TextAlignment = TextAlignment.Right; amount.VerticalAlignment = VerticalAlignment.Center;
+            DockPanel.SetDock(amount, Dock.Right); opacityRow.Children.Add(amount);
+            ColorOpacity = new Slider { Minimum = 0, Maximum = 1, SmallChange = .01, LargeChange = .1, Value = initialOpacity, ToolTip = "Deckkraft der Steuerelement-Hintergründe. Helligkeit und Text bleiben unabhängig." };
+            System.Windows.Automation.AutomationProperties.SetName(ColorOpacity, "Deckkraft der Steuerelemente");
+            ColorOpacity.ValueChanged += (_, _) => { amount.Text = ColorOpacity.Value.ToString("P0"); if (!syncing) Edited?.Invoke(); };
+            opacityRow.Children.Add(ColorOpacity); controls.Children.Add(opacityRow);
+        }
         var hexLabel = Ui.Text("HEX", 12); hexLabel.Margin = new Thickness(0, 0, 0, 4); controls.Children.Add(hexLabel);
         var hexRow = new DockPanel();
         colorSample = new Border { Width = 32, Height = 32, CornerRadius = new CornerRadius(7), Margin = new Thickness(8, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center }; DockPanel.SetDock(colorSample, Dock.Right); hexRow.Children.Add(colorSample);

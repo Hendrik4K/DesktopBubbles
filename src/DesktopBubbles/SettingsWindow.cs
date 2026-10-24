@@ -279,7 +279,7 @@ internal sealed class SettingsWindow : Window
     {
         if (Picker is not null || ColorButton is null || colorOverlay is null || standardDetails is null) return;
         editingModeColor = modeColor; editingDarkMode = Ui.Dark;
-        Picker = new ColorPickerPanel(modeColor ? ThemePalette.Color(app.State.Settings, editingDarkMode) : CurrentColor()); Picker.Edited += RefreshColorDraft; Picker.CancelRequested += CancelColorEdit;
+        Picker = new ColorPickerPanel(modeColor ? ThemePalette.Color(app.State.Settings, editingDarkMode) : CurrentColor(), modeColor ? editingDarkMode ? app.State.Settings.DarkModeOpacity : app.State.Settings.LightModeOpacity : null); Picker.Edited += RefreshColorDraft; Picker.CancelRequested += CancelColorEdit;
         standardDetails.Visibility = Visibility.Hidden;
         colorOverlay.Content = new ScrollViewer { Content = Picker, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Margin = new Thickness(0, 8, 0, 0) };
         colorOverlay.Visibility = Visibility.Visible;
@@ -299,7 +299,7 @@ internal sealed class SettingsWindow : Window
         {
             if (modeApplyButton is not null) modeApplyButton.IsEnabled = Picker.IsValid;
             if (modeSwatch is not null) modeSwatch.Background = Ui.Brush(Picker.SelectedHex);
-            Ui.ApplyTheme(app.State.Settings, Picker.SelectedHex); surface.Background = Ui.AppGlass(app.State.Settings);
+            Ui.ApplyTheme(app.State.Settings, Picker.SelectedHex, Picker.SelectedOpacity); surface.Background = Ui.AppGlass(app.State.Settings);
             return;
         }
         if (ColorButton is not null) ColorButton.IsEnabled = Picker.IsValid;
@@ -313,7 +313,8 @@ internal sealed class SettingsWindow : Window
         string color = Picker.SelectedHex;
         if (editingModeColor)
         {
-            if (editingDarkMode) app.State.Settings.DarkModeColor = color; else app.State.Settings.LightModeColor = color;
+            if (editingDarkMode) { app.State.Settings.DarkModeColor = color; app.State.Settings.DarkModeOpacity = Picker.SelectedOpacity; }
+            else { app.State.Settings.LightModeColor = color; app.State.Settings.LightModeOpacity = Picker.SelectedOpacity; }
             CancelColorEdit(); app.ApplySettings(app.State.Settings); return;
         }
         if (Scope == AppearanceScope.App) app.State.Settings.AppColor = color;
@@ -410,7 +411,8 @@ internal sealed class SettingsWindow : Window
         Action("Sicherung exportieren …", app.Export, "Speichert Gruppen, Einstellungen und verwaltete Verknüpfungen als .bubbles-Datei. Programme werden nicht mitkopiert.");
         Action("Sicherung importieren …", app.Import, "Lädt eine Sicherung nach Rückfrage. Der bisherige Zustand wird zusätzlich gesichert.");
         Action("Verknüpfungen auf Desktop zurücklegen", app.RestoreAllShortcuts, "Legt gesicherte Desktop-Verknüpfungen zusätzlich auf den Desktop. Die Einträge bleiben in ihren Gruppen. Hilfreich vor dem Entfernen der App.");
-        Action("Programmordner öffnen", () => { try { Process.Start(new ProcessStartInfo(AppContext.BaseDirectory) { UseShellExecute = true }); } catch (Exception ex) { Ui.Error(ex); } }, "Öffnet den Ordner mit DesktopBubbles.exe. Bei der portablen Ausgabe liegen Einstellungen und Verknüpfungen im Unterordner data.");
+        Action("Programmordner öffnen", () => { try { Process.Start(new ProcessStartInfo(AppContext.BaseDirectory) { UseShellExecute = true }); } catch (Exception ex) { Ui.Error(ex); } }, "Öffnet den Ordner mit DesktopBubbles.exe.");
+        Action("Datenordner öffnen", () => { try { Process.Start(new ProcessStartInfo(app.DataDirectory) { UseShellExecute = true }); } catch (Exception ex) { Ui.Error(ex); } }, "Öffnet den tatsächlich verwendeten Speicher für Gruppen, Einstellungen und interne Verknüpfungen: " + app.DataDirectory);
         Action("Desktop-Bubbles neu verbinden", app.Rebuild, "Baut die Desktop-Fenster neu auf, zum Beispiel nach einem Explorer-Neustart. Inhalte und Positionen bleiben erhalten.");
         Action("Diagnosebericht speichern", async () => { try { await Diagnostics.Measure(app); } catch (Exception ex) { Ui.Error(ex); } }, "Misst diesen Prozess zehn Sekunden lang und speichert einen lokalen Bericht. Es wird nichts hochgeladen.");
     }

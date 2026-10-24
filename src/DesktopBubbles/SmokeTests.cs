@@ -174,6 +174,15 @@ internal static class SmokeTests
         theme = Descendants(settings).OfType<System.Windows.Controls.ComboBox>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Farbmodus der Anwendung");
         theme.SelectedIndex = 2; await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         Check("Windows-Standard verwendet das aktive Farbprofil", Ui.Resource("Surface").Color == Ui.Brush(Ui.Dark ? "#16324F" : "#FFE8D6").Color);
+        settings.ModeColorButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        settings.Picker!.ColorOpacity!.Value = .4;
+        Check("Deckkraft-Vorschau verändert Hintergrund-Alpha ohne Speichern oder Abdunkeln", Ui.Resource("ControlFill").Color.A == 102 && settings.Picker.SelectedHex == (Ui.Dark ? "#16324F" : "#FFE8D6") && app.State.Settings.LightModeOpacity == 1 && app.State.Settings.DarkModeOpacity == 1);
+        settings.CancelColorEdit(); Check("Deckkraft-Abbrechen stellt die bisherige Palette wieder her", Ui.Resource("ControlFill").Color.A == 255);
+        bool opacityDark = Ui.Dark; settings.ModeColorButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle); settings.Picker!.ColorOpacity!.Value = .4;
+        SaveImage(settings, Path.Combine(app.DataDirectory, "mode-opacity-editor.png"));
+        settings.ApplyColorEdit(); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle); app.Flush();
+        Check("Deckkraft-Anwenden speichert ausschließlich das aktive Modusprofil", opacityDark ? app.State.Settings.DarkModeOpacity == .4 && app.State.Settings.LightModeOpacity == 1 && StateStore.Read(app.Store.Path).Settings.DarkModeOpacity == .4 : app.State.Settings.LightModeOpacity == .4 && app.State.Settings.DarkModeOpacity == 1 && StateStore.Read(app.Store.Path).Settings.LightModeOpacity == .4);
+        app.State.Settings.LightModeOpacity = app.State.Settings.DarkModeOpacity = 1; app.ApplySettings(app.State.Settings); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         theme = Descendants(settings).OfType<System.Windows.Controls.ComboBox>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Farbmodus der Anwendung");
         theme.SelectedIndex = 0; await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         var originalAppOpacity = app.State.Settings.AppOpacity;
@@ -367,6 +376,20 @@ internal static class SmokeTests
         Check("Defekter Eintrag lässt sich über das echte Symbolmenü dauerhaft löschen", !deleteGroup.Items.Contains(missingEntry) && !StateStore.Read(app.Store.Path).Groups.SelectMany(g => g.Items).Any(e => e.Id == missingEntry.Id) && !Descendants(app.CurrentFlyout!).OfType<System.Windows.Controls.Button>().Any(b => System.Windows.Automation.AutomationProperties.GetName(b) == missingEntry.Name));
         app.CloseFlyout();
         // Native vault workflow on a fixture desktop only; never touch the user's desktop files.
+        var readOnlyData = Path.Combine(app.DataDirectory, "read-only-storage");
+        var readOnlyState = new BubbleState { Groups = [new BubbleGroup { Items = [Targets.Create(Path.Combine(app.DataDirectory, "dead.exe"))] }] };
+        string readOnlyPath = Path.Combine(readOnlyData, "groups.json"); new StateStore(readOnlyPath).Save(readOnlyState);
+        byte[] beforeMigration = File.ReadAllBytes(readOnlyPath); File.SetAttributes(readOnlyPath, FileAttributes.ReadOnly);
+        try
+        {
+            var redirected = DataLocation.Select(readOnlyData, Path.Combine(app.DataDirectory, "user-storage")); redirected.Prepare();
+            Check("Echte schreibgeschützte Konfiguration wird ins Benutzerprofil umgeleitet", redirected.Redirected && DataLocation.IsWritable(redirected.DirectoryPath));
+            var relocatedStore = new StateStore(Path.Combine(redirected.DirectoryPath, "groups.json")); var relocatedState = relocatedStore.Load();
+            new ShortcutManager(new ShortcutVault(redirected.DirectoryPath, new WindowsShortcutPlatform(Path.Combine(app.DataDirectory, "storage-desktop"))), relocatedStore.Save).RemoveFromGroup(relocatedState, relocatedState.Groups[0], relocatedState.Groups[0].Items[0]);
+            Check("Löschen nach Speicherumleitung bleibt nach Neustart gespeichert", relocatedStore.Load().Groups[0].Items.Count == 0 && beforeMigration.SequenceEqual(File.ReadAllBytes(readOnlyPath)));
+            Check("Neustart kopiert den entfernten Eintrag nicht aus der geschützten Quelle zurück", DataLocation.Select(readOnlyData, Path.Combine(app.DataDirectory, "user-storage")).DirectoryPath == redirected.DirectoryPath);
+        }
+        finally { File.SetAttributes(readOnlyPath, FileAttributes.Normal); }
         var fixtureDesktop = Path.Combine(app.DataDirectory, "fixture-desktop"); Directory.CreateDirectory(fixtureDesktop);
         var fixtureData = Path.Combine(app.DataDirectory, "fixture-vault");
         var platform = new WindowsShortcutPlatform(fixtureDesktop);

@@ -1,5 +1,13 @@
 # Prüfstand
 
+## Patch 1.5.2 · 24.10.2026
+
+Build ohne Warnungen/Fehler, **117 Kernprüfungen und 124 vollständige native Windows-Prüfungen bestanden**. [Core](results/core-tests-v1.5.2.txt), [Windows](results/windows-smoke-v1.5.2.json).
+
+Neue Fälle: tatsächliche schreibgeschützte Konfiguration, Migration ohne Quelländerung, Erhalt interner Verknüpfungen/Journale, dauerhafte Löschung nach Umleitung und Neustart, keine erneute Übernahme alter Quelldaten, getrennte Ausgangsordner, beschädigte Hauptdatei mit/ohne Backup und stale read-only groups.json.tmp. Deckkraft wird als Alpha statt Helligkeit geprüft, einschließlich Entwurf ohne Persistenz, Abbrechen, getrenntem Übernehmen und Neustart. Eine separate Ansichtsprüfung bestand vorher 115 Fälle; der abschließende vollständige Lauf ist der oben verlinkte Bericht.
+
+Zusätzlich wurde die echte, normal nicht beschreibbare Program-Files-Datensammlung des Nutzers mit 7 Gruppen und 31 Einträgen in einen beschreibbaren Benutzerprofil-Pfad kopiert, anhand der aktuellen lokalen Export-Sicherung abgeglichen und dort erfolgreich gespeichert. Quelle und Sicherung blieben erhalten. Persönliche Daten und dieser lokale Migrationsbericht werden nicht veröffentlicht. Plattformgrenzen unten bleiben bestehen.
+
 ## Patch 1.5.1 · 24.10.2026
 
 Release-Build ohne Warnungen/Fehler, **108 Kernprüfungen und 118 vollständige native Windows-Prüfungen bestanden** (AppearanceOnly=false). [Core-Bericht](results/core-tests-v1.5.1.txt), [Windows-Bericht](results/windows-smoke-v1.5.1.json).

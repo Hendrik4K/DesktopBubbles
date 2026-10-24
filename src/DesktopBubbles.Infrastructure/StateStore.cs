@@ -111,6 +111,8 @@ public sealed class StateStore(string path)
         s.AppColor = ColorValue.Normalize(s.AppColor); s.BubbleColor = ColorValue.Normalize(s.BubbleColor);
         s.LightModeColor = ColorValue.TryParse(s.LightModeColor, out var light) ? light.Hex : null;
         s.DarkModeColor = ColorValue.TryParse(s.DarkModeColor, out var dark) ? dark.Hex : null;
+        s.LightModeOpacity = double.IsFinite(s.LightModeOpacity) ? Math.Clamp(s.LightModeOpacity, 0, 1) : 1;
+        s.DarkModeOpacity = double.IsFinite(s.DarkModeOpacity) ? Math.Clamp(s.DarkModeOpacity, 0, 1) : 1;
         s.WindowColor = s.BubbleColor;
         s.WindowOpacity = double.IsFinite(s.WindowOpacity) ? Math.Clamp(s.WindowOpacity, 0, .95) : .35;
         s.AppCornerRadius = 8;
@@ -137,7 +139,7 @@ public sealed class StateStore(string path)
     {
         Validate(state);
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(Path)!);
-        var temp = Path + ".tmp";
+        var temp = Path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try
         {
             using (var fs = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None))

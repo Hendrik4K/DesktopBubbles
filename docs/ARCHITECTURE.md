@@ -1,4 +1,6 @@
-# Architektur · 1.4.0
+# Architektur · 1.5.2
+
+DataLocation prüft beim Start tatsächliche Schreib-/Löschrechte und die Zustandsdateien. Fehlende Rechte wählen einen nach dem Ausgangspfad getrennten Benutzerprofil-Speicher. Erst nach Erwerb dessen Prozess-Mutex kopiert Prepare Konfigurationen, Sicherungen und Verknüpfungen inklusive Journale in ein Staging-Verzeichnis. Hashes, unveränderter Quellbestand und lesbare Konfiguration beziehungsweise Backup werden geprüft; Directory.Move veröffentlicht die Kopie ohne Überschreiben. Herkunftsmarker verhindern Verwechslungen und erneuten Import alter Daten. Reparse Points werden nicht verfolgt. Die Quelle bleibt unverändert. StateStore verwendet eindeutige temporäre Dateien für atomaren Ersatz. LightModeOpacity/DarkModeOpacity ändern nur Hintergrund-Alpha der Palette; Text sowie App-/Bubble-Materialstärke bleiben unabhängig.
 
 Der neuere Farbeditor ist als ColorPickerPanel direkt in SettingsWindow eingebettet. Ein Entwurf ändert nur Vorschaufarben; erst Anwenden überträgt ihn über AppearancePreferences beziehungsweise AppColor in den Zustand. Der verdeckte Detailbereich bleibt erhalten, ist während der Bearbeitung aber unsichtbar und nicht bedienbar. Reiter-/Gruppenwechsel und Esc verwerfen den Entwurf. Es gibt kein separates Farbauswahlfenster mehr.
 

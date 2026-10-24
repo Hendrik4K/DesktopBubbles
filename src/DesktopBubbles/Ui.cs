@@ -15,12 +15,12 @@ internal static class Ui
     private static Color materialBasis = Color.FromRgb(235, 233, 244);
     public static SolidColorBrush Brush(string hex) => new((Color)ColorConverter.ConvertFromString(hex));
     public static SolidColorBrush Resource(string name) => (SolidColorBrush)System.Windows.Application.Current.FindResource(name);
-    public static void ApplyTheme(BubbleSettings settings, string? modeDraft = null)
+    public static void ApplyTheme(BubbleSettings settings, string? modeDraft = null, double? modeOpacityDraft = null)
     {
         using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
         Dark = settings.Theme == "Dark" || (settings.Theme == "System" && key?.GetValue("AppsUseLightTheme") is int v && v == 0);
         var r = System.Windows.Application.Current.Resources;
-        var palette = ThemePalette.Create(settings, Dark, modeDraft);
+        var palette = ThemePalette.Create(settings, Dark, modeDraft, modeOpacityDraft);
         r["Ink"] = Brush(palette.Ink); r["Muted"] = Brush(palette.Muted);
         r["Surface"] = Brush(palette.Surface); r["ControlFill"] = Brush(palette.ControlFill);
         r["HoverFill"] = Brush(palette.HoverFill); r["Line"] = Brush(palette.Line);

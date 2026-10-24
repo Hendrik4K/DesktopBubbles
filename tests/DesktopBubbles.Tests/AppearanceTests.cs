@@ -4,6 +4,17 @@ internal static class AppearanceTests
 {
     public static void Run(Action<string, Action> test, Action<bool> assert, string fixtureRoot)
     {
+        test("Modus-Deckkraft bleibt getrennt, wird begrenzt und beeinflusst nur Hintergrund-Alpha", () =>
+        {
+            var state = new BubbleState { Settings = new BubbleSettings { LightModeColor = "#FFEEDD", LightModeOpacity = .4, DarkModeOpacity = 1 } };
+            var light = ThemePalette.Create(state.Settings, false); var dark = ThemePalette.Create(state.Settings, true);
+            assert(light.ControlFill.StartsWith("#66") && light.Ink == "#000000" && dark.ControlFill == "#383348");
+            string path = Path.Combine(fixtureRoot, "mode-opacity.json");
+            try { new StateStore(path).Save(state); var loaded = StateStore.Read(path); assert(loaded.Settings.LightModeOpacity == .4 && loaded.Settings.DarkModeOpacity == 1); }
+            finally { File.Delete(path); }
+            state.Settings.LightModeOpacity = 0; assert(ThemePalette.Create(state.Settings, false).ControlFill.StartsWith("#00"));
+            state.Settings.LightModeOpacity = double.NaN; state.Settings.DarkModeOpacity = -2; StateStore.Validate(state); assert(state.Settings.LightModeOpacity == 1 && state.Settings.DarkModeOpacity == 0);
+        });
         test("Alte Konfiguration behält Modusfarben; ungültige Overrides fallen auf den Standard zurück", () =>
         {
             var state = new BubbleState(); StateStore.Validate(state);

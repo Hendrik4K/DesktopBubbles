@@ -99,6 +99,7 @@ try
     Test("100 Speichervorgänge ohne temporäre Restdateien", () => { var store = new StateStore(Path.Combine(root, "cycles.json")); for (int i = 0; i < 100; i++) store.Save(Sample()); Assert(!File.Exists(store.Path + ".tmp") && store.Load().Groups.Count == 1); });
     ManagedShortcutTests.Run(root, Test, Assert, Reject);
     AppearanceTests.Run(Test, Assert, root);
+    DataLocationTests.Run(root, Test, Assert);
 }
 finally { Directory.Delete(root, true); }
 Console.WriteLine($"{passed} bestanden, {failed} fehlgeschlagen.");

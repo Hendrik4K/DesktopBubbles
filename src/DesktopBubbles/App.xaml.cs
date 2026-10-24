@@ -52,11 +52,13 @@ public partial class App : System.Windows.Application
             bool visual = e.Args.Contains("--design-preview");
             Portable = e.Args.Contains("--portable") || File.Exists(Path.Combine(AppContext.BaseDirectory, "portable.flag"));
             int dataArg = Array.IndexOf(e.Args, "--data-dir");
-            DataDirectory = dataArg >= 0 && dataArg + 1 < e.Args.Length ? Path.GetFullPath(e.Args[dataArg + 1])
+            string requestedDirectory = dataArg >= 0 && dataArg + 1 < e.Args.Length ? Path.GetFullPath(e.Args[dataArg + 1])
                 : Path.Combine(Portable ? AppContext.BaseDirectory : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Portable ? "data" : "DesktopBubbles");
             if (smoke && dataArg < 0) throw new InvalidOperationException("--smoke-test benötigt ein separates --data-dir.");
             if (visual && dataArg < 0) throw new InvalidOperationException("--design-preview benötigt ein separates --data-dir.");
-            Directory.CreateDirectory(DataDirectory); Log.DirectoryPath = DataDirectory;
+            var location = DataLocation.Select(requestedDirectory, Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DesktopBubbles"));
+            if ((smoke || visual) && location.Redirected) throw new IOException("Der ausdrücklich gewählte Testdatenordner ist nicht beschreibbar.");
+            DataDirectory = location.DirectoryPath;
             string hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(DataDirectory.ToUpperInvariant())))[..16];
             mutex = new Mutex(true, @"Local\DesktopBubbles-" + hash, out ownsMutex);
             uint showMessage = Native.RegisterWindowMessage("DesktopBubbles.ShowSettings");
@@ -66,6 +68,8 @@ public partial class App : System.Windows.Application
                 if (existing != 0) Native.SendNotifyMessage(existing, showMessage, 0, 0);
                 Shutdown(); return;
             }
+            location.Prepare(); Log.DirectoryPath = DataDirectory;
+            if (location.Redirected) Log.Write("Benutzerdaten statt geschütztem Ordner: " + location.RequestedDirectory);
             Store = new StateStore(Path.Combine(DataDirectory, "groups.json"));
             State = Store.Load(); Ui.ApplyTheme(State.Settings);
             Vault = new ShortcutVault(DataDirectory, shortcutPlatform);
