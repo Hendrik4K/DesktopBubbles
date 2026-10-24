@@ -1,0 +1,128 @@
+{
+  "OS": "Microsoft Windows NT 10.0.26300.0",
+  "Date": "2026-10-23T23:27:15.8960922+02:00",
+  "Checks": [
+    {
+      "Name": "Zwei Desktop-Gruppen erzeugt",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Originalicon geladen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gel\u00F6schtes Ziel erkannt",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gruppen ohne Taskbar/Alt-Tab-Stil",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gruppen ohne Aktivierung",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gruppen ohne Taskbar/Alt-Tab-Stil",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gruppen ohne Aktivierung",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Physische Positionierung",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Flyout \u00F6ffnet",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Flyout ohne Taskbar",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Fokuswechsel schlie\u00DFt Flyout",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "60 \u00D6ffnen/Schlie\u00DFen-Zyklen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Keine unbeschr\u00E4nkt steigenden Handles im Kurztest",
+      "Passed": true,
+      "Note": "vorher=911, nachher=919"
+    },
+    {
+      "Name": "Managed-Speicher nach Zyklen",
+      "Passed": true,
+      "Note": "Delta=-1266304 Bytes"
+    },
+    {
+      "Name": ".lnk-Ziel aufgel\u00F6st",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Originalverkn\u00FCpfung erhalten",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": ".lnk startet Ziel mit Originalargumenten",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Start ver\u00E4ndert .lnk nicht",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Installierte Apps gelesen",
+      "Passed": true,
+      "Note": "210 Apps"
+    },
+    {
+      "Name": "Store-Icon abgerufen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Persistenz nach UI-\u00C4nderungen",
+      "Passed": true,
+      "Note": null
+    }
+  ],
+  "Integration": "Desktop verbunden \u00B7 experimentell",
+  "EmbeddedGroups": 2,
+  "OpenMedianMs": 24.2028,
+  "OpenMaxMs": 41.6145,
+  "HandlesBeforeCycles": 911,
+  "HandlesAfterCycles": 919,
+  "ManagedDeltaBytes": -1266304,
+  "ResourceReport": "<test-artifacts>/final-smoke\\diagnostics-20261023-232715-887.json",
+  "NotTested": [
+    "Echter Explorer-Neustart",
+    "Win\u002BD mit Benutzerinteraktion",
+    "Mehrere Monitore und gemischte DPI",
+    "Gaming / GPU / Frametimes",
+    "Beliebige Drittanbieter-Programme / UAC / Store-App-Start",
+    "Hover / Drag \u0026 Drop mit physischer Maus",
+    "Anmeldung / Autostart"
+  ]
+}

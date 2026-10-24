@@ -1,0 +1,46 @@
+PASS Leere Konfiguration
+PASS JSON-Roundtrip mit Unicode, Reihenfolge und negativen Koordinaten
+PASS Atomisches Ersetzen und Backup
+PASS Defekte Konfiguration aus Backup wiederherstellen
+PASS Defekte Konfiguration ohne Backup erhalten
+PASS Gültiges Backup nach Wiederherstellung behalten
+PASS Unbekannte Importversion ablehnen
+PASS Doppelte Gruppen-ID ablehnen
+PASS Doppelte Eintrags-ID ablehnen
+PASS Null-Listen ablehnen
+PASS Null-Einträge ablehnen
+PASS NaN-Position ablehnen
+PASS Ungültige Einstellungen begrenzen
+PASS Mehr als 100 Gruppen ablehnen
+PASS Relative Pfade ablehnen
+PASS Befehlszeile statt Datei ablehnen
+PASS Nicht unterstützte URL-Schemata ablehnen
+PASS HTTP und HTTPS akzeptieren
+PASS Store-AUMID behalten
+PASS Leere Store-ID ablehnen
+PASS Anführungszeichen im Store-Ziel ablehnen
+PASS Gelöschtes Ziel erkennen
+PASS Datei und Ordner erkennen
+PASS .lnk .exe .url unverändert speichern
+PASS Hinzufügen verändert Originaldatei nicht
+PASS Doppelte Ziele ignorieren
+PASS Sortieren nach hinten
+PASS Sortieren nach vorne / Index begrenzen
+PASS Unbekannte Sortier-ID ohne Änderung
+PASS Entfernen löscht Original nicht
+PASS Position auf 1080p begrenzen
+PASS Monitor links mit negativen Koordinaten
+PASS Entfernter Monitor: nächster verfügbarer Monitor
+PASS Monitorwahl bei mehreren Auflösungen
+PASS Übergroße Fläche bleibt erreichbar
+PASS Flyout klappt nach oben
+PASS Flyout an linker Kante
+PASS 4K-Skalierung in physischen Pixeln
+PASS Namen bereinigen und begrenzen
+PASS Leere Unicode-Linknamen benötigen App-Namensauflösung
+PASS Gespeicherten Platzhalter eines leeren Links erkennen
+PASS Eigene Anzeigenamen beibehalten
+PASS Export-Import übernimmt Einstellungen
+PASS Import größer 8 MiB ablehnen
+PASS 100 Speichervorgänge ohne temporäre Restdateien
+45 bestanden, 0 fehlgeschlagen.

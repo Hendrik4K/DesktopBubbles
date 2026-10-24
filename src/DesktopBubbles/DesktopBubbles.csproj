@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyName>DesktopBubbles</AssemblyName>
+    <Version>1.4.1</Version>
+    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+    <ApplicationIcon>Assets\DesktopBubbles.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="..\DesktopBubbles.Infrastructure\DesktopBubbles.Infrastructure.csproj" /></ItemGroup>
+  <ItemGroup><Using Include="DesktopBubbles.Infrastructure" /><Using Include="DesktopBubbles.Application" /></ItemGroup>
+  <ItemGroup><Using Remove="System.Windows.Forms" /><Using Remove="System.Drawing" /></ItemGroup>
+</Project>

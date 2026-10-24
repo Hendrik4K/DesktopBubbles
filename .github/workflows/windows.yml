@@ -1,0 +1,24 @@
+name: Windows build and portable package
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile, test core and publish portable x64
+        shell: pwsh
+        run: ./Build.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DesktopBubbles-win-x64
+          path: |
+            artifacts/DesktopBubbles-win-x64.zip
+            artifacts/DesktopBubbles-win-x64.zip.sha256
+            artifacts/core-tests.txt
+          if-no-files-found: error

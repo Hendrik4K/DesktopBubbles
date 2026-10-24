@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net8.0</TargetFramework></PropertyGroup>
+  <ItemGroup><ProjectReference Include="..\..\src\DesktopBubbles.Infrastructure\DesktopBubbles.Infrastructure.csproj"/></ItemGroup>
+  <ItemGroup><Using Include="DesktopBubbles.Infrastructure" /><Using Include="DesktopBubbles.Application" /></ItemGroup>
+</Project>

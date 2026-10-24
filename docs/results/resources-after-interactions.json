@@ -1,0 +1,23 @@
+{
+  "Timestamp": "2026-10-23T23:27:15.8832381+02:00",
+  "OS": "Microsoft Windows NT 10.0.26300.0",
+  "Runtime": "8.0.32",
+  "DurationSeconds": 10.0115198,
+  "LogicalProcessors": 16,
+  "CpuPercentOneCore": 0.4682106307176259,
+  "CpuPercentAllCores": 0.02926316441985162,
+  "WorkingSetMiB": 210.46484375,
+  "PrivateMiB": 114.2890625,
+  "ManagedMiB": 5.305198669433594,
+  "HandlesBefore": 1047,
+  "HandlesAfter": 1047,
+  "GdiObjects": 116,
+  "UserObjects": 64,
+  "IconCache": 6,
+  "Groups": 2,
+  "DesktopMode": "Desktop verbunden \u00B7 experimentell",
+  "PopupOpen": false,
+  "Gpu": "Nicht gemessen",
+  "GamingFrametimes": "Nicht gemessen",
+  "Note": "Momentaufnahme dieses Prozesses. Keine Aussage \u00FCber Spiele-Frametimes oder alle Hardwarekonfigurationen."
+}

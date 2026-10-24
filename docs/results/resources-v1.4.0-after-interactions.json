@@ -1,0 +1,23 @@
+{
+  "Timestamp": "2026-10-24T07:07:40.0936901+02:00",
+  "OS": "Microsoft Windows NT 10.0.26300.0",
+  "Runtime": "8.0.32",
+  "DurationSeconds": 10.0042192,
+  "LogicalProcessors": 16,
+  "CpuPercentOneCore": 0.31236820560669043,
+  "CpuPercentAllCores": 0.019523012850418152,
+  "WorkingSetMiB": 207.50390625,
+  "PrivateMiB": 107.55078125,
+  "ManagedMiB": 10.127998352050781,
+  "HandlesBefore": 1047,
+  "HandlesAfter": 1047,
+  "GdiObjects": 130,
+  "UserObjects": 62,
+  "IconCache": 6,
+  "Groups": 2,
+  "DesktopMode": "Desktop-Modus \u00B7 eigenes Bubble-Fenster",
+  "PopupOpen": false,
+  "Gpu": "Nicht gemessen",
+  "GamingFrametimes": "Nicht gemessen",
+  "Note": "Momentaufnahme dieses Prozesses. Keine Aussage \u00FCber Spiele-Frametimes oder alle Hardwarekonfigurationen."
+}
