@@ -2,15 +2,16 @@
   <Application.Resources>
     <sys:Double xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">10</sys:Double>
     <sys:Double xmlns:sys="clr-namespace:System;assembly=mscorlib" x:Key="{x:Static SystemParameters.HorizontalScrollBarHeightKey}">10</sys:Double>
-    <Style TargetType="Window"><Setter Property="FontFamily" Value="Segoe UI"/><Setter Property="FontSize" Value="13"/><Setter Property="UseLayoutRounding" Value="True"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/></Style>
+    <Style TargetType="Window"><Setter Property="Icon" Value="/DesktopBubbles;component/Assets/DesktopBubbles.ico"/><Setter Property="FontFamily" Value="Segoe UI"/><Setter Property="FontSize" Value="13"/><Setter Property="UseLayoutRounding" Value="True"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/></Style>
     <Style TargetType="Control"><Setter Property="Foreground" Value="{DynamicResource Ink}"/></Style>
     <Style TargetType="Button">
       <Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="Background" Value="{DynamicResource ControlFill}"/>
       <Setter Property="BorderBrush" Value="{DynamicResource Line}"/><Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="14,9"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Margin" Value="0,0,8,0"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
         <Border x:Name="Frame" CornerRadius="10" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
-          <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
         </Border>
         <ControlTemplate.Triggers>
           <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Frame" Property="Background" Value="{DynamicResource HoverFill}"/></Trigger>
@@ -20,6 +21,21 @@
         </ControlTemplate.Triggers>
       </ControlTemplate></Setter.Value></Setter>
     </Style>
+    <Style x:Key="ResetColorsButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+      <Setter Property="Background" Value="#B42332"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="#B42332"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+        <Border x:Name="Frame" CornerRadius="10" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
+          <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+        </Border>
+        <ControlTemplate.Triggers>
+          <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Frame" Property="Opacity" Value="0.85"/></Trigger>
+          <Trigger Property="IsPressed" Value="True"><Setter TargetName="Frame" Property="Opacity" Value="0.65"/></Trigger>
+          <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource Ink}"/><Setter TargetName="Frame" Property="BorderThickness" Value="2"/></Trigger>
+          <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Frame" Property="Opacity" Value="0.4"/></Trigger>
+        </ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+      <Style.Triggers><DataTrigger Binding="{Binding Source={x:Static SystemParameters.HighContrast}}" Value="True"><Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/><Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/><Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/></DataTrigger></Style.Triggers>
+    </Style>
     <Style TargetType="TextBox"><Setter Property="Padding" Value="10,8"/><Setter Property="Background" Value="{DynamicResource ControlFill}"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="BorderBrush" Value="{DynamicResource Line}"/><Setter Property="CaretBrush" Value="{DynamicResource Ink}"/></Style>
     <Style TargetType="CheckBox"><Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="Margin" Value="0,9,0,9"/></Style>
     <Style TargetType="ScrollBar">
@@ -28,7 +44,7 @@
         <Grid Background="Transparent">
           <Track x:Name="PART_Track" Orientation="{TemplateBinding Orientation}" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{TemplateBinding Value}" ViewportSize="{TemplateBinding ViewportSize}" IsDirectionReversed="True" Opacity="0.45">
             <Track.DecreaseRepeatButton><RepeatButton x:Name="Before" Command="ScrollBar.PageUpCommand" Focusable="False"><RepeatButton.Template><ControlTemplate><Border Background="Transparent"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
-            <Track.Thumb><Thumb x:Name="Grip" MinHeight="28"><Thumb.Template><ControlTemplate><Border x:Name="Pill" Background="{DynamicResource Muted}" CornerRadius="3" Margin="3,0"/><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Pill" Property="Margin" Value="2,0"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+            <Track.Thumb><Thumb x:Name="Grip" MinHeight="28"><Thumb.Template><ControlTemplate><Border x:Name="Pill" Background="{DynamicResource Muted}" CornerRadius="3" Margin="3,0"/><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Pill" Property="Margin" Value="2,0"/></Trigger><DataTrigger Binding="{Binding Orientation, RelativeSource={RelativeSource AncestorType=ScrollBar}}" Value="Horizontal"><Setter TargetName="Pill" Property="Margin" Value="0,3"/></DataTrigger></ControlTemplate.Triggers></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
             <Track.IncreaseRepeatButton><RepeatButton x:Name="After" Command="ScrollBar.PageDownCommand" Focusable="False"><RepeatButton.Template><ControlTemplate><Border Background="Transparent"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.IncreaseRepeatButton>
           </Track>
         </Grid>
@@ -43,7 +59,7 @@
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBox">
         <Grid x:Name="ComboRoot">
           <ToggleButton Focusable="False" IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
-            <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border CornerRadius="9" BorderThickness="1" BorderBrush="{DynamicResource Line}" Background="{DynamicResource ControlFill}" Padding="12,8"><Grid><TextBlock Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid></Border></ControlTemplate></ToggleButton.Template>
+            <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border CornerRadius="9" BorderThickness="1" BorderBrush="{DynamicResource Line}" Background="{DynamicResource ControlFill}" Padding="12,8"><Grid><TextBlock Text="&#xE70D;" Foreground="{DynamicResource Ink}" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/></Grid></Border></ControlTemplate></ToggleButton.Template>
           </ToggleButton>
           <ContentPresenter Margin="12,8,30,8" VerticalAlignment="Center" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" IsHitTestVisible="False"/>
           <Popup x:Name="PART_Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False">
@@ -54,6 +70,18 @@
     </Style>
     <Style TargetType="ComboBoxItem"><Setter Property="Padding" Value="10,8"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/></Style>
     <Style TargetType="ContextMenu"><Setter Property="Background" Value="{DynamicResource Surface}"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/></Style>
+    <Style x:Key="SaturationSlider" TargetType="Slider">
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Slider">
+        <Grid Background="Transparent">
+          <Border Width="14" CornerRadius="7" Background="{TemplateBinding Background}"/>
+          <Track x:Name="PART_Track" Orientation="Vertical" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}" Value="{TemplateBinding Value}">
+            <Track.DecreaseRepeatButton><RepeatButton Command="Slider.DecreaseLarge" Focusable="False"><RepeatButton.Template><ControlTemplate><Border Background="Transparent"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
+            <Track.Thumb><Thumb Width="22" Height="18"><Thumb.Template><ControlTemplate><Ellipse Fill="White" Stroke="#887C719D" StrokeThickness="1.5"/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+            <Track.IncreaseRepeatButton><RepeatButton Command="Slider.IncreaseLarge" Focusable="False"><RepeatButton.Template><ControlTemplate><Border Background="Transparent"/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.IncreaseRepeatButton>
+          </Track>
+        </Grid>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
     <Style TargetType="Slider">
       <Setter Property="Height" Value="24"/><Setter Property="Foreground" Value="{DynamicResource Accent}"/>
       <Setter Property="Background" Value="{DynamicResource Line}"/>

@@ -21,7 +21,7 @@ internal static class VisualPreview
         await Task.Delay(2400);
         Save(settings, Path.Combine(app.DataDirectory, "host-selected.png"));
         settings.OpenPickerForTest(); await Task.Delay(250);
-        Save(settings.Picker!, Path.Combine(app.DataDirectory, "picker-selected.png")); settings.Picker!.Close();
+        Save(settings, Path.Combine(app.DataDirectory, "picker-selected.png")); settings.CancelColorEdit();
         settings.SelectScope(AppearanceScope.Window); await Task.Delay(150);
         Save(settings, Path.Combine(app.DataDirectory, "window-settings.png"));
         settings.SelectScope(AppearanceScope.App); await Task.Delay(150);
@@ -32,7 +32,7 @@ internal static class VisualPreview
         Save(app.CurrentFlyout!, Path.Combine(app.DataDirectory, "folder-clear.png"));
         app.State.Settings.Glass = .85; app.ApplyAppearance();
         Save(app.CurrentFlyout!, Path.Combine(app.DataDirectory, "folder-matte.png"));
-        gaming.WindowOpacity = 0; app.ApplyAppearance();
+        app.State.Settings.WindowOpacity = 0; app.ApplyAppearance();
         Save(app.CurrentFlyout!, Path.Combine(app.DataDirectory, "folder-transparent.png")); app.CloseFlyout();
     }
     internal static void Save(Window window, string path)

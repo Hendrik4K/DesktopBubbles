@@ -1,5 +1,21 @@
 # Änderungen
 
+## 1.5.0 · 24.10.2026
+
+- Optionale Farbkopplung für alle Miniaturen und Ordner, separater Farbreset.
+- Getrennte globale Transparenzen und neuer gemeinsamer Miniatur-Größenregler.
+- Ordner-Vorschau schaltet zwischen 1:3 und 1:1 um.
+- Navigation und Kontextmenüs vereinfacht; Zurück zum Desktop deutlicher benannt.
+- Gruppenminiaturen links ausgerichtet; Aussehen und Reiter zentriert, Einstellungszahnrad neben dem Ressourcen-Tracking unten rechts.
+- Einstellungen mit Zurück-Pfeil und Zahnrad zum Verlassen, ohne Ansichtsreiter. Farbmodus neben App-Farbe; gemeinsame Bubble-Farben und roter Farbreset unter Allgemein.
+- Miniatur und Ordner teilen sich die gesamte Breite des Inhaltsbereichs in zwei gleich breite, mitwachsende Reiter.
+- Separate frei wählbare Hell-/Dunkel-Modusfarben über eine Farbkachel neben dem Farbmodus. Steuerelemente und Glasgrundflächen verwenden die Palette; Entwürfe bleiben bis Anwenden ungespeichert. Der Farbreset umfasst beide Modusfarben.
+- Neues bereitgestelltes Rauchglas-Branding mit neun Kacheln für EXE, Fenster/Taskleiste, Tray und Logo im App-Fenster. Das PNG ersetzt die zuvor ausprobierten Frostglas- und Kristallglas-Varianten; das daraus erzeugte ICO enthält neun Auflösungen. ICO und PNG sind eingebettet.
+- Hover-Öffnen entfernt, Datenwerkzeuge mit klaren Beschreibungen.
+- Tray-Menü auf installierte Version und drei Aktionen reduziert: Repository, Desktop-Verbindung erneuern und Beenden.
+- Farbauswahl in die Ansicht integriert: überdeckt vorübergehend die unteren Regler, zeigt einen Entwurf live und übernimmt erst mit Anwenden. Abbrechen oder Esc stellt den bisherigen Zustand wieder her.
+- Schema 6 und eigene lokale Vorschau; Details: docs/LOCAL-PREVIEW.md.
+
 ## 1.4.1 · 24.10.2026
 
 - Symbolmenü auf **Starten** und **Aus Gruppe entfernen** reduziert.

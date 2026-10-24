@@ -53,6 +53,7 @@ internal sealed class LiveMeasurementBar : Grid, IDisposable
         ToolTip = "Manuell gestartetes Ressourcen-Tracking dieses Prozesses: zeitgewichteter CPU-Durchschnitt über alle logischen Prozessoren; RAM = aktueller Working Set. Schwankung in Prozentpunkten, keine Messgenauigkeit. Stoppen hält die letzten Werte fest; erneutes Starten beginnt eine neue Messung. Bei ausgeblendeter/minimierter Verwaltung wird nicht gemessen.";
         toggle = Ui.Button("Tracking starten", Toggle); toggle.FontSize = 11; toggle.Width = 122; toggle.Padding = new Thickness(8, 10, 8, 10); toggle.Margin = new Thickness(6, 0, 0, 0); toggle.VerticalAlignment = VerticalAlignment.Center;
         SetColumn(toggle, 2); Children.Add(toggle);
+        SizeChanged += (_, _) => trace.Visibility = ActualWidth >= 390 ? Visibility.Visible : Visibility.Collapsed;
         timer.Tick += (_, _) => Sample();
         window.IsVisibleChanged += VisibilityChanged; window.StateChanged += StateChanged;
         Loaded += (_, _) => UpdateRunning();

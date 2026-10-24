@@ -47,7 +47,7 @@ public sealed class StateStore(string path)
 
     public static void Validate(BubbleState state)
     {
-        if (state.Version is not (1 or 2 or 3 or 4 or 5)) throw new InvalidDataException("Diese Konfigurationsversion wird nicht unterstützt.");
+        if (state.Version is not (1 or 2 or 3 or 4 or 5 or 6)) throw new InvalidDataException("Diese Konfigurationsversion wird nicht unterstützt.");
         if (state.Version < 3 && state.Settings is { } legacy)
         {
             // Update unchanged old presentation defaults to the selected compact glass design.
@@ -72,7 +72,7 @@ public sealed class StateStore(string path)
             previousAppearance.CornerRoundness = double.IsFinite(previousAppearance.WindowCornerRadius) ? previousAppearance.WindowCornerRadius / width * 100 : 14;
             if (previousAppearance.BubbleColor == "#7B6BFF" && previousAppearance.WindowColor != "#7B6BFF") previousAppearance.BubbleColor = previousAppearance.WindowColor;
         }
-        state.Version = 5;
+        bool globalTransparency = state.Version < 6;
         var ids = new HashSet<Guid>();
         foreach (var g in state.Groups)
         {
@@ -97,8 +97,20 @@ public sealed class StateStore(string path)
             }
         }
         var s = state.Settings;
+        // A former selected-group override becomes the shared value exactly once.
+        // Group order is stable; migration never depends on the UI's current selection.
+        if (globalTransparency && state.Groups.FirstOrDefault() is { } first)
+        {
+            s.Opacity = first.Opacity ?? s.Opacity;
+            s.WindowOpacity = first.WindowOpacity ?? s.WindowOpacity;
+        }
+        foreach (var group in state.Groups) group.Opacity = group.WindowOpacity = null;
+        if (s.LinkBubbleColors) foreach (var group in state.Groups) group.Color = group.WindowColor = null;
+        state.Version = 6;
         if (s.Theme is not ("System" or "Light" or "Dark")) s.Theme = "System";
         s.AppColor = ColorValue.Normalize(s.AppColor); s.BubbleColor = ColorValue.Normalize(s.BubbleColor);
+        s.LightModeColor = ColorValue.TryParse(s.LightModeColor, out var light) ? light.Hex : null;
+        s.DarkModeColor = ColorValue.TryParse(s.DarkModeColor, out var dark) ? dark.Hex : null;
         s.WindowColor = s.BubbleColor;
         s.WindowOpacity = double.IsFinite(s.WindowOpacity) ? Math.Clamp(s.WindowOpacity, 0, .95) : .35;
         s.AppCornerRadius = 8;
@@ -107,9 +119,10 @@ public sealed class StateStore(string path)
         s.Opacity = double.IsFinite(s.Opacity) ? Math.Clamp(s.Opacity, 0, .95) : .35;
         s.Glass = double.IsFinite(s.Glass) ? Math.Clamp(s.Glass, 0, 1) : .55;
         s.TileSize = double.IsFinite(s.TileSize) ? Math.Clamp(s.TileSize, 76, 160) : 116;
+        s.MiniatureSize = double.IsFinite(s.MiniatureSize) ? Math.Clamp(s.MiniatureSize, 48, 144) : 76;
         s.Columns = Math.Clamp(s.Columns, 2, 8);
         // Compatibility aliases; real corners use the same proportion of the shorter edge.
-        s.BubbleCornerRadius = AppearanceGeometry.Radius(s.CornerRoundness, 76, 76);
+        s.BubbleCornerRadius = AppearanceGeometry.Radius(s.CornerRoundness, s.MiniatureSize, s.MiniatureSize);
         s.WindowCornerRadius = AppearanceGeometry.Radius(s.CornerRoundness, s.Columns * s.TileSize + 48, s.Columns * s.TileSize + 48);
         s.AnimationMilliseconds = Math.Clamp(s.AnimationMilliseconds, 60, 450);
     }

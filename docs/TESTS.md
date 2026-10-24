@@ -1,5 +1,23 @@
 # Prüfstand
 
+## Release 1.5.0 · 24.10.2026
+
+Release-Build ohne Warnungen oder Fehler. **104 Kernprüfungen und 116 native Windows-Prüfungen bestanden**, vollständiger Modus (AppearanceOnly=false). Windows 10.0.26300.0, x64, .NET 8.0.32, SDK 8.0.426. Berichte: [Core](results/core-tests-v1.5.0.txt) und [Windows](results/windows-smoke-v1.5.0.json).
+
+Der vollständige Lauf prüft auch Bubble finden, die tatsächliche Desktop-Klickfläche, Überdecken durch ein normales Fenster und Erreichbarkeit nach dessen Schließen. Ein vorheriger Lauf traf die Bubble einer parallel laufenden alten Vorschau. Deren gespeicherte Daten wurden separat gesichert, die alte Instanz beendet und der unveränderte Release-Build erneut vollständig geprüft; dieser Lauf bestand.
+
+Weitere Schwerpunkte: Schema-6-Migration, gemeinsame Größen/Transparenzen, Farbkopplung, Modusfarben, eingebettete Farbentwürfe mit Anwenden/Abbrechen, 1:1-Vorschau, Verknüpfungsrückgabe ohne Überschreiben, Shell-Datenübergabe und Ressourcen-/Handle-Zyklen. Das Rauchglas-Icon ist eingebettet; das aus der EXE geladene 32×32-Symbol wurde zuvor pixelgenau mit dem ICO verglichen.
+
+Physisches Explorer-Drag-&-Drop, echte Win+D-Bedienung, Explorer-Neustart, Mehrmonitor-/DPI-Mischbetrieb, Store-App-/UAC-Fälle und Anmeldung/Autostart bleiben manuell beziehungsweise auf weiteren Systemen zu prüfen. Die Screenshots rendern den eigenen WPF-Inhalt, nicht die vollständige Desktop-Komposition.
+
+## Historische Entwicklungsprüfungen
+
+**Aktuelle lokale Modusfarben:** Release-Build ohne Warnungen/Fehler, 104 Kernprüfungen und 107 native Prüfungen im Modus AppearanceOnly bestanden. Geprüft sind getrennte Speicherung, Standards bei fehlenden/ungültigen Feldern, Schwarz-/Weiß-Kontrast auf 216 eigenen Farbpaletten, Vorschau ohne Persistenz, Abbrechen, ungültige HEX-Eingabe, eigene Hell-/Dunkel-Steuerelemente, Windows-Standard-Profilwahl und vorhandene Farbreset-/Kopplungsabläufe. Rohbericht: artifacts/mode-colors-native-20261024-172458/smoke-results.json. Die Desktop-Klickflächenprüfung bleibt in diesem Modus ausdrücklich ausgelassen; die folgenden Prüfstände sind historisch.
+
+**Neuester lokaler Farbeditor:** 101 Kernprüfungen und 96 native Ansichts-/Integrationsprüfungen mit AppearanceOnly bestanden. Die vollständige Desktop-Klickflächenprüfung erreichte am Prüfpunkt ein anderes Fenster und bleibt auf freiem Desktop offen. [Prüfumfang](LOCAL-PREVIEW.md#ergänzung-eingebetteter-farbeditor), Rohbericht windows-smoke-inline-color.json. Der folgende vollständige 101er-Lauf stammt vom vorherigen Stand ohne eingebetteten Farbeditor.
+
+**Lokale Vorschau 1.5.0-preview.1, noch nicht veröffentlicht:** 101 Kernprüfungen und 101 native Windows-Prüfungen im abschließenden Durchlauf bestanden. Gemeinsame Einstellungen, Farbauswahl mit und ohne Kopplung, Miniaturgröße und scrollbar erreichbare 1:1-Vorschau geprüft. [Details und Grenzen](LOCAL-PREVIEW.md). Der folgende Stand beschreibt den veröffentlichten Release 1.4.1.
+
 Stand: **24.10.2026**, Version **1.4.1**, Windows **10.0.26300.0**, x64, .NET **8.0.32**, lokal eingerichtetes SDK **8.0.426**. Ein Buildname wie „26H2“ wird nicht aus der Buildnummer abgeleitet. Getestete Version und noch offene Fälle bleiben getrennt.
 
 ## Automatisiert ausgeführt

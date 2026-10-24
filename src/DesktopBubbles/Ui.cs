@@ -12,19 +12,19 @@ internal static class Ui
 {
     public const double AppRadius = 8, BubbleRadius = 20;
     public static bool Dark { get; private set; }
+    private static Color materialBasis = Color.FromRgb(235, 233, 244);
     public static SolidColorBrush Brush(string hex) => new((Color)ColorConverter.ConvertFromString(hex));
     public static SolidColorBrush Resource(string name) => (SolidColorBrush)System.Windows.Application.Current.FindResource(name);
-    public static void ApplyTheme(BubbleSettings settings)
+    public static void ApplyTheme(BubbleSettings settings, string? modeDraft = null)
     {
         using var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
         Dark = settings.Theme == "Dark" || (settings.Theme == "System" && key?.GetValue("AppsUseLightTheme") is int v && v == 0);
         var r = System.Windows.Application.Current.Resources;
-        r["Ink"] = Brush(Dark ? "#F3F1FF" : "#201D3B");
-        r["Muted"] = Brush(Dark ? "#BDB9D2" : "#66637E");
-        r["Surface"] = Brush(Dark ? "#252234" : "#EBE9F4");
-        r["ControlFill"] = Brush(Dark ? "#383348" : "#70FFFFFF");
-        r["HoverFill"] = Brush(Dark ? "#514961" : "#62BDB4FA");
-        r["Line"] = Brush(Dark ? "#75678391" : "#70A29ABD");
+        var palette = ThemePalette.Create(settings, Dark, modeDraft);
+        r["Ink"] = Brush(palette.Ink); r["Muted"] = Brush(palette.Muted);
+        r["Surface"] = Brush(palette.Surface); r["ControlFill"] = Brush(palette.ControlFill);
+        r["HoverFill"] = Brush(palette.HoverFill); r["Line"] = Brush(palette.Line);
+        materialBasis = Brush(palette.MaterialBasis).Color;
         r["Accent"] = Brush(settings.AppColor);
         if (SystemParameters.HighContrast)
         {
@@ -130,14 +130,16 @@ internal static class Ui
         Log.Write($"DWM backdrop={use}, HRESULT=0x{result:X8}");
     }
     public static Brush AppGlass(BubbleSettings settings) => Material(settings.AppColor, settings.AppOpacity, settings.Glass > .65);
+    public static Brush ColorDraft(BubbleSettings settings, string color, bool application = false)
+        => Material(color, application ? settings.AppOpacity : settings.Opacity, settings.Glass > .65);
     public static Brush Glass(BubbleSettings settings, BubbleGroup? group = null)
     {
-        return Material(group?.Color ?? settings.BubbleColor, Math.Clamp(group?.Opacity ?? settings.Opacity, 0, .95), settings.Glass > .65);
+        return Material(AppearancePreferences.Color(settings, group), Math.Clamp(settings.Opacity, 0, .95), settings.Glass > .65);
     }
     public static Brush WindowGlass(BubbleSettings settings, BubbleGroup? group = null)
-        => Material(group?.Color ?? settings.BubbleColor, Math.Clamp(group?.WindowOpacity ?? settings.WindowOpacity, 0, .95), settings.Glass > .65);
+        => Material(AppearancePreferences.Color(settings, group), Math.Clamp(settings.WindowOpacity, 0, .95), settings.Glass > .65);
     public static Brush BubbleRim(BubbleSettings settings, BubbleGroup group)
-        => !SystemParameters.HighContrast && (group.Opacity ?? settings.Opacity) <= 0 ? Brushes.Transparent : GlassRim();
+        => !SystemParameters.HighContrast && settings.Opacity <= 0 ? Brushes.Transparent : GlassRim();
     private static Brush Material(string tint, double opacity, bool matte)
     {
         if (SystemParameters.HighContrast) return SystemColors.WindowBrush;
@@ -147,7 +149,7 @@ internal static class Ui
         double amount = matte ? .12 : .48;
         double alpha = opacity * (matte ? 1 : .48);
         ColorValue.TryParse(tint, out var rgb);
-        var basis = Dark ? Color.FromRgb(30, 27, 43) : Color.FromRgb(235, 233, 244);
+        var basis = materialBasis;
         var color = Color.FromArgb((byte)(255 * alpha), (byte)(basis.R * (1 - amount) + rgb.R * amount),
             (byte)(basis.G * (1 - amount) + rgb.G * amount), (byte)(basis.B * (1 - amount) + rgb.B * amount));
         var white = Color.FromArgb(color.A, (byte)Math.Min(255, color.R + 12), (byte)Math.Min(255, color.G + 12), (byte)Math.Min(255, color.B + 12));

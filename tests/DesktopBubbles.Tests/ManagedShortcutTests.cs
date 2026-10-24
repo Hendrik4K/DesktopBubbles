@@ -11,7 +11,7 @@ internal static class ManagedShortcutTests
         test("v1 migriert ohne Übernahme bestehender Dateien", () =>
         {
             var f = New(); var source = f.Link(); var state = new BubbleState { Version = 1, Groups = [new BubbleGroup { Items = [Targets.Create(source)] }] };
-            f.Store.Save(state); var loaded = f.Store.Load(); assert(loaded.Version == 5 && loaded.Groups[0].ShowName && loaded.Groups[0].Items[0].Target == source && File.Exists(source));
+            f.Store.Save(state); var loaded = f.Store.Load(); assert(loaded.Version == 6 && loaded.Groups[0].ShowName && loaded.Groups[0].Items[0].Target == source && File.Exists(source));
         });
         test("Desktop-Übernahme: erst Daten speichern, dann Original entfernen", () =>
         {

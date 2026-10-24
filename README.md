@@ -1,116 +1,103 @@
-# DesktopBubbles · 1.4.1
+# DesktopBubbles · 1.5.0
 
-Native App-Ordner für den vorhandenen Windows-Desktop. Mini-Bubble anklicken, Programm auswählen. C# / WPF / Win32 ohne Browser-Runtime, Shell-Austausch oder Administratorrechte.
+<img src="https://raw.githubusercontent.com/Hendrik4K/DesktopBubbles/v1.5.0/src/DesktopBubbles/Assets/DesktopBubbles.png" width="88" height="88" alt="DesktopBubbles Rauchglas-Logo">
 
-[Download für Windows 11 x64](https://github.com/Hendrik4K/DesktopBubbles/releases/latest) · [Änderungen](CHANGELOG.md) · [MIT-Lizenz](LICENSE)
+**App folders for your Windows 11 desktop.** Group your shortcuts into a small bubble, open it with one click, and launch the app you need.
 
-**Desktop-Anbindung experimentell.** Lokal auf Windows **10.0.26300.0**, x64, .NET **8.0.32** gebaut und geprüft. Weitere Hardwarekonfigurationen sind noch nicht abgenommen. [Prüfstand](docs/TESTS.md), [Release-Vorbereitung](docs/RELEASE.md).
+Native App-Ordner für den vorhandenen Windows-Desktop. Statt vieler einzelner Verknüpfungen liegt eine kompakte Miniatur auf dem Desktop. Ein Klick öffnet das App-Raster über der Bubble; nach dem Schließen erscheint wieder die Miniatur.
 
-## Neu in 1.4.1
+**[Windows 11 x64 herunterladen](https://github.com/Hendrik4K/DesktopBubbles/releases/latest)** · [Änderungen](CHANGELOG.md) · [MIT-Lizenz](LICENSE) · [Fehler melden](https://github.com/Hendrik4K/DesktopBubbles/issues)
 
-Das Symbolmenü enthält nur **Starten** und **Aus Gruppe entfernen**. Entfernen bringt eine unabhängige, geprüfte Verknüpfung zurück auf den Desktop. Herausziehen per Drag & Drop bleibt ebenfalls verfügbar. Programme werden dabei nicht verschoben; Dateinamenkonflikte erhalten einen neuen Namen.
+![DesktopBubbles – Miniatur und Einstellungen](docs/screenshots/v1.5.0-host.png)
 
-## Darstellung seit 1.4.0
+## Funktionen
 
-- **Miniatur** heißt die geschlossene Desktop-Bubble; **Ordner** das geöffnete App-Raster. Das Zahnrad enthält weiterhin die Einstellungen der Verwaltung.
-- Unter **Miniatur** gibt es eine gemeinsame Farbe für beide Ansichten. Direkt rechts daneben sitzt die einzige kompakte Glaswahl (Klar/Matt), danach die Vorschau. Die gemeinsame **Eckenrundung** verwendet denselben Anteil der kürzeren Kante und wirkt dadurch bei beiden Größen proportional gleich.
-- Transparenz bleibt **getrennt** für Miniatur und Ordner einstellbar, jeweils bis **100 %**. Dann verschwinden Fläche und Rahmen, während Icons sichtbar bleiben. Freie transparente Pixel geben die Maus an den Desktop weiter.
-- Unter **Ordner** bleiben Transparenz und Größe. Die Vorschau wächst direkt mit dem Größenregler, zeigt die ausgewählten App-Symbole im festen Maßstab **1:3** und daneben die tatsächlichen nominellen Abmessungen bei 100 % Windows-Skalierung.
-- **Tracking starten** aktiviert CPU-Durchschnitt, aktuellen RAM, Verlauf und aktive Dauer. **Tracking stoppen** beendet den Timer und hält die letzten Werte fest. Ein erneuter Start beginnt eine neue Messung. Standardmäßig läuft keine Ressourcenmessung.
-- **97 Kernprüfungen und 92 native Windows-Prüfungen bestanden.** Physische Explorer-Mausbedienung und weitere Hardwarefälle bleiben manuell abzunehmen.
+- Verknüpfungen, Programme, Ordner, Webadressen und installierte Store-Apps in Desktop-Bubbles organisieren.
+- Einträge per Drag & Drop hinzufügen, sortieren, zwischen Gruppen verschieben und zurück auf den Desktop ziehen.
+- Über **Zurück zum Desktop** eine geprüfte Verknüpfung zurücklegen. Programme werden nicht verschoben; bestehende Dateien bleiben erhalten.
+- Miniaturgröße und Ordnergröße global anpassen; getrennte globale Transparenzen bis 100 Prozent und gemeinsame proportionale Rundung.
+- Farben je Bubble oder optional für alle Bubbles gemeinsam wählen. Hell und Dunkel haben eigene anpassbare Grundfarben; Windows-Standard folgt dem Systemmodus.
+- Ordner-Vorschau zwischen 1:3 und 1:1 umschalten; eingebetteter Farbeditor mit Farbkreis und HEX-Eingabe.
+- Gruppen sichern/importieren, optional mit Windows starten und Ressourcen-Tracking ausdrücklich einschalten.
 
-![DesktopBubbles – Miniatur und Ordner-Einstellungen](docs/screenshots/v1.4.0-selected-host.png)
+C# / WPF / Win32, ohne Browser-Runtime oder Administratorrechte. Keine Konten, Telemetrie oder automatischen Uploads. Das Öffnen gewählter Programme, Weblinks oder des Repositorys kann Netzwerkzugriffe auslösen.
 
-## Starten und aktualisieren
+## Loslegen
 
-Die lokale Ausgabe liegt unter `artifacts/DesktopBubbles-win-x64-v1.4.1`. Alte Ausgabe zuerst **im Tray → Beenden** schließen, dann dort `DesktopBubbles.exe` starten. Das X schließt nur die Verwaltung; für die Desktop-Bubbles läuft die App weiter.
+1. Das portable ZIP von der [Release-Seite](https://github.com/Hendrik4K/DesktopBubbles/releases/latest) herunterladen und vollständig in einen beschreibbaren Ordner entpacken. Die .NET-Desktop-Laufzeit ist enthalten.
+2. **DesktopBubbles.exe** starten und mit **Neu** eine Bubble erstellen.
+3. Verknüpfungen auf die Miniatur, ins geöffnete Raster oder auf die Gruppenzeile ziehen.
+4. Miniatur anklicken und eine App auswählen. Zum Positionieren die geschlossene Bubble ziehen.
 
-Das portable ZIP vollständig in einen beschreibbaren Ordner entpacken; .NET ist enthalten. Release-ZIPs enthalten keine Benutzerdaten. Beim Upgrade den vollständigen bisherigen `data`-Ordner übernehmen oder eine `.bubbles`-Sicherung importieren. Der lokal vorbereitete Ordner kann bereits eine Datenkopie enthalten. Schema 1/2/3/4 migriert zu **Schema 5**; diesen Datenordner anschließend nicht mit älteren Ausgaben öffnen. Alte Einträge werden beim Upgrade nicht automatisch vom Desktop verschoben.
+Das **X** schließt die Verwaltung; die Desktop-Bubbles bleiben aktiv. Ein Doppelklick auf das Tray-Symbol öffnet die Verwaltung. **Tray → Beenden** beendet die App vollständig. Das Tray-Menü enthält außerdem Version, Repository und Desktop-Verbindung erneuern.
 
-1. **Neu** wählen und Gruppe benennen.
-2. Verknüpfungen auf die Mini-Bubble, ins geöffnete Raster oder auf die Gruppenzeile ziehen.
-3. Mini-Bubble auf dem Desktop anklicken, anschließend das gewünschte Programm auswählen.
-4. Zum Positionieren die geschlossene Bubble ziehen. Neue Gruppen erscheinen oben rechts auf dem Hauptmonitor.
+Die portable Ausgabe ist nicht signiert und enthält keinen Installer oder automatischen Updater. **Desktop-Anbindung ist experimentell**: normale Fenster dürfen die Bubbles überdecken. [Prüfstand und Plattformgrenzen](docs/TESTS.md).
 
 ## Bedienung
 
 | Aktion | Bedienung |
 | --- | --- |
-| Öffnen / schließen | Mini-Bubble anklicken; Raster mit Esc oder Klick außerhalb schließen |
-| Gruppe finden | Rechtsklick auf Gruppenzeile → **Auf dem Desktop finden**; minimiert andere Fenster und setzt die Bubble in die Hauptmonitormitte |
-| Desktop anzeigen | Oberes **Zahnrad → Zum Desktop**; verändert keine Positionen |
-| Gruppe bearbeiten | Rechtsklick auf Mini-Bubble oder Gruppenzeile |
-| Dateien, Ordner, Store-App, Webadresse hinzufügen | Drag & Drop beziehungsweise Kontextmenü der Gruppe oder des leeren Rasterhintergrunds |
-| Sortieren / andere Bubble | Symbol auf anderes Symbol oder auf die Ziel-Bubble ziehen |
-| Herausziehen | Symbol auf Desktop oder Explorer ziehen; selbstständige `.lnk`/`.url`, Originalziel bleibt bestehen |
-| Starten / zurück auf den Desktop | Rechtsklick auf das Symbol → **Starten** oder **Aus Gruppe entfernen** |
-| Mini-Bubble ohne Namen | Gruppenmenü → **Name unter Bubble anzeigen** ausschalten |
-| Eigenes Gruppensymbol | **Gruppensymbol wählen …**; **Mini-Icons verwenden** stellt das 3×3-Raster wieder her |
-| Tastatur | Tab / Umschalt+Tab, Enter / Leertaste; Strg+N in der Verwaltung erzeugt eine Gruppe |
+| Öffnen / schließen | Miniatur anklicken; Raster mit Esc oder Klick außerhalb schließen |
+| Gruppe finden | Rechtsklick auf Gruppenzeile → Auf dem Desktop finden; zeigt den Desktop und setzt die Bubble in die Hauptmonitormitte |
+| Gruppe bearbeiten | Rechtsklick auf Miniatur oder Gruppenzeile; Umbenennen und Name unter Bubble anzeigen stehen oben |
+| Einträge hinzufügen | Drag & Drop oder Gruppenmenü → Hinzufügen |
+| Sortieren / andere Bubble | Symbol auf anderes Symbol beziehungsweise Ziel-Bubble ziehen |
+| Zurück auf den Desktop | Symbol hinausziehen oder Rechtsklick → Zurück zum Desktop |
+| Einstellungen verlassen | Erneut Zahnrad unten rechts oder Zurück-Pfeil → Miniaturansicht |
+| Tastatur | Tab / Umschalt+Tab, Enter / Leertaste; Strg+N erstellt eine Gruppe |
 
-Persönliche Desktop-`.lnk/.url` erhalten zuerst eine geprüfte Kopie. Standardmäßig entfernt die App danach das geprüfte Desktop-Original. **Zahnrad → Desktop-Originale nach Übernahme entfernen** ausschalten, um neue Links nur zu kopieren. Gemeinsame Desktop-Originale sowie Programme, Dateien und Ordner bleiben am Ort. **Aus Gruppe entfernen** legt zuerst eine geprüfte Verknüpfung auf dem persönlichen Desktop ab und entfernt danach den Gruppeneintrag. Das gilt auch für direkt hinzugefügte Programme, Ordner und Webadressen. Bestehende Dateien werden nicht überschrieben. Bei Fehlern bleibt der Eintrag erhalten.
+Persönliche Desktop-`.lnk/.url` erhalten zuerst eine geprüfte eigene Kopie. Standardmäßig entfernt die App danach das geprüfte Desktop-Original. **Einstellungen → Desktop-Originale nach Übernahme entfernen** ausschalten, um neue Links nur zu kopieren. Programme, Dateien, Ordner und gemeinsame Desktop-Originale bleiben am Ort. Bei der Rückgabe wird zuerst eine unabhängige Verknüpfung auf dem persönlichen Desktop angelegt und erst danach der Eintrag entfernt. Namenskonflikte erhalten einen neuen Namen. Bei Fehlern bleibt der Eintrag erhalten. [Verknüpfungen und Rückgabe](docs/SHORTCUTS.md).
 
-Beim bestätigten Herausziehen endet die Rückgabepflicht der letzten Referenz, damit „Wiederherstellen“ den Link nicht später erneut zusätzlich zurücklegt. Ohne Bestätigung bleibt der Eintrag erhalten; eine externe Kopie kann dann bereits existieren. [Details](docs/SHORTCUTS.md).
+## Aussehen
 
-## Aussehen und Einstellungen
+Gruppe links auswählen. **Miniatur** enthält Farbe, Glas, globale Miniaturtransparenz und -größe sowie die gemeinsame Eckenrundung. **Ordner** enthält die getrennte globale Ordnertransparenz, Ordnergröße und Live-Vorschau mit 1:3-/1:1-Umschaltung. Bei 100 Prozent Transparenz verschwinden Fläche und Rahmen; die Symbole bleiben sichtbar.
 
-Gruppe links auswählen. **Zahnrad** verändert Farbe und Transparenz der Verwaltung. **Miniatur** enthält die gemeinsame Ordnerfarbe, Glaswahl und Rundung sowie die Transparenz der kleinen Bubble. **Ordner** enthält die unabhängige Ordnertransparenz und den Größenregler mit maßstäblicher Live-Vorschau.
+**Ändern** öffnet den Farbeditor über den unteren Reglern. Der Entwurf verändert keine gespeicherten Farben. **Anwenden** übernimmt, **Abbrechen** oder Esc verwirft die Auswahl. HEX akzeptiert sechs RGB-Stellen. Andere Regler wirken sofort und werden automatisch gespeichert.
 
-Die gemeinsame Rundung wird als Prozentsatz der kürzeren Kante angezeigt. 0 % ergibt eckige Flächen; 50 % die maximale Rundung. Damit passen die Konturen trotz unterschiedlicher Größe zusammen. Der Größenregler verändert Zellen und Icons des geöffneten Ordners gemeinsam. Die Zahlen entsprechen 100 % Windows-Skalierung; echte Fenster werden zusätzlich am Monitorarbeitsbereich begrenzt.
+Das Zahnrad enthält App-Farbe, Farbmodus und App-Transparenz. Die **quadratische Farbkachel neben Farbmodus** bearbeitet die Grundfarbe von Hell oder Dunkel. Bei Windows-Standard wird das aktuell aktive Profil bearbeitet. Diese Farben betreffen DesktopBubbles, nicht die Windows-Systemfarben. Unter **Allgemein** koppelt **Bubble-Farben für alle übernehmen** die Gruppenfarben. **Farben zurücksetzen** setzt App-, Bubble- und Modusfarben zurück; Größen, Transparenzen und Kopplungswahl bleiben erhalten.
 
-**Ändern** öffnet den Farbkreis, **Fertig** übernimmt, Schließen/Esc verwirft die Farbauswahl. HEX akzeptiert sechs RGB-Stellen. Regler wirken sofort und werden automatisch gespeichert. Beim Upgrade erhält eine ausdrücklich gewählte Miniaturfarbe Vorrang; war sie nicht gesetzt, wird eine vorhandene Ordnerfarbe übernommen. Beide Transparenzen bleiben erhalten. Das Gruppenmenü kann Standardfarbe/-transparenz wiederherstellen.
+**Klar** ist leichter und farbiger, **Matt** dichter. Die Verwaltung nutzt DWM-Unschärfe, sofern verfügbar und eingeschaltet. Geöffnete Ordner verwenden eigene transparente Farbflächen; dort ist Matt eine Materialtönung ohne echten Desktop-Blur. Hoher Kontrast verwendet Systemfarben. Rundung und Größen bleiben proportional; Größenangaben entsprechen 100 Prozent Windows-Skalierung.
 
-**Glas** steht nur unter Miniatur und gilt gemeinsam. Klar ist farbiger und leichter, Matt neutraler und dichter. Die Transparenz steuert die Materialstärke; bei 100 % sind Fläche und Rahmen vollständig ausgeblendet. Die Verwaltung nutzt weiterhin DWM-Unschärfe, sofern verfügbar und aktiviert. Geöffnete Ordner/Farbwahl nutzen eigene transparente Flächen; Matt ist dort Materialtönung ohne echten Desktop-Blur. Hoher Kontrast verwendet Systemfarben.
+## Ressourcen und Daten
 
-Im scrollbaren **Zahnrad-Bereich → Allgemein** liegen Design und Checkboxen für Desktop-Originale, Hover-Öffnen, Windows-Start, Desktop-Zuordnung und Hintergrundweichzeichnung. **Daten & Werkzeuge** enthält alle bisherigen …-Aktionen: Desktop, Sicherung/Import, Verknüpfungen wiederherstellen, Datenordner, Verbindung erneuern, Diagnosebericht. Animationsdauer und Spaltenzahl sind keine regulären UI-Regler; ältere individuelle Werte bleiben erhalten.
+**Tracking starten** aktiviert zeitgewichteten CPU-Durchschnitt über alle logischen Prozessoren, aktuellen RAM (Working Set), Verlauf und aktive Dauer. **Tracking stoppen** hält die Werte fest; erneuter Start beginnt eine neue Messung. Ausblenden/Minimieren unterbricht die Messung, Schließen beendet sie. Standardmäßig läuft kein Tracking. Die angezeigte Schwankung ist keine Messgenauigkeit. [Methodik](docs/PERFORMANCE.md).
 
-Die Ressourcenleiste bleibt bis **Tracking starten** ausgeschaltet und zeigt keine scheinbar aktuellen Werte. Danach misst sie ungefähr einmal je Sekunde bei sichtbarer, nicht minimierter Verwaltung. CPU Ø ist der zeitgewichtete Mittelwert dieser Sitzung über alle logischen Prozessoren; RAM der aktuelle Working Set. Die Kurve zeigt die letzten Intervalle, die Dauer zählt aktive Messzeit. **Tracking stoppen** hält die letzten Werte fest; erneuter Start setzt Verlauf, Durchschnitt und Zeit zurück. Ausblenden/Minimieren unterbricht die gestartete Sitzung; Schließen beendet sie. Die nächste Verwaltung startet wieder ohne Tracking.
+**Einstellungen → Daten & Werkzeuge** enthält Sicherung exportieren/importieren, Verknüpfungen auf Desktop zurücklegen, Programmordner öffnen, Desktop-Bubbles neu verbinden und Diagnosebericht speichern. Der Diagnosebericht misst den eigenen Prozess zehn Sekunden lang und bleibt lokal.
 
-Schwankung wird in Prozentpunkten angezeigt und ist keine Messgenauigkeit. **Zahnrad → Diagnosebericht speichern** erstellt unabhängig vom Tracking eine ausdrücklich gestartete zehnsekündige Messung. [Methodik und lokale Werte](docs/PERFORMANCE.md).
+## Aktualisieren, sichern und entfernen
 
-**Mit Windows starten** schreibt auf ausdrückliche Bedienung nach `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. Vor Verschieben des portablen Ordners ausschalten beziehungsweise am neuen Ort erneut aktivieren.
+Die bisherige App **im Tray beenden**. Die neue Version in einen eigenen Ordner entpacken und den **vollständigen bisherigen `data`-Ordner** übernehmen. Alternativ eine `.bubbles`-Sicherung importieren. Release-ZIPs enthalten keine Benutzerdaten.
 
-## Daten, Sicherung und Entfernen
+Version 1.5.0 migriert ältere Konfigurationen auf **Schema 6**. Beide Transparenzen gelten danach global; bei alten Einzelwerten wird je Ansicht der wirksame Wert der ersten Gruppe übernommen. Gruppen und Verknüpfungen bleiben erhalten. Migrierte Daten anschließend nicht mit älteren Ausgaben öffnen. Alte Einträge werden beim Upgrade nicht automatisch vom Desktop verschoben.
 
-`portable.flag` aktiviert `data/groups.json` neben der EXE. Ohne Flag/`--portable` liegt der Zustand unter `%LOCALAPPDATA%\DesktopBubbles`. Ein eigener Datenpfad ist möglich:
+`portable.flag` aktiviert `data/groups.json` neben der EXE. Ohne Flag/`--portable` liegt der Zustand unter `%LOCALAPPDATA%\DesktopBubbles`. Eigene Datenpfade sind über `--data-dir "D:\Meine Einstellungen\DesktopBubbles"` möglich; `--background` startet ohne Verwaltung.
 
-```powershell
-.\DesktopBubbles.exe --portable
-.\DesktopBubbles.exe --background
-.\DesktopBubbles.exe --data-dir "D:\Meine Einstellungen\DesktopBubbles"
-```
+Export enthält Gruppen, Einstellungen und referenzierte interne Verknüpfungen. Import ersetzt den Zustand nach Rückfrage und sichert den bisherigen Stand zusätzlich. Programme, externe Ziele und die ganze Rückgabehistorie sind nicht vollständig enthalten. Für eine vollständige Sicherung bei beendeter App den gesamten `data`-Ordner kopieren.
 
-Normale Änderungen werden nach 500 ms Ruhe und beim regulären Beenden gespeichert; Dateitransaktionen speichern sofort. Atomarer Dateiersatz mit `.bak`; beschädigte Dateien bleiben als `.damaged-*` erhalten. Grenzen: 100 Gruppen, 300 Einträge je Gruppe, 8 MiB Konfiguration. Pro Datenpfad eine laufende Instanz.
+Vor Löschen der App **Einstellungen → Verknüpfungen auf Desktop zurücklegen** ausführen, bei Bedarf Daten sichern, Autostart ausschalten und im Tray beenden. Löschen des Datenordners kann die einzige Kopie übernommener Links entfernen. Autostart schreibt auf ausdrückliche Bedienung nach `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`; vor einem Umzug ausschalten und am neuen Ort bei Bedarf neu aktivieren.
 
-**Zahnrad → Sicherung exportieren …** enthält Gruppen, Einstellungen und referenzierte interne Verknüpfungen. Import ersetzt nach Rückfrage den Zustand mit zusätzlicher Sicherung. Programme, externe Ziele, eigene Symbolbilder und die lokale Rückgabehistorie sind nicht vollständig enthalten. Für vollständige Sicherung bei beendeter App den gesamten `data`-Ordner kopieren.
+## Bauen und mitarbeiten
 
-Vor Löschen der App **Zahnrad → Desktop-Verknüpfungen wiederherstellen**, bei Bedarf Daten sichern, Autostart ausschalten und im Tray beenden. Bloßes Löschen des Datenordners kann die einzige Kopie übernommener Links entfernen.
-
-Keine Telemetrie, Konten oder eigene Netzwerkkommunikation. Lokale Logs sind größenbegrenzt (etwa 1 MiB plus `.old`), können Pfade/Fehlertexte enthalten. Gestartete Programme/Weblinks können Netzwerkzugriffe auslösen.
-
-## Bauen und prüfen
-
-Windows 11 x64, .NET-8-SDK beziehungsweise Visual Studio mit .NET-Desktopentwicklung. Keine Drittanbieter-NuGet-Laufzeitabhängigkeiten.
+Windows 11 x64 und .NET-8-SDK beziehungsweise Visual Studio mit .NET-Desktopentwicklung. Keine Drittanbieter-NuGet-Laufzeitabhängigkeiten.
 
 ```powershell
-# Optional: SDK nur im Projektordner einrichten.
-.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.4.1
+.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.5.0
 # Mit vorhandenem SDK:
-.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.4.1
-# Native Prüfungen mit separaten Testdaten auf interaktivem Desktop:
-.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.4.1\DesktopBubbles.exe
+.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.5.0
+# Native Tests mit isolierten Testdaten auf interaktivem Windows-Desktop:
+.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.5.0\DesktopBubbles.exe
 ```
 
-Build erzeugt Release, führt die Konsolensuite aus und packt portable Ausgabe, Source-ZIP und SHA-256. `-FrameworkDependent` setzt eine installierte .NET-8-Desktop-Laufzeit voraus. `dotnet test` ist nicht der Einstieg für diese ausführbare Konsolensuite. Native Tests starten ausschließlich ihre eigene Launch-Probe. CI ist vorbereitet, wurde hier nicht auf GitHub ausgeführt.
+Build erstellt die portable Ausgabe, führt die Kernprüfungen aus und packt ZIPs sowie SHA-256-Prüfsummen. Native Tests laufen separat. `dotnet test` ist nicht der Einstieg für die ausführbare Konsolensuite. CI baut und prüft den Core auf GitHub Actions. [Architektur](docs/ARCHITECTURE.md), [Entwicklerregeln](docs/DEVELOPMENT.md), [Release](docs/RELEASE.md), [Design-QA](design-qa.md).
 
-Die portable Ausgabe ist nicht signiert und enthält keinen Installer/Updater. [Architektur](docs/ARCHITECTURE.md), [Entwicklerregeln](docs/DEVELOPMENT.md), [Designvergleich](design-qa.md).
+Feedback zu Bugs, Bedienung und Tests auf weiteren Windows-Systemen ist unter [Issues](https://github.com/Hendrik4K/DesktopBubbles/issues) willkommen. Bitte Konfigurationen oder Logs mit privaten Pfaden vor dem Upload prüfen.
 
 ## Bekannte Grenzen
 
-- Bubbles sind eigene transparente Desktop-Toolfenster mit Desktop-Besitzer, keine Explorer-Icons. Keine Hooks, Explorer-Patches oder Topmost-Overlays. Normale Fenster dürfen sie überdecken. Desktop-Zuordnung bleibt experimentell; einfacher Fenstermodus und explizites Finden stehen bereit.
-- Echter Explorer-Neustart, Win+D mit physischer Eingabe, virtuelle Desktops, mehrere Monitore und gemischte DPI brauchen weitere manuelle Abnahme. Wiederherstellung/Geometrie sind implementiert, nicht für jede Hardware bestätigt.
-- Physisches Drag & Drop mit Explorer, Cloud-/Netzwerkpfade, Sonderlinks, Store-Starts und UAC-Fälle sind nicht umfassend geprüft. Windows-UIPI kann Drops aus erhöhten Apps blockieren. Ohne verlässliche Übergabebestätigung bleibt der Eintrag erhalten.
-- Eigene WPF-Vorschaubilder erfassen keine physische Desktop-Komposition. Die zusätzlichen Tests prüfen Alpha, echte Layered-Window-Eigenschaft und ausgeschalteten DWM-Hintergrund des Ordners. Hoher Kontrast und das Ergebnis auf unterschiedlichen Windows-/DPI-Systemen müssen trotzdem am Desktop beurteilt werden.
-- WPF hat messbaren Speichergrundbedarf. Lokale CPU-/RAM-Werte belegen keine GPU- oder Spiele-Frametimes; Gaming-Benchmarks fehlen.
+- Bubbles sind eigene Desktop-Toolfenster mit Desktop-Besitzer, keine Explorer-Icons. Keine Hooks, Explorer-Patches oder Topmost-Overlays.
+- Mehrere Monitore, gemischte DPI, virtuelle Desktops, echter Explorer-Neustart und physisches Win+D benötigen weitere Plattformtests.
+- Physisches Explorer-Drag-&-Drop, Cloud-/Netzwerkpfade, Sonderlinks, Store-Starts und UAC-Fälle sind nicht umfassend abgenommen. Ohne verlässliche Übergabebestätigung bleibt ein herausgezogener Eintrag erhalten.
+- WPF-Aufnahmen erfassen nicht den vom Desktop zusammengesetzten Hintergrund. Hoher Kontrast und verschiedene Skalierungen müssen zusätzlich visuell geprüft werden.
+- WPF hat einen Speichergrundbedarf. CPU-/RAM-Messungen belegen keine Spiele-Frametimes oder GPU-Leistung.
 
-Eigene Glasflächen und eigenes geometrisches Programmsymbol; App-Icons aus der lokalen Windows-Shell. Keine Apple-Code- oder Grafikdateien enthalten.
+Eigener Projektcode unter MIT. Das Rauchglas-Logo wurde vom Projektinhaber bereitgestellt; App-Symbole stammen aus der lokalen Windows-Shell. Die portable Ausgabe enthält die Lizenzhinweise ihrer .NET-Laufzeit. [Branding](src/DesktopBubbles/Assets/README.md).

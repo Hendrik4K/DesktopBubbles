@@ -3,7 +3,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Threading;
 using DesktopBubbles.Core;
 
 namespace DesktopBubbles;
@@ -13,7 +12,7 @@ internal sealed class BubbleWindow : Window
     private readonly App app;
     public BubbleGroup Group { get; }
     private readonly Border glass;
-    private readonly DispatcherTimer hover;
+    private readonly Grid canvas;
     private Native.Point startCursor;
     private PixelRect startWindow;
     private bool dragging, pressed;
@@ -23,14 +22,15 @@ internal sealed class BubbleWindow : Window
     public BubbleWindow(App app, BubbleGroup group)
     {
         this.app = app; Group = group;
-        Title = group.Name; Width = 104; Height = 116; WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize;
+        double size = app.State.Settings.MiniatureSize;
+        Title = group.Name; Width = size + 28; Height = size + 40; WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize;
         AllowsTransparency = true; Background = Brushes.Transparent; ShowInTaskbar = false; ShowActivated = false;
         AllowDrop = true; Cursor = Cursors.Hand;
         var root = new StackPanel { Margin = new Thickness(8, 3, 8, 0) };
         glass = new Border
         {
-            Width = 76, Height = 76, CornerRadius = new CornerRadius(app.State.Settings.BubbleCornerRadius), BorderThickness = new Thickness(1),
-            BorderBrush = Ui.BubbleRim(app.State.Settings, group), Background = Ui.Glass(app.State.Settings, group), Padding = new Thickness(10),
+            Width = size, Height = size, CornerRadius = new CornerRadius(app.State.Settings.BubbleCornerRadius), BorderThickness = new Thickness(1),
+            BorderBrush = Ui.BubbleRim(app.State.Settings, group), Background = Ui.Glass(app.State.Settings, group), Padding = new Thickness(size * 10 / 76),
         };
         root.Children.Add(glass);
         var name = Ui.Text(group.Name, 12); name.Foreground = Brushes.White; name.TextAlignment = TextAlignment.Center;
@@ -38,29 +38,14 @@ internal sealed class BubbleWindow : Window
         name.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 4, ShadowDepth = 1, Opacity = .8, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance };
         name.Visibility = group.ShowName ? Visibility.Visible : Visibility.Collapsed;
         root.Children.Add(name);
-        var canvas = new Grid { Width = 104, Height = 116 }; canvas.Children.Add(root);
+        canvas = new Grid { Width = size + 28, Height = size + 40 }; canvas.Children.Add(root);
         Content = new Viewbox { Stretch = Stretch.Fill, Child = canvas };
         System.Windows.Automation.AutomationProperties.SetName(this, group.Name);
         ToolTip = $"{group.Name} · {group.Items.Count} Einträge\nZiehen zum Verschieben · Rechtsklick zum Bearbeiten";
-        ContextMenu = new ContextMenu();
-        ContextMenu.Items.Add(Ui.Menu("Öffnen", () => app.Toggle(this)));
-        ContextMenu.Items.Add(Ui.Menu("Einträge hinzufügen …", () => app.AddFiles(Group)));
-        ContextMenu.Items.Add(Ui.Menu("Installierte App hinzufügen …", () => app.PickApp(Group)));
-        ContextMenu.Items.Add(new Separator());
-        ContextMenu.Items.Add(Ui.Menu("Umbenennen …", () => app.Rename(Group)));
-        var showName = Ui.Menu("Name unter Bubble anzeigen", () => app.ToggleName(Group)); showName.IsCheckable = true; showName.IsChecked = group.ShowName; ContextMenu.Items.Add(showName);
-        ContextMenu.Items.Add(Ui.Menu("Gruppensymbol wählen …", () => app.SetIcon(Group)));
-        ContextMenu.Items.Add(Ui.Menu("Mini-Icons verwenden", () => { Group.CustomIcon = null; app.Changed(true); }));
-        ContextMenu.Items.Add(Ui.Menu("Gruppe löschen …", () => app.Delete(Group)));
-        ContextMenu.Items.Add(new Separator());
-        ContextMenu.Items.Add(Ui.Menu("Einstellungen", app.ShowSettings));
-        hover = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(450) };
-        hover.Tick += (_, _) => { hover.Stop(); if (IsMouseOver && !pressed && !app.HasFlyout) app.Open(this); };
-        MouseEnter += (_, _) => { if (app.State.Settings.HoverOpen) hover.Start(); };
-        MouseLeave += (_, _) => hover.Stop();
+        ContextMenu = GroupActionsMenu.Create(app, group, settings: true);
         PreviewMouseLeftButtonDown += (_, e) =>
         {
-            hover.Stop(); Native.GetCursorPos(out startCursor); startWindow = Native.Bounds(this);
+            Native.GetCursorPos(out startCursor); startWindow = Native.Bounds(this);
             pressed = true; dragging = false; CaptureMouse(); e.Handled = true;
         };
         MouseMove += (_, _) =>
@@ -99,14 +84,21 @@ internal sealed class BubbleWindow : Window
             RestorePosition();
             await LoadIcons();
         };
-        Closed += (_, _) => { closing = true; hover.Stop(); };
+        Closed += (_, _) => closing = true;
     }
-    public void Finish() { closing = true; hover.Stop(); Close(); }
-    public void RefreshAppearance() { glass.Background = Ui.Glass(app.State.Settings, Group); glass.BorderBrush = Ui.BubbleRim(app.State.Settings, Group); glass.CornerRadius = new CornerRadius(app.State.Settings.BubbleCornerRadius); }
+    public void Finish() { closing = true; Close(); }
+    public void RefreshAppearance()
+    {
+        double size = app.State.Settings.MiniatureSize;
+        glass.Background = Ui.Glass(app.State.Settings, Group); glass.BorderBrush = Ui.BubbleRim(app.State.Settings, Group);
+        glass.CornerRadius = new CornerRadius(app.State.Settings.BubbleCornerRadius);
+        glass.Width = glass.Height = size; glass.Padding = new Thickness(size * 10 / 76);
+        canvas.Width = size + 28; canvas.Height = size + 40; RestorePosition();
+    }
     public void SetExpanded(bool value)
     {
         if (closing) return;
-        Expanded = value; hover.Stop();
+        Expanded = value;
         // Keep the HWND and its physical bounds for placement and DPI. Transparent pixels pass through.
         ((UIElement)Content).Opacity = value ? 0 : 1;
         IsHitTestVisible = !value;
@@ -116,8 +108,8 @@ internal sealed class BubbleWindow : Window
         // A desktop host can span monitors while its child HWNDs inherit one DPI.
         // Scale the small closed tile explicitly for its destination monitor.
         double ratio = ((long)Native.GetWindowLongPtr(Native.Handle(this), Native.GwlStyle) & Native.WsChild) != 0
-            ? Native.MonitorDpi(Group.X + 52, Group.Y + 58) / Math.Max(96, Native.GetDpiForWindow(Native.Handle(this))) : 1;
-        Width = 104 * ratio; Height = 116 * ratio; UpdateLayout();
+            ? Native.MonitorDpi(Group.X + (app.State.Settings.MiniatureSize + 28) / 2, Group.Y + (app.State.Settings.MiniatureSize + 40) / 2) / Math.Max(96, Native.GetDpiForWindow(Native.Handle(this))) : 1;
+        Width = (app.State.Settings.MiniatureSize + 28) * ratio; Height = (app.State.Settings.MiniatureSize + 40) * ratio; UpdateLayout();
         var area = Native.WorkArea(Group.X, Group.Y);
         var bounds = Native.Bounds(this);
         var p = Placement.Clamp(Group.X, Group.Y, bounds.Width, bounds.Height, area);
@@ -132,11 +124,6 @@ internal sealed class BubbleWindow : Window
     }
     public async Task LoadIcons()
     {
-        if (Group.CustomIcon is not null)
-        {
-            glass.Child = new Image { Source = await app.Icons.Get(Group.CustomIcon), Stretch = Stretch.Uniform };
-            return;
-        }
         var grid = new System.Windows.Controls.Primitives.UniformGrid { Rows = 3, Columns = 3 };
         glass.Child = grid;
         if (Group.Items.Count == 0)

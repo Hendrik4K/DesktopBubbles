@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -100,7 +101,7 @@ public partial class App : System.Windows.Application
             if (smoke)
             {
                 State = SmokeTests.CreateState(); Ui.ApplyTheme(State.Settings); Rebuild();
-                _ = RunSmoke();
+                _ = RunSmoke(e.Args.Contains("--appearance-only"));
             }
             else
             {
@@ -117,9 +118,9 @@ public partial class App : System.Windows.Application
         catch (Exception ex) { Ui.Error(ex); Shutdown(1); }
     }
 
-    private async Task RunSmoke()
+    private async Task RunSmoke(bool appearanceOnly)
     {
-        try { await SmokeTests.Run(this); Quit(); }
+        try { await SmokeTests.Run(this, appearanceOnly); Quit(); }
         catch (Exception ex) { Log.Write("SMOKE FAILED " + ex); File.WriteAllText(Path.Combine(DataDirectory, "smoke-failure.txt"), ex.ToString()); Shutdown(2); }
     }
     private async Task RunVisualPreview()
@@ -139,17 +140,26 @@ public partial class App : System.Windows.Application
 
     private void SetupTray()
     {
-        trayIcon = System.Drawing.Icon.ExtractAssociatedIcon(Environment.ProcessPath!) ?? (System.Drawing.Icon)System.Drawing.SystemIcons.Application.Clone();
-        tray = new Forms.NotifyIcon { Text = "DesktopBubbles", Icon = trayIcon, Visible = true };
+        using var iconStream = GetResourceStream(new Uri("pack://application:,,,/Assets/DesktopBubbles.ico")).Stream;
+        using var brandIcon = new System.Drawing.Icon(iconStream);
+        trayIcon = new System.Drawing.Icon(brandIcon, Forms.SystemInformation.SmallIconSize);
+        var assembly = Assembly.GetExecutingAssembly();
+        string version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0]
+            ?? assembly.GetName().Version?.ToString(3) ?? "unbekannt";
+        tray = new Forms.NotifyIcon { Text = "DesktopBubbles · " + version, Icon = trayIcon, Visible = true };
         var menu = new Forms.ContextMenuStrip();
-        menu.Items.Add("Neue Gruppe …", null, (_, _) => Dispatcher.Invoke(CreateGroup));
-        menu.Items.Add("Einstellungen / Gruppen", null, (_, _) => Dispatcher.Invoke(ShowSettings));
-        menu.Items.Add("Desktop-Bubbles anzeigen", null, (_, _) => Dispatcher.Invoke(() => ShowDesktop()));
-        menu.Items.Add("Desktop-Verbindung erneuern", null, (_, _) => Dispatcher.Invoke(Rebuild));
+        menu.Items.Add(new Forms.ToolStripMenuItem("Version " + version) { Enabled = false });
         menu.Items.Add(new Forms.ToolStripSeparator());
+        menu.Items.Add("Zum Repository", null, (_, _) => Dispatcher.Invoke(OpenRepository));
+        menu.Items.Add("Desktop-Verbindung erneuern", null, (_, _) => Dispatcher.Invoke(Rebuild));
         menu.Items.Add("Beenden", null, (_, _) => Dispatcher.Invoke(Quit));
         tray.ContextMenuStrip = menu;
         tray.DoubleClick += (_, _) => Dispatcher.Invoke(ShowSettings);
+    }
+    private void OpenRepository()
+    {
+        try { Process.Start(new ProcessStartInfo("https://github.com/Hendrik4K/DesktopBubbles") { UseShellExecute = true }); }
+        catch (Exception ex) { Ui.Error(ex); }
     }
 
     internal void Rebuild()

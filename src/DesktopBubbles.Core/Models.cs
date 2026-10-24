@@ -2,7 +2,7 @@ namespace DesktopBubbles.Core;
 
 public sealed class BubbleState
 {
-    public int Version { get; set; } = 5;
+    public int Version { get; set; } = 6;
     public BubbleSettings Settings { get; set; } = new();
     public List<BubbleGroup> Groups { get; set; } = [];
 }
@@ -11,7 +11,11 @@ public sealed class BubbleSettings
 {
     public string Theme { get; set; } = "Light";
     public string AppColor { get; set; } = "#7B6BFF";
+    public string? LightModeColor { get; set; }
+    public string? DarkModeColor { get; set; }
     public string BubbleColor { get; set; } = "#7B6BFF";
+    public bool LinkBubbleColors { get; set; }
+    public double MiniatureSize { get; set; } = 76;
     public double AppOpacity { get; set; } = .65;
     public string WindowColor { get; set; } = "#7B6BFF";
     public double WindowOpacity { get; set; } = .35;
@@ -24,7 +28,7 @@ public sealed class BubbleSettings
     public bool Blur { get; set; } = true;
     public bool Animations { get; set; } = true;
     public int AnimationMilliseconds { get; set; } = 160;
-    public bool HoverOpen { get; set; }
+    public bool HoverOpen { get; set; } // Legacy configuration field; hover opening is no longer used.
     public int Columns { get; set; } = 3;
     public double TileSize { get; set; } = 116;
     public bool DesktopIntegration { get; set; } = true;
@@ -42,9 +46,9 @@ public sealed class BubbleGroup
     public string? Monitor { get; set; }
     public string? CustomIcon { get; set; }
     public string? Color { get; set; }
-    public double? Opacity { get; set; }
+    public double? Opacity { get; set; } // Legacy override, migrated to the shared setting in schema 6.
     public string? WindowColor { get; set; }
-    public double? WindowOpacity { get; set; }
+    public double? WindowOpacity { get; set; } // Legacy override, migrated to the shared setting in schema 6.
     public List<AppEntry> Items { get; set; } = [];
 }
 

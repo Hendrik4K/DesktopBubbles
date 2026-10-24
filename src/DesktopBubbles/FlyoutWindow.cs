@@ -71,7 +71,7 @@ internal sealed class FlyoutWindow : Window
     {
         surface.Background = Ui.WindowGlass(app.State.Settings, Group); surface.BorderBrush = FrameBrush(); Ui.RefreshRounding(this);
     }
-    private Brush FrameBrush() => !SystemParameters.HighContrast && (Group.WindowOpacity ?? app.State.Settings.WindowOpacity) <= 0 ? Brushes.Transparent : Ui.GlassRim();
+    private Brush FrameBrush() => !SystemParameters.HighContrast && app.State.Settings.WindowOpacity <= 0 ? Brushes.Transparent : Ui.GlassRim();
     private void Place()
     {
         UpdateLayout();
@@ -115,7 +115,7 @@ internal sealed class FlyoutWindow : Window
             };
             var menu = new ContextMenu(); button.ContextMenu = menu;
             menu.Items.Add(Ui.Menu("Starten", () => { try { app.Launch(entry); Close(); } catch (Exception ex) { Ui.Error(ex); } }));
-            menu.Items.Add(Ui.Menu("Aus Gruppe entfernen", () => WithDialog(() => { app.RemoveEntry(Group, entry); _ = Populate(); Place(); })));
+            menu.Items.Add(Ui.Menu("Zurück zum Desktop", () => WithDialog(() => { app.RemoveEntry(Group, entry); _ = Populate(); Place(); })));
             grid.Children.Add(button); buttons[entry.Id] = button;
             _ = SetImage(image, app.Resolve(entry.Target));
         }

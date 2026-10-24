@@ -1,5 +1,11 @@
 # Architektur · 1.4.0
 
+Der neuere Farbeditor ist als ColorPickerPanel direkt in SettingsWindow eingebettet. Ein Entwurf ändert nur Vorschaufarben; erst Anwenden überträgt ihn über AppearancePreferences beziehungsweise AppColor in den Zustand. Der verdeckte Detailbereich bleibt erhalten, ist während der Bearbeitung aber unsichtbar und nicht bedienbar. Reiter-/Gruppenwechsel und Esc verwerfen den Entwurf. Es gibt kein separates Farbauswahlfenster mehr.
+
+ThemePalette im Core erzeugt aus den optionalen LightModeColor/DarkModeColor-Feldern eine Palette mit kontrastabhängiger Textfarbe. Null erhält die ursprünglichen Vorgaben. Ui.ApplyTheme wählt bei Windows-Standard das tatsächlich aktive Profil und setzt WPF-Ressourcen sowie den Glasgrundton. Die Modusfarbkachel verwendet denselben Entwurfseditor mit eigenem Anwenden-Knopf; die Vorschau verändert Ressourcen, aber keine Modell- oder gespeicherten Werte. Abbrechen stellt die gespeicherte Palette wieder her. Übernehmen baut die betroffenen Oberflächen mit der gespeicherten Palette neu auf. Der gemeinsame Farbreset entfernt beide Overrides, ohne den Farbmodus zu ändern.
+
+**Stand 1.5.0:** Schema 6, optionale globale Farbkopplung, gemeinsame Transparenzen, MiniatureSize und vereinfachte Menüs wurden im [Entwicklungsprotokoll](LOCAL-PREVIEW.md) aufgebaut. Die Farblogik liegt im Core in AppearancePreferences; Materialfunktionen lesen die gemeinsamen Transparenzen. GroupActionsMenu erzeugt dieselben Gruppenaktionen für Desktop und Verwaltung. Der Vorschaumaßstab ist lokaler Fensterzustand und verändert keine gespeicherten Größen. Die folgenden Abschnitte beschreiben zusätzlich die historische Grundlage aus 1.4.x.
+
 DesktopBubbles ist eine lokale Windows-Anwendung. Desktop-Bubbles, geöffnetes App-Raster und Verwaltung sind getrennte Fenster. Das Schließen der Verwaltung lässt die Anwendung im Tray weiterlaufen. Die Dateiverwaltung liegt hinter eigenen Anwendungsports.
 
 ## Projekte
