@@ -1,5 +1,19 @@
 # Prüfstand
 
+## Version 1.6.1 · 26.10.2026
+
+Finaler Build ohne Warnungen/Fehler, **130 Kernprüfungen und 124 native Fenster-/Integrationsprüfungen bestanden**. [Core](results/core-tests-v1.6.1.txt), [Windows](results/windows-smoke-v1.6.1.json). Der native Lauf verwendet `AppearanceOnly=true`; Desktop-Klickflächen-/MinimizeAll-Prüfungen und eine echte Windows-Anmeldung gehören nicht zu diesem Lauf. Der vorhandene Nutzer-Autostart wird bei automatischen Tests nicht verändert.
+
+Die acht neuen Kernfälle prüfen den tatsächlich gebundenen Programm- und Datenpfad, abweichende Ausgaben, portablen Modus, fehlende Einträge, Windows-Pfadschreibweise, Groß-/Kleinschreibung der Optionen, Argumentvalidierung und Quoting einer Laufwerkswurzel. Daten bleiben pro Ausgabe getrennt; die Korrektur ändert die Anzeige und die ausdrückliche Autostart-Auswahl. [Übernahme bestehender Gruppen](STARTUP.md).
+
+## Lokale Korrektur 1.6.1-local.1 · 26.10.2026
+
+Build ohne Warnungen/Fehler, **130 Kernprüfungen und 124 native Fenster-/Integrationsprüfungen bestanden**. [Core](results/core-tests-startup-local.txt), [Windows](results/windows-smoke-startup-local.json). Der native Lauf verwendet `AppearanceOnly=true`; die realen Autostart-Einträge werden dabei ausschließlich gelesen.
+
+Acht neue Kernfälle prüfen die Bindung des Windows-Startbefehls an Programmdatei, aktiven Datenordner und portablen Modus, abweichende Ausgaben, fehlende Einträge, Windows-Pfadschreibweise, Groß-/Kleinschreibung der tatsächlich erkannten Optionen, unzulässige Argumente und korrektes Quoting einer Laufwerkswurzel. Die Anzeige übernimmt keinen fremden Eintrag von allein. [Autostart und unterschiedliche lokale Ausgaben](STARTUP.md).
+
+Zusätzlich wurde eine gesicherte lokale Datensammlung samt internen Verknüpfungen in die feste Installation übernommen und bei zwei vollständigen App-Starts mit den Autostart-Argumenten auf erhaltene Gruppeninhalte und Einstellungen geprüft. Das ist kein echter Windows-Neustart und keine vollständige Prüfung des Anmeldeablaufs. Persönliche Daten, Programm-/Datensicherungen und Reparaturberichte verbleiben außerhalb der Quellpakete im ignorierten artifacts-Ordner. Dieser lokale Vorabstand war noch nicht veröffentlicht.
+
 ## Version 1.6.0 · 25.10.2026
 
 Finaler Build ohne Warnungen/Fehler, **122 Kernprüfungen und 124 native Fenster-/Integrationsprüfungen bestanden**. [Core](results/core-tests-v1.6.0.txt), [Windows](results/windows-smoke-v1.6.0.json). Der native Lauf verwendet `AppearanceOnly=true`: Die neun Desktop-Klickflächen-/MinimizeAll-Prüfungen sind ausdrücklich ausgelassen; für 1.5.2 ist weiter unten der damalige vollständige Plattformlauf dokumentiert.

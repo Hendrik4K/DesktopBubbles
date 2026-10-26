@@ -396,13 +396,18 @@ internal sealed class SettingsWindow : Window
         reset.ToolTip = "Setzt App- und alle Bubble-Farben zurück. Transparenz, Größe und Rundung bleiben erhalten.";
         reset.Margin = new Thickness(0); reset.Padding = new Thickness(10, 7, 10, 7); reset.VerticalAlignment = VerticalAlignment.Center;
         Grid.SetColumn(reset, 1); colors.Children.Add(reset); root.Children.Add(colors);
-        void Check(string text, bool value, Action<bool> set)
+        CheckBox Check(string text, bool value, Action<bool> set)
         {
             var box = new CheckBox { Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap }, IsChecked = value };
             box.Click += (_, _) => { bool next = box.IsChecked == true; try { set(next); } catch (Exception ex) { box.IsChecked = !next; Ui.Error(ex); } }; root.Children.Add(box);
+            return box;
         }
-        bool auto = false; try { auto = StartupService.Enabled; } catch (Exception ex) { Log.Write(ex.Message); }
-        Check("Mit Windows starten", auto, value => StartupService.Set(value, app.Portable, app.DataDirectory));
+        bool auto = false, otherStartup = false;
+        try { auto = StartupService.EnabledFor(app.Portable, app.DataDirectory); otherStartup = !auto && StartupService.HasRegistration; } catch (Exception ex) { Log.Write(ex.Message); }
+        var startup = Check("Mit Windows starten", auto, value => StartupService.Set(value, app.Portable, app.DataDirectory));
+        startup.ToolTip = otherStartup
+            ? "Eine andere DesktopBubbles-Ausgabe oder ein anderer Datenordner ist für den Windows-Start eingetragen. Aktiviere diese Option, um stattdessen diese Ausgabe mit ihren aktuellen Gruppen zu starten."
+            : "Startet diese Ausgabe von DesktopBubbles mit genau ihrem aktuellen Datenordner.";
         Check("Desktop-Originale nach Übernahme entfernen", app.State.Settings.MoveDesktopShortcuts, value => { app.State.Settings.MoveDesktopShortcuts = value; app.RequestSave(); });
         Check("Desktop-Zuordnung verwenden", app.State.Settings.DesktopIntegration, value => { app.State.Settings.DesktopIntegration = value; app.Changed(true); });
         Check("Hintergrund weichzeichnen", app.State.Settings.Blur, value => { app.State.Settings.Blur = value; app.ApplySettings(app.State.Settings); });

@@ -100,6 +100,7 @@ try
     ManagedShortcutTests.Run(root, Test, Assert, Reject);
     AppearanceTests.Run(Test, Assert, root);
     DataLocationTests.Run(root, Test, Assert);
+    StartupRegistrationTests.Run(root, Test, Assert, Reject);
 }
 finally { Directory.Delete(root, true); }
 Console.WriteLine($"{passed} bestanden, {failed} fehlgeschlagen.");

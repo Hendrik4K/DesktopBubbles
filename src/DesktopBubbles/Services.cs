@@ -229,11 +229,13 @@ internal sealed class ShellIcons : IDisposable
 internal static class StartupService
 {
     private const string Key = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    public static bool Enabled { get { using var key = Registry.CurrentUser.OpenSubKey(Key); return key?.GetValue("DesktopBubbles") is string; } }
+    private static string? Read() { using var key = Registry.CurrentUser.OpenSubKey(Key); return key?.GetValue("DesktopBubbles") as string; }
+    public static bool HasRegistration => Read() is not null;
+    public static bool EnabledFor(bool portable, string dataDirectory) => StartupRegistration.Matches(Read(), Environment.ProcessPath!, portable, dataDirectory);
     public static void Set(bool enabled, bool portable, string dataDirectory)
     {
         using var key = Registry.CurrentUser.CreateSubKey(Key);
-        if (enabled) key.SetValue("DesktopBubbles", $"\"{Environment.ProcessPath}\" --background --data-dir \"{dataDirectory.TrimEnd(Path.DirectorySeparatorChar)}\"" + (portable ? " --portable" : ""));
+        if (enabled) key.SetValue("DesktopBubbles", StartupRegistration.Command(Environment.ProcessPath!, portable, dataDirectory));
         else key.DeleteValue("DesktopBubbles", false);
     }
 }

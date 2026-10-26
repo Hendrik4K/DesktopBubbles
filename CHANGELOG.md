@@ -1,5 +1,11 @@
 # Änderungen
 
+## 1.6.1 · 26.10.2026
+
+- Die Autostart-Checkbox prüft jetzt die tatsächliche Programmdatei, den Datenordner und den portablen Modus. Ein vorhandener Eintrag einer anderen Ausgabe wird nicht mehr fälschlich als aktiver Autostart dieser Ausgabe angezeigt.
+- Ein Hinweis an der Checkbox erklärt einen abweichenden vorhandenen Eintrag. Erst ausdrückliches Aktivieren übernimmt die aktuell verwendete Ausgabe und deren Gruppen in den Windows-Start.
+- Die Befehlszeilenerzeugung behandelt auch Datenordner an einer Laufwerkswurzel korrekt. Keine automatische Zusammenführung unterschiedlicher Datensammlungen und keine stillschweigende Autostart-Aktivierung.
+
 ## 1.6.0 · 25.10.2026
 
 - Ein Symbol im geöffneten Ordner etwa eine halbe Sekunde gedrückt halten aktiviert den Sortiermodus. Symbole wackeln dezent; bei deaktivierten Animationen bleiben sie ruhig.

@@ -1,4 +1,4 @@
-# DesktopBubbles · 1.6.0
+# DesktopBubbles · 1.6.1
 
 <img src="https://raw.githubusercontent.com/Hendrik4K/DesktopBubbles/v1.5.0/src/DesktopBubbles/Assets/DesktopBubbles.png" width="88" height="88" alt="DesktopBubbles Rauchglas-Logo">
 
@@ -23,6 +23,7 @@ App folders for your Windows 11 desktop: group your shortcuts into a glass bubbl
 
 ## Funktionen
 
+- **Korrigiert in 1.6.1:** „Mit Windows starten“ erkennt die tatsächlich eingetragene Programmdatei und ihren Datenordner. Eine ältere Ausgabe gilt nicht mehr fälschlich als Autostart der aktuellen. [Sicher umsteigen](docs/STARTUP.md).
 - **Neu in 1.6.0: Halten. Wackeln. Tauschen.** Ein Symbol etwa eine halbe Sekunde gedrückt halten und auf ein anderes ziehen. Genau diese beiden tauschen ihre Plätze; die Reihenfolge bleibt gespeichert.
 - Defekte Einträge über **Aus Gruppe löschen** entfernen, auch wenn das Ziel fehlt. Dateien und interne Sicherungskopien bleiben erhalten.
 - Verknüpfungen, Programme, Ordner, Webadressen und installierte Store-Apps in Desktop-Bubbles organisieren.
@@ -86,6 +87,8 @@ Das Zahnrad enthält App-Farbe, Farbmodus und App-Transparenz. Die **quadratisch
 
 Den aktiven Speicher unter **Einstellungen → Datenordner öffnen** ermitteln, dann die bisherige App **im Tray beenden**. Die neue Version in einen eigenen Ordner entpacken und den **vollständigen aktiven Datenordner** übernehmen oder mit --data-dir weiterverwenden. Alternativ eine `.bubbles`-Sicherung importieren. Release-ZIPs enthalten keine Benutzerdaten.
 
+**Beim Wechsel zwischen Ausgaben:** Vorschau und installierte Version können unterschiedliche Datenordner verwenden. Wähle den Stand mit deinen neuesten Gruppen und übernimm diesen vollständig. Aktiviere anschließend in der gewünschten Ausgabe **Mit Windows starten**, damit Windows genau diese Programmdatei mit diesem Datenordner öffnet. Version 1.6.1 zeigt einen abweichenden vorhandenen Eintrag als ausgeschaltet und erklärt ihn im Tooltip. Datenstände werden nicht automatisch zusammengeführt. [Autostart und Datenübernahme](docs/STARTUP.md).
+
 Version 1.5.0 migriert ältere Konfigurationen auf **Schema 6**. Beide Transparenzen gelten danach global; bei alten Einzelwerten wird je Ansicht der wirksame Wert der ersten Gruppe übernommen. Gruppen und Verknüpfungen bleiben erhalten. Migrierte Daten anschließend nicht mit älteren Ausgaben öffnen. Alte Einträge werden beim Upgrade nicht automatisch vom Desktop verschoben.
 
 `portable.flag` bevorzugt `data/groups.json` neben der EXE. Ist dieser Ordner nicht beschreibbar, etwa unter Program Files, übernimmt die App vorhandene Daten nach `%LOCALAPPDATA%\DesktopBubbles\profiles\<Kennung>`. Die Kennung trennt unterschiedliche Ausgangsordner; deren Daten werden nicht vermischt. Einmal umgeleitete Ordner verwenden weiter ihre neuere Kopie. Die Quelle bleibt unverändert. Ohne Flag/`--portable` liegt der Zustand unter `%LOCALAPPDATA%\DesktopBubbles`. Eigene Datenpfade sind über `--data-dir "D:\Meine Einstellungen\DesktopBubbles"` möglich; auch diese werden bei fehlenden Schreibrechten umgeleitet. `--background` startet ohne Verwaltung.
@@ -101,11 +104,11 @@ Vor Löschen der App **Einstellungen → Verknüpfungen auf Desktop zurücklegen
 Windows 11 x64 und .NET-8-SDK beziehungsweise Visual Studio mit .NET-Desktopentwicklung. Keine Drittanbieter-NuGet-Laufzeitabhängigkeiten.
 
 ```powershell
-.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.6.0
+.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.6.1
 # Mit vorhandenem SDK:
-.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.6.0
+.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.6.1
 # Native Tests mit isolierten Testdaten auf interaktivem Windows-Desktop:
-.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.6.0\DesktopBubbles.exe
+.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.6.1\DesktopBubbles.exe
 ```
 
 Build erstellt die portable Ausgabe, führt die Kernprüfungen aus und packt ZIPs sowie SHA-256-Prüfsummen. Native Tests laufen separat. `dotnet test` ist nicht der Einstieg für die ausführbare Konsolensuite. CI baut und prüft den Core auf GitHub Actions. [Architektur](docs/ARCHITECTURE.md), [Entwicklerregeln](docs/DEVELOPMENT.md), [Release](docs/RELEASE.md), [Design-QA](design-qa.md).

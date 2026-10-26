@@ -1,0 +1,645 @@
+{
+  "OS": "Microsoft Windows NT 10.0.26300.0",
+  "Date": "2026-10-26T13:46:17.4544003+01:00",
+  "AppearanceOnly": true,
+  "Checks": [
+    {
+      "Name": "Zwei Desktop-Gruppen erzeugt",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Originalicon geladen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gel\u00F6schtes Ziel erkannt",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gruppen ohne Taskbar/Alt-Tab-Stil",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gruppen ohne Aktivierung",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gruppen ohne Taskbar/Alt-Tab-Stil",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gruppen ohne Aktivierung",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Physische Positionierung",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Tracking startet beim \u00D6ffnen nicht automatisch",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Tracking starten sammelt echte Prozessintervalle",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Tracking stoppen h\u00E4lt Werte fest und beendet Timer",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Erneuter Tracking-Start beginnt eine neue Messung",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Farbauswahl sitzt im Verwaltungsfenster und verdeckt die anderen Regler",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Farbkreis und HEX-Eingabe bleiben innerhalb der Ansicht",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Ung\u00FCltige HEX-Eingabe deaktiviert \u00DCbernahme und erh\u00E4lt den Entwurf",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Farbkreis unterst\u00FCtzt Wei\u00DF",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "S\u00E4ttigungsregler und Farbkreis bleiben synchron",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Helligkeit erlaubt Schwarz",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Eine Farb-Vorschau ver\u00E4ndert weder Modell noch gespeicherte Farbe",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Eine freie Farbe gilt gemeinsam f\u00FCr Miniatur und Ordner",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Anwenden bringt das normale Layout ohne Regler\u00E4nderung zur\u00FCck",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Esc verwirft nur den Farbentwurf und l\u00E4sst die Verwaltung ge\u00F6ffnet",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Verwaltung verwendet feste dezente Ecken statt eigenem Rundungsregler",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Zahnrad zeigt App-Darstellung und allgemeine Checkboxen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Einstellungen verbergen die Ansichtsreiter",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Zur\u00FCck f\u00FChrt zur Miniatur mit beiden Ansichtsreitern",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Erneuter Zahnrad-Klick verl\u00E4sst die Einstellungen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Farbmodus neben App-Farbe schaltet die Anwendung dunkel",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Modusfarbe zeigt einen Entwurf ohne gespeicherte \u00C4nderung",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Abbrechen stellt die dunkle Standardpalette wieder her",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Ung\u00FCltige Modusfarbe verhindert Anwenden",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Modus-Vorschau aktualisiert Editorfl\u00E4che und Text gemeinsam",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Dunkle Modusfarbe f\u00E4rbt Steuerelemente und bleibt von App-Farbe und Hell getrennt",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Helle Modusfarbe wird separat \u00FCbernommen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Windows-Standard verwendet das aktive Farbprofil",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Deckkraft-Vorschau ver\u00E4ndert Hintergrund-Alpha ohne Speichern oder Abdunkeln",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Deckkraft-Abbrechen stellt die bisherige Palette wieder her",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Deckkraft-Anwenden speichert ausschlie\u00DFlich das aktive Modusprofil",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Zahnrad-Transparenz ver\u00E4ndert nur die Anwendung",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Einstellungen ohne Ordner-Vorschau oder Rundungsregler",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Schmale Scrollbar bleibt bis zu den Werkzeugen bedienbar",
+      "Passed": true,
+      "Note": "Trefferbreite=10, sichtbarer Griff=4"
+    },
+    {
+      "Name": "Einstellungen stehen unten rechts neben Tracking",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Farbkopplung \u00FCbernimmt die ausgew\u00E4hlte Bubble f\u00FCr alle und h\u00E4lt die App separat",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gekoppelte Farbauswahl erreicht auch andere Bubbles",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Ohne Kopplung bleibt eine neue Farbe auf die gew\u00E4hlte Bubble begrenzt",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Miniatur enth\u00E4lt genau eine Glaswahl zwischen Farbe und Vorschau",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gemeinsame Rundung skaliert Miniatur und Ordner proportional",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Ordnertransparenz gilt gemeinsam und unabh\u00E4ngig von App und Miniatur",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gr\u00F6\u00DFenregler ver\u00E4ndert die Vorschau direkt im Ma\u00DFstab 1 zu 3",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Originalvorschau hat echte Ordnerma\u00DFe ohne Verkleinerung",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Originalvorschau l\u00E4sst sich bis zu den verdeckten R\u00E4ndern scrollen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Vorschau l\u00E4sst sich ohne \u00C4nderung der echten Ordnergr\u00F6\u00DFe zur\u00FCck auf 1 zu 3 schalten",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Live-Vorschau entspricht der echten Rasterh\u00F6he und -breite",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Window-Gr\u00F6\u00DFe skaliert das echte Raster und seine Icons",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gr\u00F6\u00DFe und Transparenz gelten auch f\u00FCr den anderen Ordner",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Window rundet auch die \u00E4u\u00DFere Windows-Fl\u00E4che",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Ordner verwendet eine transparente Alpha-Fl\u00E4che ohne DWM-Hintergrundrechteck",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Ordner-Au\u00DFenecke ist tats\u00E4chlich transparent gerendert",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Klar und Matt unterscheiden sich sichtbar im gerenderten Material",
+      "Passed": true,
+      "Note": "Klar-Alpha=77, Matt-Alpha=160"
+    },
+    {
+      "Name": "100 Prozent Transparenz entfernt Ordnerfl\u00E4che und Rahmen bei sichtbaren Icons",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Miniatur bietet gemeinsamen Rundungsregler",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Miniaturtransparenz gilt f\u00FCr alle und l\u00E4sst den Ordnerwert unver\u00E4ndert",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Miniaturtransparenz bis 100 Prozent ohne \u00C4nderung am Ordner",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Miniatur-Fl\u00E4che wird bei 100 Prozent tats\u00E4chlich transparent",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Miniatur-Gr\u00F6\u00DFenregler skaliert alle Desktop-Bubbles und ihre Rundung",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Verwaltung geschlossen, Desktop-Bubbles bleiben sichtbar",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Flyout \u00F6ffnet",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Ge\u00F6ffnetes Raster enth\u00E4lt keinerlei sichtbaren Text",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Kacheln behalten zug\u00E4ngliche App-Namen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Mini-Bubble w\u00E4hrend ge\u00F6ffnetem Raster ausgeblendet",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Raster mittig \u00FCber Bubble und im Arbeitsbereich",
+      "Passed": true,
+      "Note": "Anchor=PixelRect { X = 2210, Y = 150, Width = 104, Height = 116, Right = 2314, Bottom = 266 }; Popup=PixelRect { X = 2064, Y = 69, Width = 396, Height = 278, Right = 2460, Bottom = 347 }; erwartet=(2064, 69); Work=PixelRect { X = 0, Y = 0, Width = 2560, Height = 1392, Right = 2560, Bottom = 1392 }"
+    },
+    {
+      "Name": "Flyout ohne Taskbar",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gedr\u00FCckthalten startet zun\u00E4chst nur den 500-ms-Timer",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Kurzer Klick aktiviert keinen Sortiermodus und bleibt startf\u00E4hig",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Langes Halten aktiviert Sortieren und unterdr\u00FCckt App-Start",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Sortiermodus animiert nur Symbole und beachtet Windows-Bewegungseinstellungen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Im Sortiermodus greift der n\u00E4chste Druck sofort ein Symbol",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Ablegen tauscht nur die beiden Pl\u00E4tze und aktualisiert die gespeicherte Reihenfolge",
+      "Passed": true,
+      "Note": "Ist: Microsoft Learn, Explorer, Windows, Editor; erwartet: Microsoft Learn, Explorer, Windows, Editor"
+    },
+    {
+      "Name": "Nach Platztausch bleibt Sortieren aktiv und die Anzahl gleich",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Loslassen au\u00DFerhalb des Ordners bricht den Griff ohne Platztausch ab",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Esc beendet zuerst das Sortieren und stoppt die Wackelanimationen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Mini-Bubble nach Schlie\u00DFen wieder sichtbar",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Fokuswechsel schlie\u00DFt Flyout",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "60 \u00D6ffnen/Schlie\u00DFen-Zyklen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Keine unbeschr\u00E4nkt steigenden Handles im Kurztest",
+      "Passed": true,
+      "Note": "vorher=946, nachher=946"
+    },
+    {
+      "Name": "Managed-Speicher nach Zyklen",
+      "Passed": true,
+      "Note": "Delta=-3812416 Bytes"
+    },
+    {
+      "Name": ".lnk-Ziel aufgel\u00F6st",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Originalverkn\u00FCpfung erhalten",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "App-Name trotz leerem Verkn\u00FCpfungsnamen ermittelt",
+      "Passed": true,
+      "Note": "Editor"
+    },
+    {
+      "Name": "Unbenannte Originalverkn\u00FCpfung erhalten",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": ".lnk startet Ziel mit Originalargumenten",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Start ver\u00E4ndert .lnk nicht",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Herausziehen verwendet echte unabh\u00E4ngige .lnk-Kopie",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Windows-FileDrop enth\u00E4lt ausschlie\u00DFlich die Exportkopie",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Natives CF_HDROP rendert die Exportkopie ohne Objekt-Deserialisierung",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Interner Drag-Token wird als native Bytes \u00FCbertragen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Drag-Abbruch best\u00E4tigt keine Entfernung",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Exportbest\u00E4tigung pr\u00FCft tats\u00E4chliche Desktop-Datei",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Ver\u00E4nderte Zieldatei best\u00E4tigt keinen Export",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Programm wird als .lnk exportiert, nicht als EXE verschoben",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Desktop-R\u00FCckgabe erzeugt eine funktionsf\u00E4hige Programmverkn\u00FCpfung",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Wiederholte R\u00FCckgabe verwendet dieselbe gepr\u00FCfte Kopie",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Desktop-R\u00FCckgabe \u00FCberschreibt keine gleichnamige Datei",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Aus Gruppe entfernen schreibt URL vor dem Entfernen auf den Desktop",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Fehlgeschlagene Desktop-R\u00FCckgabe erh\u00E4lt den Gruppeneintrag",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Symbolmen\u00FC bietet Starten, Zur\u00FCck zum Desktop und Aus Gruppe l\u00F6schen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Defekter Eintrag l\u00E4sst sich \u00FCber das echte Symbolmen\u00FC dauerhaft l\u00F6schen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Echte schreibgesch\u00FCtzte Konfiguration wird ins Benutzerprofil umgeleitet",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "L\u00F6schen nach Speicherumleitung bleibt nach Neustart gespeichert",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Neustart kopiert den entfernten Eintrag nicht aus der gesch\u00FCtzten Quelle zur\u00FCck",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Native Copy-Pr\u00FCfung erh\u00E4lt Ziel, Argumente und Arbeitsverzeichnis",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Native \u00DCbernahme entfernt genau das gesicherte Desktop-Original",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gespeicherte .lnk beh\u00E4lt alle Bytes",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "\u00DCbernommene .lnk startet nach Entfernen des Originals",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Native Wiederherstellung erh\u00E4lt Originalbytes",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Gesperrtes Desktop-Original bleibt bei nativer \u00DCbernahme erhalten",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Native L\u00F6schung lehnt ge\u00E4nderten Hash ab",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": ".url wird gepr\u00FCft und \u00FCbernommen, ohne sie zu \u00F6ffnen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Link au\u00DFerhalb des pers\u00F6nlichen Desktops wird unabh\u00E4ngig kopiert",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Bundle enth\u00E4lt nutzbare .lnk/.url ohne Desktop-Eigentum",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Bubble-Name ausblendbar, interner Name bleibt erhalten",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Installierte Apps gelesen",
+      "Passed": true,
+      "Note": "212 Apps"
+    },
+    {
+      "Name": "Store-Icon abgerufen",
+      "Passed": true,
+      "Note": null
+    },
+    {
+      "Name": "Persistenz nach UI-\u00C4nderungen",
+      "Passed": true,
+      "Note": null
+    }
+  ],
+  "Integration": "Desktop-Modus \u00B7 eigenes Bubble-Fenster",
+  "EmbeddedGroups": 2,
+  "OpenMedianMs": 44.8403,
+  "OpenMaxMs": 62.7247,
+  "HandlesBeforeCycles": 946,
+  "HandlesAfterCycles": 946,
+  "ManagedDeltaBytes": -3812416,
+  "ResourceReport": "D:\\Dokumente\\ChatGPT\\OrdnerBubble\\artifacts\\windows-test-20261026-134548\\diagnostics-20261026-134617-449.json",
+  "NotTested": [
+    "Echter Explorer-Neustart",
+    "Win\u002BD mit Benutzerinteraktion",
+    "Mehrere Monitore und gemischte DPI",
+    "Gaming / GPU / Frametimes",
+    "Beliebige Drittanbieter-Programme / UAC / Store-App-Start",
+    "Drag \u0026 Drop mit physischer Maus",
+    "Anmeldung / Autostart",
+    "Desktop-Klickfl\u00E4che unter fremden Fenstern: im Aussehen-Test ausdr\u00FCcklich \u00FCbersprungen"
+  ]
+}
