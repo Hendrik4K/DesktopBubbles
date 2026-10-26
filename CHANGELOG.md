@@ -1,5 +1,17 @@
 # Änderungen
 
+## 1.7.0 · 27.10.2026
+
+- Windows-Installer mit Startmenüeintrag, optionaler Desktop-Verknüpfung und Deinstallation unter dem Benutzerkonto. Updates sichern vorhandene Daten geprüft; Deinstallation erhält persönliche Daten und Sicherungen. Eine separat baubare UI-Vorschau enthält kein App-Paket und führt keine Installation aus. Details: docs/INSTALLER.md.
+- Installer-Prüfungen laufen zusätzlich in GitHub Actions. Eine laufende Ziel-App oder gesperrte Programmdatei blockiert das Update. Der Installer erzwingt kein Beenden und aktiviert keinen Autostart.
+
+- Eigene Option **Milchglas für Ordner** im Reiter Ordner, unabhängig von Miniaturfarbe und gemeinsamem Klar-/Matt-Stil.
+- Kompakter Milchglas-Knopf links neben dem Vorschau-Maßstab, aktiv grün. Im Milchglasmodus entfällt die Transparenzzeile; die Tönung ist fest eingestellt. Ausschalten stellt den normalen Stil und den Transparenzregler mit seinem bisherigen Wert wieder her.
+- Der rechteckige Windows-Acrylic-Hintergrund entfällt. Milchglas, Tönung und Rand teilen eine einzige gerundete Alpha-Oberfläche. Der Hintergrund wird beim Öffnen einmal im Arbeitsspeicher übernommen und weichgezeichnet; Änderungen dahinter erscheinen beim nächsten Öffnen. Keine laufenden Aufnahmen und keine Speicherung der Aufnahme durch die App.
+- Rundung und alle vier transparenten Glasecken folgen der gemeinsamen Geometrie, auch bei Größenänderungen. Bei deaktivierter Windows-Transparenz oder nicht verfügbarer Aufnahme bleibt eine gerundete neutrale Materialfläche.
+- Ohne Milchglas bleiben 100 Prozent Transparenz möglich. Normale und Milchglas-Ordner verwenden dieselbe gerundete Alpha-Fläche.
+- Größe und Rundung bleiben gemeinsame Werte. Bestehende Konfigurationen starten mit deaktiviertem Milchglas; Schema bleibt 6. Details: docs/FROSTED-FOLDERS.md.
+
 ## 1.6.1 · 26.10.2026
 
 - Die Autostart-Checkbox prüft jetzt die tatsächliche Programmdatei, den Datenordner und den portablen Modus. Ein vorhandener Eintrag einer anderen Ausgabe wird nicht mehr fälschlich als aktiver Autostart dieser Ausgabe angezeigt.

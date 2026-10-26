@@ -115,6 +115,7 @@ public sealed class StateStore(string path)
         s.DarkModeOpacity = double.IsFinite(s.DarkModeOpacity) ? Math.Clamp(s.DarkModeOpacity, 0, 1) : 1;
         s.WindowColor = s.BubbleColor;
         s.WindowOpacity = double.IsFinite(s.WindowOpacity) ? Math.Clamp(s.WindowOpacity, 0, .95) : .35;
+        s.FrostedFolderOpacity = double.IsFinite(s.FrostedFolderOpacity) ? Math.Clamp(s.FrostedFolderOpacity, 0, 1) : .55;
         s.AppCornerRadius = 8;
         s.CornerRoundness = double.IsFinite(s.CornerRoundness) ? Math.Clamp(s.CornerRoundness, 0, 50) : 14;
         s.AppOpacity = double.IsFinite(s.AppOpacity) ? Math.Clamp(s.AppOpacity, .2, .95) : .65;

@@ -4,6 +4,48 @@ internal static class AppearanceTests
 {
     public static void Run(Action<string, Action> test, Action<bool> assert, string fixtureRoot)
     {
+        test("Ältere Einstellungen behalten normalen Ordnerstil ohne Milchglas", () =>
+        {
+            string path = Path.Combine(fixtureRoot, "before-frost.json");
+            File.WriteAllText(path, "{\"Version\":6,\"Settings\":{\"WindowOpacity\":0.27},\"Groups\":[]}");
+            var settings = StateStore.Read(path).Settings;
+            assert(!settings.FrostedFolders && settings.FrostedFolderOpacity == .55 && FolderAppearance.Opacity(settings) == .27);
+        });
+        test("Milchglas sperrt Transparenzänderungen und stellt normalen Ordnerwert wieder her", () =>
+        {
+            var settings = new BubbleSettings { Opacity = .42, WindowOpacity = .27, FrostedFolders = true };
+            FolderAppearance.SetTransparency(settings, 80);
+            assert(settings.FrostedFolderOpacity == .55 && settings.Opacity == .42 && settings.WindowOpacity == .27);
+            settings.FrostedFolders = false; assert(FolderAppearance.Opacity(settings) == .27);
+            FolderAppearance.SetTransparency(settings, 60); settings.FrostedFolders = true;
+            assert(Math.Abs(settings.WindowOpacity - .4) < .0001 && FolderAppearance.Opacity(settings) == FolderAppearance.FrostedOpacity);
+        });
+        test("Milchglas und beide Transparenzen bleiben nach Speichern und Umschalten erhalten", () =>
+        {
+            string path = Path.Combine(fixtureRoot, "frost-roundtrip.json");
+            var state = new BubbleState { Settings = new BubbleSettings { FrostedFolders = true, FrostedFolderOpacity = .8, WindowOpacity = .27 } };
+            new StateStore(path).Save(state); var loaded = StateStore.Read(path);
+            assert(loaded.Settings.FrostedFolders && loaded.Settings.FrostedFolderOpacity == .8 && loaded.Settings.WindowOpacity == .27 && loaded.Version == 6);
+            loaded.Settings.FrostedFolders = false; new StateStore(path).Save(loaded);
+            assert(!StateStore.Read(path).Settings.FrostedFolders && StateStore.Read(path).Settings.FrostedFolderOpacity == .8);
+        });
+        test("Feste Milchglasfläche bleibt unabhängig von alten Transparenzwerten sichtbar", () =>
+        {
+            var state = new BubbleState { Settings = new BubbleSettings { FrostedFolders = true } };
+            state.Settings.FrostedFolderOpacity = 0;
+            FolderAppearance.SetTransparency(state.Settings, 100); StateStore.Validate(state); assert(FolderAppearance.Opacity(state.Settings) == .55);
+            state.Settings.FrostedFolderOpacity = 1;
+            FolderAppearance.SetTransparency(state.Settings, 0); StateStore.Validate(state); assert(FolderAppearance.Opacity(state.Settings) == .55);
+            state.Settings.FrostedFolderOpacity = double.NaN; StateStore.Validate(state); assert(state.Settings.FrostedFolderOpacity == .55);
+            state.Settings.FrostedFolderOpacity = 3; StateStore.Validate(state); assert(state.Settings.FrostedFolderOpacity == 1);
+        });
+        test("Farbrücksetzung und gemeinsame Miniaturfarbe erhalten die eigenen Milchglaswerte", () =>
+        {
+            var state = new BubbleState { Groups = [new BubbleGroup()], Settings = new BubbleSettings { FrostedFolders = true, FrostedFolderOpacity = .73 } };
+            AppearancePreferences.ResetColors(state);
+            AppearancePreferences.SetColor(state, state.Groups[0], "#FF0000");
+            assert(state.Settings.FrostedFolders && state.Settings.FrostedFolderOpacity == .73);
+        });
         test("Modus-Deckkraft bleibt getrennt, wird begrenzt und beeinflusst nur Hintergrund-Alpha", () =>
         {
             var state = new BubbleState { Settings = new BubbleSettings { LightModeColor = "#FFEEDD", LightModeOpacity = .4, DarkModeOpacity = 1 } };

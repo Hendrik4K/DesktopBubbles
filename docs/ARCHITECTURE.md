@@ -1,4 +1,8 @@
-# Architektur · 1.5.2
+# Architektur · 1.7.0
+
+**Neu in 1.7.0:** Der Installer ist ein separates Buildartefakt auf Basis von Inno Setup; er gehört nicht zum laufenden WPF-Prozess. Gemeinsame Skriptquelle, eine ohne Installationsaktionen kompilierte UI-Vorschau und feste Test-Fixture-Konstanten trennen echte Einrichtung und sichere Tests. Nutzdaten werden vor Updates kopiert und geprüft, nicht durch das Programmpaket ersetzt. [Installation und Grenzen](INSTALLER.md).
+
+`FolderFrost` übernimmt beim Öffnen einmal den kleinen physischen Ordnerhintergrund in den Arbeitsspeicher, weichzeichnet ihn und verbindet ihn mit der neutralen Tönung zu einem WPF-Hintergrundpinsel. Alle Ordner verwenden dieselbe gerundete Alpha-Fläche ohne separaten DWM-Systemhintergrund. Die Aufnahme wird beim Schließen freigegeben; es gibt keinen Aufnahme-Timer. `FolderAppearance` kapselt normale gegenüber fester Milchglas-Deckkraft, ohne WPF-Abhängigkeit. [Milchglas](FROSTED-FOLDERS.md).
 
 DataLocation prüft beim Start tatsächliche Schreib-/Löschrechte und die Zustandsdateien. Fehlende Rechte wählen einen nach dem Ausgangspfad getrennten Benutzerprofil-Speicher. Erst nach Erwerb dessen Prozess-Mutex kopiert Prepare Konfigurationen, Sicherungen und Verknüpfungen inklusive Journale in ein Staging-Verzeichnis. Hashes, unveränderter Quellbestand und lesbare Konfiguration beziehungsweise Backup werden geprüft; Directory.Move veröffentlicht die Kopie ohne Überschreiben. Herkunftsmarker verhindern Verwechslungen und erneuten Import alter Daten. Reparse Points werden nicht verfolgt. Die Quelle bleibt unverändert. StateStore verwendet eindeutige temporäre Dateien für atomaren Ersatz. LightModeOpacity/DarkModeOpacity ändern nur Hintergrund-Alpha der Palette; Text sowie App-/Bubble-Materialstärke bleiben unabhängig.
 

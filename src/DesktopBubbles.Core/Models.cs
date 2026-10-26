@@ -21,6 +21,8 @@ public sealed class BubbleSettings
     public double AppOpacity { get; set; } = .65;
     public string WindowColor { get; set; } = "#7B6BFF";
     public double WindowOpacity { get; set; } = .35;
+    public bool FrostedFolders { get; set; }
+    public double FrostedFolderOpacity { get; set; } = .55;
     public double AppCornerRadius { get; set; } = 8;
     public double BubbleCornerRadius { get; set; } = 20;
     public double WindowCornerRadius { get; set; } = 40;

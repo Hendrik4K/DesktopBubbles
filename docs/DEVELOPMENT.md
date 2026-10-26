@@ -6,6 +6,7 @@ Neue Arbeit in getrenntem `--data-dir` testen. Der Benutzerdesktop ist keine Tes
 
 ## Erweiterungsregeln
 
+- Installeränderungen mit `tools/Test-Installer.ps1` in einer frisch kompilierten Fixture prüfen. Produktions-Setup und Fixture haben unterschiedliche feste Ziele; weder echte Nutzdaten noch echte Deinstallationsregistrierung als Testfixture verwenden. Inno Setup 6 erzeugt einen 32-Bit-Installer für den x64-Payload; die nativen Pascal-DLL-Signaturen und der gepinnte Compiler müssen dazu passen. Pfad-/Mutex-Prüfungen benötigen Unicode-Großschreibung und UTF-8, nicht die reine ASCII-Funktion Uppercase.
 - Neue Zieltypen im Core validieren und im Windows-Adapter auflösen/starten. Keine Befehlszeilen aus Benutzertext zusammensetzen. Hinzufügen/Import führen nichts aus.
 - Dateiabläufe über `ShortcutManager` und Ports. Eine View darf keine Desktop-Originale löschen. Erst eigene Kopie und persistierter Verweis, dann Inhaltsprüfung und Entfernung.
 - Unbekannte Schema-Versionen nicht still akzeptieren. Migrationen mit Fixtures prüfen, Backups erhalten. Neue Assettypen benötigen begrenzte Resolver und eine Export-/Importpolitik.

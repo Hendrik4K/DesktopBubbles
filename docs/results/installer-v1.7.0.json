@@ -1,0 +1,87 @@
+{
+  "Checks": [
+    {
+      "Passed": true,
+      "Name": "Vorschau stoppt vor der Installation, auch im unbeaufsichtigten Modus"
+    },
+    {
+      "Passed": true,
+      "Name": "Vorschau enthält kein App-Paket"
+    },
+    {
+      "Passed": true,
+      "Name": "Vorschau registriert keine Deinstallation"
+    },
+    {
+      "Passed": true,
+      "Name": "Frische Installation im isolierten Testordner"
+    },
+    {
+      "Passed": true,
+      "Name": "Installierte Programmdatei entspricht dem Payload"
+    },
+    {
+      "Passed": true,
+      "Name": "Startmenü-Verknüpfung verwendet den richtigen Programm- und Datenort"
+    },
+    {
+      "Passed": true,
+      "Name": "Gesperrte Programmdatei blockiert Update auch ohne Datenordner-Mutex"
+    },
+    {
+      "Passed": true,
+      "Name": "Programmdatei-Sperre greift vor der Datensicherung"
+    },
+    {
+      "Passed": true,
+      "Name": "Laufende Ziel-App blockiert Update ohne Beenden zu erzwingen"
+    },
+    {
+      "Passed": true,
+      "Name": "Blockiertes Update verändert keine Gruppen oder Verknüpfungen"
+    },
+    {
+      "Passed": true,
+      "Name": "Update mit vorhandenen Gruppen erfolgreich"
+    },
+    {
+      "Passed": true,
+      "Name": "Update erhält vollständige Daten bytegenau"
+    },
+    {
+      "Passed": true,
+      "Name": "Geprüfte Sicherung enthält auch Verknüpfungen und Journale"
+    },
+    {
+      "Passed": true,
+      "Name": "Nicht lesbare Datensicherung verhindert Installation"
+    },
+    {
+      "Passed": true,
+      "Name": "Fehlgeschlagene Sicherung lässt Originaldaten unverändert"
+    },
+    {
+      "Passed": true,
+      "Name": "Deinstallation der isolierten Testinstallation erfolgreich"
+    },
+    {
+      "Passed": true,
+      "Name": "Deinstallation entfernt das Programm und erhält persönliche Daten"
+    },
+    {
+      "Passed": true,
+      "Name": "Deinstallation erhält die externe Datensicherung"
+    },
+    {
+      "Passed": true,
+      "Name": "Echte Nutzergruppen und Programmdatei unverändert"
+    },
+    {
+      "Passed": true,
+      "Name": "Echter Autostart und Installationsregistrierung unverändert"
+    }
+  ],
+  "FixtureRoot": "artifacts/installer-release-check-ä",
+  "RealInstallChanged": false,
+  "ProductionInstallExecuted": false
+}

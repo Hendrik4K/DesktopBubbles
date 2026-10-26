@@ -1,5 +1,15 @@
 # Prüfstand
 
+## Version 1.7.0 · 27.10.2026
+
+**20 isolierte Installer-Prüfungen bestanden.** [Rohbericht](results/installer-v1.7.0.json), [Bedienung und Grenzen](INSTALLER.md). Geprüft: installationsfreie Vorschau auch bei unbeaufsichtigtem Start, Erstinstallation, Startmenüziel und Portable-Datenort, Sperre bei laufender Ziel-App auf einem Unicode-Pfad sowie bei gesperrter Programmdatei ohne passenden Datenordner-Mutex, Update mit bytegleichem Erhalt von Gruppen/Links/Journal, geprüfte externe Sicherung, Abbruch bei gesperrter Datendatei sowie Datenerhalt nach Deinstallation. Die echte Nutzerinstallation wurde nur gelesen; Programmdatei, Gruppen und Autostart blieben unverändert. Der echte Installer wurde nicht auf die Nutzerinstallation angewendet. UI mit eigener Fensteraufnahme in dunklem Windows-Design geprüft. Installer-Build und isolierte Prüfungen werden zusätzlich im Windows-CI-Workflow ausgeführt.
+
+### App und Milchglas
+
+Build ohne Warnungen/Fehler, **135 Kernprüfungen und 142 native Fenster-/Integrationsprüfungen bestanden**. [Core](results/core-tests-v1.7.0.txt), [Windows](results/windows-smoke-v1.7.0.json). Native Prüfung mit `AppearanceOnly=true`; die bestehende Nutzerinstallation und deren Registrierung bleiben außerhalb der Fixture.
+
+Neue Fälle prüfen ältere Konfigurationen ohne Milchglasfelder, feste Tönung unabhängig vom früheren Deckkraftwert, unveränderte normale Transparenz, Umschalten und Persistenz. Der native Test bedient den Milchglas-Knopf links vom Maßstab und prüft Aktivfarbe, ausgeblendete Transparenzzeile und Wiederherstellung, unabhängige Tönung, tatsächlich verfügbare Hintergrundübernahme, ausdrücklich abgeschalteten DWM-Systemhintergrund, Alpha-Fensterstil, Blur einer synthetischen Schwarzweißkante, transparente Glaspixel an allen vier Ecken, starke/Null-Rundung, Größenänderung und Wiederherstellung nach simulierter verlorener Kontur. Zwölf zusätzliche Öffnen/Schließen-Zyklen prüfen begrenzte Handle-Zahl. Eine Aufnahme erfolgt pro Öffnen; keine laufenden Aufnahmen oder Speicherung von Desktopbildern durch die App. Gespeicherte Milchglas-Testbilder verwenden synthetische Hintergrundpixel. Reale gemischte DPI-/Mehrmonitor-Hardware bleibt manuell zu prüfen. [Bedienung und Grenzen](FROSTED-FOLDERS.md).
+
 ## Version 1.6.1 · 26.10.2026
 
 Finaler Build ohne Warnungen/Fehler, **130 Kernprüfungen und 124 native Fenster-/Integrationsprüfungen bestanden**. [Core](results/core-tests-v1.6.1.txt), [Windows](results/windows-smoke-v1.6.1.json). Der native Lauf verwendet `AppearanceOnly=true`; Desktop-Klickflächen-/MinimizeAll-Prüfungen und eine echte Windows-Anmeldung gehören nicht zu diesem Lauf. Der vorhandene Nutzer-Autostart wird bei automatischen Tests nicht verändert.

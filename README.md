@@ -1,6 +1,6 @@
-# DesktopBubbles · 1.6.1
+# DesktopBubbles · 1.7.0
 
-<img src="https://raw.githubusercontent.com/Hendrik4K/DesktopBubbles/v1.5.0/src/DesktopBubbles/Assets/DesktopBubbles.png" width="88" height="88" alt="DesktopBubbles Rauchglas-Logo">
+<img src="https://raw.githubusercontent.com/Hendrik4K/DesktopBubbles/v1.7.0/src/DesktopBubbles/Assets/DesktopBubbles.png" width="88" height="88" alt="DesktopBubbles Rauchglas-Logo">
 
 **Many shortcuts. One bubble. More room for your desktop. ✨**
 
@@ -8,7 +8,7 @@ App folders for your Windows 11 desktop: group your shortcuts into a glass bubbl
 
 **Viele Launcher. Eine Bubble. Mehr Platz auf deinem Desktop.** Steam, Epic, Battle.net und Co. müssen nicht einzeln den Desktop belegen. Pack sie in einen App-Ordner, öffne ihn mit einem Klick und wähle, was du starten möchtest. Danach bleibt wieder die kleine Miniatur. Dein Hintergrund bekommt seinen Platz zurück. 🚀
 
-**[Windows 11 x64 herunterladen](https://github.com/Hendrik4K/DesktopBubbles/releases/latest)** · [Änderungen](CHANGELOG.md) · [MIT-Lizenz](LICENSE) · [Fehler melden](https://github.com/Hendrik4K/DesktopBubbles/issues)
+**[Windows-11-Installer herunterladen](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.7.0/DesktopBubbles-Setup-1.7.0.exe)** · [Portable ZIP](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.7.0/DesktopBubbles-win-x64-v1.7.0.zip) · [Release](https://github.com/Hendrik4K/DesktopBubbles/releases/latest) · [MIT-Lizenz](LICENSE) · [Fehler melden](https://github.com/Hendrik4K/DesktopBubbles/issues)
 
 <table>
   <tr>
@@ -23,6 +23,8 @@ App folders for your Windows 11 desktop: group your shortcuts into a glass bubbl
 
 ## Funktionen
 
+- **Neu in 1.7.0: installieren und loslegen.** Benutzer-Installer mit Startmenüeintrag, optionaler Desktop-Verknüpfung und geprüfter Datensicherung bei Updates. Persönliche Daten bleiben bei der Deinstallation erhalten.
+- **Milchglas für Ordner:** eigener zuschaltbarer Effekt mit sauberen runden Ecken. Der Hintergrund wird beim Öffnen einmal weichgezeichnet übernommen; die Symbole bleiben scharf.
 - **Korrigiert in 1.6.1:** „Mit Windows starten“ erkennt die tatsächlich eingetragene Programmdatei und ihren Datenordner. Eine ältere Ausgabe gilt nicht mehr fälschlich als Autostart der aktuellen. [Sicher umsteigen](docs/STARTUP.md).
 - **Neu in 1.6.0: Halten. Wackeln. Tauschen.** Ein Symbol etwa eine halbe Sekunde gedrückt halten und auf ein anderes ziehen. Genau diese beiden tauschen ihre Plätze; die Reihenfolge bleibt gespeichert.
 - Defekte Einträge über **Aus Gruppe löschen** entfernen, auch wenn das Ziel fehlt. Dateien und interne Sicherungskopien bleiben erhalten.
@@ -38,14 +40,18 @@ C# / WPF / Win32, ohne Browser-Runtime oder Administratorrechte. Keine Konten, T
 
 ## Loslegen
 
-1. Das portable ZIP von der [Release-Seite](https://github.com/Hendrik4K/DesktopBubbles/releases/latest) herunterladen und vollständig in einen beschreibbaren Ordner entpacken. Die .NET-Desktop-Laufzeit ist enthalten.
-2. **DesktopBubbles.exe** starten und mit **Neu** eine Bubble erstellen.
+1. Den Installer von der [Release-Seite](https://github.com/Hendrik4K/DesktopBubbles/releases/latest) starten. Er installiert für dein Benutzerkonto und legt **DesktopBubbles** im Startmenü an. Die .NET-Desktop-Laufzeit ist enthalten.
+2. **DesktopBubbles** über die Windows-Suche starten und mit **Neu** eine Bubble erstellen. Rechtsklick auf den Suchtreffer → **An Start anheften** funktioniert wie bei anderen Windows-Apps.
 3. Verknüpfungen auf die Miniatur, ins geöffnete Raster oder auf die Gruppenzeile ziehen.
 4. Miniatur anklicken und eine App auswählen. Zum Positionieren die geschlossene Bubble ziehen.
 
 Das **X** schließt die Verwaltung; die Desktop-Bubbles bleiben aktiv. Ein Doppelklick auf das Tray-Symbol öffnet die Verwaltung. **Tray → Beenden** beendet die App vollständig. Das Tray-Menü enthält außerdem Version, Repository und Desktop-Verbindung erneuern.
 
-Die portable Ausgabe ist nicht signiert und enthält keinen Installer oder automatischen Updater. **Desktop-Anbindung ist experimentell**: normale Fenster dürfen die Bubbles überdecken. [Prüfstand und Plattformgrenzen](docs/TESTS.md).
+Alternativ das portable ZIP vollständig in einen beschreibbaren Ordner entpacken und **DesktopBubbles.exe** starten. Es richtet keinen Startmenüeintrag automatisch ein.
+
+**Bereits portable unterwegs?** Ein Installer-Update erhält vorhandene Daten unter `%LOCALAPPDATA%\Programs\DesktopBubbles\data`. Bei Daten an einem anderen Ort zuerst in der bisherigen App exportieren und den vollständigen Datenordner sichern; unterschiedliche portable Datenstände werden nicht automatisch zusammengeführt. [Sicher umsteigen](docs/STARTUP.md), [Installer und Datenerhalt](docs/INSTALLER.md).
+
+Setup und App sind nicht signiert; Windows kann einen Hinweis auf einen unbekannten Herausgeber anzeigen. Es gibt keinen automatischen Updater. **Desktop-Anbindung ist experimentell**: normale Fenster dürfen die Bubbles überdecken. [Prüfstand und Plattformgrenzen](docs/TESTS.md).
 
 ## Bedienung
 
@@ -75,7 +81,7 @@ Gruppe links auswählen. **Miniatur** enthält Farbe, Glas, globale Miniaturtran
 
 Das Zahnrad enthält App-Farbe, Farbmodus und App-Transparenz. Die **quadratische Farbkachel neben Farbmodus** bearbeitet die Grundfarbe von Hell oder Dunkel. Bei Windows-Standard wird das aktuell aktive Profil bearbeitet. Diese Farben betreffen DesktopBubbles, nicht die Windows-Systemfarben. Unter **Allgemein** koppelt **Bubble-Farben für alle übernehmen** die Gruppenfarben. **Farben zurücksetzen** setzt App-, Bubble- und Modusfarben zurück; Größen, Transparenzen und Kopplungswahl bleiben erhalten.
 
-**Klar** ist leichter und farbiger, **Matt** dichter. Die Verwaltung nutzt DWM-Unschärfe, sofern verfügbar und eingeschaltet. Geöffnete Ordner verwenden eigene transparente Farbflächen; dort ist Matt eine Materialtönung ohne echten Desktop-Blur. Hoher Kontrast verwendet Systemfarben. Rundung und Größen bleiben proportional; Größenangaben entsprechen 100 Prozent Windows-Skalierung.
+**Klar** ist leichter und farbiger, **Matt** dichter. Die Verwaltung nutzt DWM-Unschärfe, sofern verfügbar und eingeschaltet. Unter **Ordner → Milchglas** lässt sich ein eigener Effekt einschalten: Grün bedeutet aktiv, der normale Transparenzregler wird ausgeblendet. Beim Ausschalten kehren der normale Stil und der bisherige Transparenzwert zurück. Milchglas übernimmt nur beim Öffnen einen kleinen Hintergrundbereich im Arbeitsspeicher und weichzeichnet ihn. Bewegungen dahinter erscheinen beim nächsten Öffnen; die App speichert oder überträgt diese Aufnahme nicht. Hoher Kontrast verwendet Systemfarben. [Milchglas und Grenzen](docs/FROSTED-FOLDERS.md).
 
 ## Ressourcen und Daten
 
@@ -104,14 +110,17 @@ Vor Löschen der App **Einstellungen → Verknüpfungen auf Desktop zurücklegen
 Windows 11 x64 und .NET-8-SDK beziehungsweise Visual Studio mit .NET-Desktopentwicklung. Keine Drittanbieter-NuGet-Laufzeitabhängigkeiten.
 
 ```powershell
-.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.6.1
+.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.7.0
 # Mit vorhandenem SDK:
-.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.6.1
+.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.7.0
 # Native Tests mit isolierten Testdaten auf interaktivem Windows-Desktop:
-.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.6.1\DesktopBubbles.exe
+.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.7.0\DesktopBubbles.exe
+# Optionaler Installer-Build:
+.\tools\Get-InnoSetup.ps1
+.\tools\Build-Installer.ps1 -Payload .\artifacts\DesktopBubbles-win-x64-v1.7.0
 ```
 
-Build erstellt die portable Ausgabe, führt die Kernprüfungen aus und packt ZIPs sowie SHA-256-Prüfsummen. Native Tests laufen separat. `dotnet test` ist nicht der Einstieg für die ausführbare Konsolensuite. CI baut und prüft den Core auf GitHub Actions. [Architektur](docs/ARCHITECTURE.md), [Entwicklerregeln](docs/DEVELOPMENT.md), [Release](docs/RELEASE.md), [Design-QA](design-qa.md).
+Build erstellt die portable Ausgabe, führt die Kernprüfungen aus und packt ZIPs sowie SHA-256-Prüfsummen. Native Tests laufen separat. `dotnet test` ist nicht der Einstieg für die ausführbare Konsolensuite. CI baut App und Installer und prüft Core sowie isolierte Installer-Abläufe auf GitHub Actions. Inno Setup ist nur ein zusätzliches Buildwerkzeug. [Architektur](docs/ARCHITECTURE.md), [Entwicklerregeln](docs/DEVELOPMENT.md), [Release](docs/RELEASE.md), [Design-QA](design-qa.md).
 
 Feedback zu Bugs, Bedienung und Tests auf weiteren Windows-Systemen ist unter [Issues](https://github.com/Hendrik4K/DesktopBubbles/issues) willkommen. Bitte Konfigurationen oder Logs mit privaten Pfaden vor dem Upload prüfen.
 

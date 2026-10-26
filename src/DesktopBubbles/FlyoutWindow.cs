@@ -4,6 +4,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using DesktopBubbles.Core;
 
 namespace DesktopBubbles;
@@ -19,6 +20,11 @@ internal sealed class FlyoutWindow : Window
     private bool busy;
     private bool placementQueued;
     internal FolderReorder Reorder { get; }
+    internal bool Frosted { get; }
+    internal int FrostCaptureCount { get; private set; }
+    internal bool HasFrostSample => frostSample is not null;
+    private BitmapSource? frostSample;
+    private bool closed;
     private readonly Dictionary<Guid, Button> buttons = [];
     public FlyoutWindow(App app, BubbleWindow anchor)
     {
@@ -27,8 +33,10 @@ internal sealed class FlyoutWindow : Window
         var settings = app.State.Settings;
         Width = settings.Columns * settings.TileSize + 48;
         SizeToContent = SizeToContent.Height; MaxHeight = 640;
+        Frosted = settings.FrostedFolders;
         Ui.Chrome(this, radius: () => AppearanceGeometry.Radius(app.State.Settings.CornerRoundness, ActualWidth, ActualHeight), perPixel: true);
         surface = new Border { CornerRadius = new CornerRadius(settings.WindowCornerRadius), Background = Ui.WindowGlass(settings, Group), BorderBrush = FrameBrush(), BorderThickness = new Thickness(1), Padding = new Thickness(22) };
+        if (Frosted) surface.Opacity = 0; // Commit an empty alpha surface before sampling the background.
         var root = new StackPanel(); surface.Child = root; Content = surface;
         scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = grid };
         Reorder = new FolderReorder(this, scroll,
@@ -55,8 +63,8 @@ internal sealed class FlyoutWindow : Window
             if (Reorder.IsSorting) Reorder.Stop(); else Reorder.CancelPress();
             Dispatcher.BeginInvoke(() => { if (!busy && !IsActive && !HasContextMenu() && IsVisible) Close(); });
         };
-        Closed += (_, _) => Reorder.Dispose();
-        SourceInitialized += (_, _) => { Native.ToolWindow(this); Ui.Backdrop(this, settings); };
+        Closed += (_, _) => { closed = true; Reorder.Dispose(); frostSample = null; surface.Background = null; };
+        SourceInitialized += (_, _) => { Native.ToolWindow(this); Ui.Backdrop(this, settings); Ui.RefreshRounding(this); };
         SizeChanged += (_, _) =>
         {
             if (placementQueued) return;
@@ -70,6 +78,15 @@ internal sealed class FlyoutWindow : Window
         Loaded += async (_, _) =>
         {
             await Populate(); Place();
+            if (Frosted)
+            {
+                await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                if (closed) return;
+                Native.DwmFlush();
+                FrostCaptureCount++;
+                frostSample = FolderFrost.Capture(Native.Bounds(this));
+                surface.Background = SurfaceBrush(); surface.Opacity = 1;
+            }
             if (settings.Animations && SystemParameters.ClientAreaAnimation)
             {
                 var animation = new DoubleAnimation(.55, 1, TimeSpan.FromMilliseconds(settings.AnimationMilliseconds)) { FillBehavior = FillBehavior.Stop, EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
@@ -81,9 +98,12 @@ internal sealed class FlyoutWindow : Window
     private bool HasContextMenu() => buttons.Values.Any(b => b.ContextMenu?.IsOpen == true) || ContextMenu?.IsOpen == true;
     internal void RefreshAppearance()
     {
-        surface.Background = Ui.WindowGlass(app.State.Settings, Group); surface.BorderBrush = FrameBrush(); Ui.RefreshRounding(this);
+        surface.Background = SurfaceBrush(); surface.BorderBrush = FrameBrush(); Ui.RefreshRounding(this);
     }
-    private Brush FrameBrush() => !SystemParameters.HighContrast && app.State.Settings.WindowOpacity <= 0 ? Brushes.Transparent : Ui.GlassRim();
+    private Brush SurfaceBrush() => frostSample is null ? Ui.WindowGlass(app.State.Settings, Group)
+        : FolderFrost.Material(frostSample, Ui.WindowGlass(app.State.Settings, Group));
+    internal void SetFrostSampleForTest(BitmapSource sample) { frostSample = sample; surface.Background = SurfaceBrush(); }
+    private Brush FrameBrush() => !SystemParameters.HighContrast && FolderAppearance.Opacity(app.State.Settings) <= 0 ? Brushes.Transparent : Ui.GlassRim();
     private void Place()
     {
         UpdateLayout();

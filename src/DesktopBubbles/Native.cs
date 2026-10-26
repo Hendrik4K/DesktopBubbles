@@ -49,12 +49,18 @@ internal static class Native
     [DllImport("dwmapi.dll")] internal static extern int DwmSetWindowAttribute(nint hwnd, int attr, ref int value, int size);
     [DllImport("dwmapi.dll")] internal static extern int DwmGetWindowAttribute(nint hwnd, int attr, out int value, int size);
     [DllImport("dwmapi.dll")] internal static extern int DwmExtendFrameIntoClientArea(nint hwnd, ref Margins margins);
+    [DllImport("dwmapi.dll")] internal static extern int DwmFlush();
     [DllImport("user32.dll")] internal static extern bool DestroyIcon(nint icon);
     [DllImport("gdi32.dll")] internal static extern bool DeleteObject(nint obj);
     [DllImport("gdi32.dll")] internal static extern nint CreateRoundRectRgn(int left, int top, int right, int bottom, int ellipseWidth, int ellipseHeight);
     [DllImport("user32.dll")] internal static extern int SetWindowRgn(nint hwnd, nint region, bool redraw);
     [DllImport("user32.dll")] internal static extern int GetWindowRgn(nint hwnd, nint region);
     [DllImport("gdi32.dll")] internal static extern bool PtInRegion(nint region, int x, int y);
+    [DllImport("gdi32.dll")] internal static extern bool EqualRgn(nint first, nint second);
+    [DllImport("user32.dll")] internal static extern nint GetDC(nint hwnd);
+    [DllImport("user32.dll")] internal static extern int ReleaseDC(nint hwnd, nint dc);
+    [DllImport("gdi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool BitBlt(nint destination, int x, int y, int width, int height, nint source, int sourceX, int sourceY, uint operation);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] internal static extern int GetClassName(nint hwnd, StringBuilder buffer, int max);
     [DllImport("user32.dll")] internal static extern bool SendNotifyMessage(nint hwnd, uint msg, nint wp, nint lp);
 

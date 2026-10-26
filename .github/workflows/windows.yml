@@ -1,4 +1,4 @@
-name: Windows build and portable package
+name: Windows build, installer and portable package
 on:
   push:
   pull_request:
@@ -14,11 +14,24 @@ jobs:
       - name: Compile, test core and publish portable x64
         shell: pwsh
         run: ./Build.ps1
+      - name: Get verified portable Inno Setup compiler
+        shell: pwsh
+        run: ./tools/Get-InnoSetup.ps1
+      - name: Build installer, safe preview and isolated fixture
+        shell: pwsh
+        run: ./tools/Build-Installer.ps1 -Payload ./artifacts/DesktopBubbles-win-x64 -FixtureRoot "$PWD/artifacts/installer-fixture-ä"
+      - name: Test installer, update, backup and uninstall without touching user data
+        shell: pwsh
+        run: ./tools/Test-Installer.ps1
       - uses: actions/upload-artifact@v4
         with:
           name: DesktopBubbles-win-x64
+          retention-days: 7
           path: |
             artifacts/DesktopBubbles-win-x64.zip
             artifacts/DesktopBubbles-win-x64.zip.sha256
             artifacts/core-tests.txt
+            artifacts/installer/DesktopBubbles-Setup-*.exe
+            artifacts/installer/DesktopBubbles-Setup-*.exe.sha256
+            artifacts/installer-fixture-ä/results.json
           if-no-files-found: error

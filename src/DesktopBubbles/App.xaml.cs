@@ -221,7 +221,13 @@ public partial class App : System.Windows.Application
     {
         StateStore.Validate(State); Ui.ApplyTheme(State.Settings); RequestSave();
         foreach (var bubble in bubbles) bubble.RefreshAppearance();
-        flyout?.RefreshAppearance(); settings?.RefreshMaterial();
+        if (flyout is { } current && current.Frosted != State.Settings.FrostedFolders)
+        {
+            var anchor = bubbles.FirstOrDefault(b => b.Group.Id == current.Group.Id);
+            if (anchor is not null) Open(anchor); else CloseFlyout();
+        }
+        else flyout?.RefreshAppearance();
+        settings?.RefreshMaterial();
     }
     internal void ShowSettings()
     {

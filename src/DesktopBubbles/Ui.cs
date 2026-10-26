@@ -73,26 +73,47 @@ internal static class Ui
             Native.DwmSetWindowAttribute(h, 33, ref corner, 4);
             Native.DwmSetWindowAttribute(h, 20, ref dark, 4);
         };
-        rounded.Add(window, new RoundedWindow(window, radius ?? (() => AppRadius)));
+        rounded.Add(window, new RoundedWindow(window, radius ?? (() => AppRadius), perPixel));
     }
     public static void RefreshRounding(Window window) { if (rounded.TryGetValue(window, out var shape)) shape.Update(); }
-    // Clip both our content and the native backdrop; a WPF Border alone leaves DWM's outer corners visible.
+    // Custom folders use a single alpha surface. The region also keeps native hit testing outside the rounded corners.
     private sealed class RoundedWindow
     {
         private readonly Window window;
         private readonly Func<double> radius;
+        private readonly bool nativeContour;
         private (int W, int H, int R) previous;
-        private bool updating;
-        public RoundedWindow(Window window, Func<double> radius)
+        private bool updating, queued, closed;
+        public RoundedWindow(Window window, Func<double> radius, bool nativeContour)
         {
-            this.window = window; this.radius = radius;
-            window.SourceInitialized += (_, _) => Update();
+            this.window = window; this.radius = radius; this.nativeContour = nativeContour;
+            window.SourceInitialized += (_, _) =>
+            {
+                Update();
+                if (nativeContour) System.Windows.Interop.HwndSource.FromHwnd(Native.Handle(window))?.AddHook(WindowMessage);
+            };
+            window.ContentRendered += (_, _) => Update(force: true); // DWM/backdrop initialization can replace an early region.
+            window.Closed += (_, _) => closed = true;
             window.SizeChanged += (_, _) => Update();
             window.LocationChanged += (_, _) => Update(); // DPI can change between monitors without a DIP-size change.
         }
-        public void Update()
+        private nint WindowMessage(nint hwnd, int message, nint wParam, nint lParam, ref bool handled)
         {
-            if (updating || new System.Windows.Interop.WindowInteropHelper(window).Handle == 0) return;
+            // Run after WPF's native processing, which may replace the region on style/DPI changes.
+            if (!updating && !closed && !queued && message is 0x0047 or 0x007D or 0x02E0 or 0x031E)
+            {
+                queued = true;
+                window.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Render, () =>
+                {
+                    queued = false;
+                    if (!closed) Update();
+                });
+            }
+            return 0;
+        }
+        public void Update(bool force = false)
+        {
+            if (closed || updating || new System.Windows.Interop.WindowInteropHelper(window).Handle == 0) return;
             updating = true;
             try
             {
@@ -103,12 +124,19 @@ internal static class Ui
                     content.Clip = new RectangleGeometry(new Rect(0, 0, window.ActualWidth, window.ActualHeight), r, r);
                     if (content is Border border) border.CornerRadius = new CornerRadius(r);
                 }
-                if (!window.AllowsTransparency) return; // DWM owns the standard host's fixed contour.
+                if (!nativeContour) return; // DWM owns the standard host's fixed contour.
                 double scale = Native.GetDpiForWindow(h) / 96d;
                 var next = ((int)bounds.Width, (int)bounds.Height, (int)Math.Round(r * scale));
-                if (next.Item1 <= 0 || next.Item2 <= 0 || next == previous) return;
+                if (next.Item1 <= 0 || next.Item2 <= 0) return;
                 var region = Native.CreateRoundRectRgn(0, 0, next.Item1 + 1, next.Item2 + 1, next.Item3 * 2, next.Item3 * 2);
                 if (region == 0) { Log.Write("Rounded window region could not be allocated."); return; }
+                if (!force && next == previous)
+                {
+                    var current = Native.CreateRoundRectRgn(0, 0, 1, 1, 0, 0);
+                    bool matches = current != 0 && Native.GetWindowRgn(h, current) != 0 && Native.EqualRgn(region, current);
+                    if (current != 0) Native.DeleteObject(current);
+                    if (matches) { Native.DeleteObject(region); return; }
+                }
                 // SetWindowRgn transfers ownership to Windows on success; only delete on failure.
                 if (Native.SetWindowRgn(h, region, window.IsVisible) != 0) previous = next;
                 else { Native.DeleteObject(region); Log.Write("Rounded window region could not be applied."); }
@@ -137,7 +165,17 @@ internal static class Ui
         return Material(AppearancePreferences.Color(settings, group), Math.Clamp(settings.Opacity, 0, .95), settings.Glass > .65);
     }
     public static Brush WindowGlass(BubbleSettings settings, BubbleGroup? group = null)
-        => Material(AppearancePreferences.Color(settings, group), Math.Clamp(settings.WindowOpacity, 0, .95), settings.Glass > .65);
+        => settings.FrostedFolders ? FrostedMaterial(FolderAppearance.FrostedOpacity)
+            : Material(AppearancePreferences.Color(settings, group), Math.Clamp(settings.WindowOpacity, 0, .95), settings.Glass > .65);
+    private static Brush FrostedMaterial(double opacity)
+    {
+        if (SystemParameters.HighContrast) return SystemColors.WindowBrush;
+        if (opacity <= 0) return Brushes.Transparent;
+        byte alpha = (byte)Math.Round(255 * Math.Clamp(opacity, 0, 1));
+        var top = Dark ? Color.FromArgb(alpha, 54, 62, 72) : Color.FromArgb(alpha, 255, 255, 255);
+        var bottom = Dark ? Color.FromArgb(alpha, 29, 35, 43) : Color.FromArgb(alpha, 230, 237, 242);
+        var brush = new LinearGradientBrush(top, bottom, 90); brush.Freeze(); return brush;
+    }
     public static Brush BubbleRim(BubbleSettings settings, BubbleGroup group)
         => !SystemParameters.HighContrast && settings.Opacity <= 0 ? Brushes.Transparent : GlassRim();
     private static Brush Material(string tint, double opacity, bool matte)

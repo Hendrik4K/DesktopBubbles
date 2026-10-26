@@ -37,6 +37,7 @@ internal sealed class SettingsWindow : Window
     internal Button? PreviewScaleButton { get; private set; }
     internal CheckBox? LinkColorsCheckBox { get; private set; }
     internal ComboBox? GlassSelector { get; private set; }
+    internal Button? FrostedFoldersButton { get; private set; }
     internal Border AppearancePreview => preview;
     internal PixelRect PreviewFootprint => AppearanceGeometry.Folder(app.State.Settings, selected?.Items.Count ?? 0);
     private BubbleGroup? selected;
@@ -100,7 +101,7 @@ internal sealed class SettingsWindow : Window
         preview.CornerRadius = new CornerRadius(Math.Clamp(radius, 0, 54));
         if (swatch is not null) swatch.Background = Ui.Brush(CurrentColor());
         if (modeSwatch is not null) modeSwatch.Background = Ui.Brush(ThemePalette.Color(app.State.Settings, Ui.Dark));
-        double opacity = Scope == AppearanceScope.Window ? app.State.Settings.WindowOpacity : app.State.Settings.Opacity;
+        double opacity = Scope == AppearanceScope.Window ? FolderAppearance.Opacity(app.State.Settings) : app.State.Settings.Opacity;
         preview.BorderBrush = !SystemParameters.HighContrast && opacity <= 0 ? Brushes.Transparent : Ui.GlassRim();
         UpdateFolderPreview();
         foreach (var group in app.State.Groups) if (thumbnails.TryGetValue(group.Id, out var thumbnail)) { thumbnail.Background = Ui.Glass(app.State.Settings, group); thumbnail.CornerRadius = new CornerRadius(AppearanceGeometry.Radius(app.State.Settings.CornerRoundness, 56, 56)); }
@@ -167,6 +168,7 @@ internal sealed class SettingsWindow : Window
         var content = new DockPanel { LastChildFill = true }; layout.Children.Add(content);
         var root = new StackPanel(); var settings = app.State.Settings;
         swatch = null; ColorButton = null; GlassSelector = null; folderCanvas = null; folderStage = null; folderViewport = null; previewDimensions = null; PreviewScaleButton = null; LinkColorsCheckBox = null;
+        FrostedFoldersButton = null; TransparencySlider = null;
         modeSwatch = null; ModeColorButton = null; modeAction = null; modeApplyButton = null; themeSelector = null;
         if (preview.Parent is Panel previous) previous.Children.Remove(preview);
         if (Scope != AppearanceScope.Window)
@@ -184,7 +186,7 @@ internal sealed class SettingsWindow : Window
             {
                 var glass = new StackPanel { Margin = new Thickness(0, 0, 12, 0) }; glass.Children.Add(Ui.Text("Glas", 13, weight: FontWeights.SemiBold));
                 GlassSelector = new ComboBox { ItemsSource = new[] { "Klar", "Matt" }, SelectedIndex = settings.Glass > .65 ? 1 : 0, MinWidth = 0, Margin = new Thickness(0, 14, 0, 0) };
-                GlassSelector.ToolTip = "Gemeinsamer Glasstil: Klar ist leichter, Matt dichter. Gilt für Miniatur und Ordner.";
+                GlassSelector.ToolTip = "Gemeinsamer Glasstil: Klar ist leichter, Matt dichter. Gilt für Miniaturen und Ordner ohne eigenen Milchglas-Effekt.";
                 GlassSelector.SelectionChanged += (_, _) => { settings.Glass = GlassSelector.SelectedIndex == 1 ? .85 : .45; app.ApplyAppearance(); };
                 glass.Children.Add(GlassSelector); Grid.SetColumn(glass, 1); colorRow.Children.Add(glass);
                 preview.Width = preview.Height = 108; preview.Padding = new Thickness(12); preview.BorderThickness = new Thickness(1); preview.VerticalAlignment = VerticalAlignment.Top;
@@ -212,18 +214,22 @@ internal sealed class SettingsWindow : Window
                 Grid.SetColumn(options, 1); colorRow.Children.Add(options);
             }
         }
-        double opacity = Scope switch { AppearanceScope.App => settings.AppOpacity, AppearanceScope.Window => settings.WindowOpacity, _ => settings.Opacity };
-        TransparencySlider = AddSlider(root, "Transparenz", 5, Scope == AppearanceScope.App ? 80 : 100,
-            (1 - opacity) * 100, value =>
-            {
-                double next = 1 - value / 100;
-                if (Scope == AppearanceScope.App) settings.AppOpacity = next;
-                else if (Scope == AppearanceScope.Window) settings.WindowOpacity = next;
-                else settings.Opacity = next;
-                app.ApplyAppearance();
-            }, value => $"{value:0} %");
-        System.Windows.Automation.AutomationProperties.SetName(TransparencySlider, "Transparenz · " + ScopeLabel(Scope));
-        if (Scope != AppearanceScope.App) TransparencySlider.ToolTip = "Gilt für alle " + (Scope == AppearanceScope.Bubbles ? "Miniaturen" : "Ordner") + ". 100 % blendet Fläche und Rahmen aus. App-Symbole bleiben sichtbar.";
+        bool frosted = Scope == AppearanceScope.Window && settings.FrostedFolders;
+        double opacity = Scope switch { AppearanceScope.App => settings.AppOpacity, AppearanceScope.Window => FolderAppearance.Opacity(settings), _ => settings.Opacity };
+        if (!frosted)
+        {
+            TransparencySlider = AddSlider(root, "Transparenz", 5, Scope == AppearanceScope.App ? 80 : 100,
+                (1 - opacity) * 100, value =>
+                {
+                    double next = 1 - value / 100;
+                    if (Scope == AppearanceScope.App) settings.AppOpacity = next;
+                    else if (Scope == AppearanceScope.Window) FolderAppearance.SetTransparency(settings, value);
+                    else settings.Opacity = next;
+                    app.ApplyAppearance();
+                }, value => $"{value:0} %");
+            System.Windows.Automation.AutomationProperties.SetName(TransparencySlider, "Transparenz · " + ScopeLabel(Scope));
+            if (Scope != AppearanceScope.App) TransparencySlider.ToolTip = "Gilt für alle " + (Scope == AppearanceScope.Bubbles ? "Miniaturen" : "Ordner") + ". 100 % blendet Fläche und Rahmen aus. App-Symbole bleiben sichtbar.";
+        }
         SizeSlider = null;
         if (Scope == AppearanceScope.Window)
         {
@@ -234,7 +240,16 @@ internal sealed class SettingsWindow : Window
             var previewBar = new DockPanel { Margin = new Thickness(0, 12, 0, 0) };
             PreviewScaleButton = Ui.Button(previewScale == 1 ? "1:1" : "1:3", () => { previewScale = previewScale == 1 ? 1d / 3 : 1; UpdateFolderPreview(); });
             PreviewScaleButton.ToolTip = "Zwischen verkleinerter Vorschau und Originalgröße wechseln. 1:1 entspricht der aktuellen Windows-Skalierung.";
-            PreviewScaleButton.Padding = new Thickness(12, 5, 12, 5); DockPanel.SetDock(PreviewScaleButton, Dock.Right); previewBar.Children.Add(PreviewScaleButton);
+            PreviewScaleButton.Padding = new Thickness(12, 5, 12, 5); PreviewScaleButton.Margin = new Thickness(0);
+            var previewActions = new StackPanel { Orientation = Orientation.Horizontal };
+            FrostedFoldersButton = Ui.Button("Milchglas", () => { settings.FrostedFolders = !settings.FrostedFolders; app.ApplyAppearance(); RefreshPage(); });
+            FrostedFoldersButton.Padding = new Thickness(12, 5, 12, 5); FrostedFoldersButton.Margin = new Thickness(0, 0, 8, 0);
+            FrostedFoldersButton.Background = frosted ? Ui.Brush("#087F4B") : Ui.Resource("ControlFill");
+            FrostedFoldersButton.Foreground = frosted ? Brushes.White : Ui.Resource("Ink");
+            FrostedFoldersButton.ToolTip = frosted ? "Milchglas ausschalten · normale Farbe und Transparenz wieder verwenden" : "Milchglas für Ordner einschalten";
+            System.Windows.Automation.AutomationProperties.SetName(FrostedFoldersButton, frosted ? "Milchglas für Ordner ausschalten" : "Milchglas für Ordner einschalten");
+            previewActions.Children.Add(FrostedFoldersButton); previewActions.Children.Add(PreviewScaleButton);
+            DockPanel.SetDock(previewActions, Dock.Right); previewBar.Children.Add(previewActions);
             previewDimensions = Ui.Text("", 12, "Muted"); previewDimensions.VerticalAlignment = VerticalAlignment.Center; previewBar.Children.Add(previewDimensions); root.Children.Add(previewBar);
             folderStage = new Grid { Background = Brushes.Transparent, Margin = new Thickness(0, 8, 0, 0) };
             preview.Padding = new Thickness(0); preview.BorderThickness = new Thickness(1d / 3); preview.HorizontalAlignment = HorizontalAlignment.Center; preview.VerticalAlignment = VerticalAlignment.Center;

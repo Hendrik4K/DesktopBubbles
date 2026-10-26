@@ -248,6 +248,65 @@ internal static class SmokeTests
         app.State.Settings.Glass = .45; app.ApplyAppearance(); byte clearAlpha = PixelAlpha(app.CurrentFlyout!, 216, app.CurrentFlyout!.ActualHeight - 8);
         app.State.Settings.Glass = .85; app.ApplyAppearance(); byte matteAlpha = PixelAlpha(app.CurrentFlyout!, 216, app.CurrentFlyout!.ActualHeight - 8);
         Check("Klar und Matt unterscheiden sich sichtbar im gerenderten Material", matteAlpha - clearAlpha > 30, $"Klar-Alpha={clearAlpha}, Matt-Alpha={matteAlpha}");
+        // Frost and normal folders must share the same alpha surface; a native
+        // region alone does not clip a separate DWM system backdrop on all builds.
+        app.ShowSettings(); settings = System.Windows.Application.Current.Windows.OfType<SettingsWindow>().Single();
+        settings.SelectScope(AppearanceScope.Window); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        double normalFolderOpacity = app.State.Settings.WindowOpacity, miniatureOpacity = app.State.Settings.Opacity;
+        var frostButton = settings.FrostedFoldersButton!;
+        var actionOrigin = frostButton.TranslatePoint(new Point(), settings);
+        var scaleOrigin = settings.PreviewScaleButton!.TranslatePoint(new Point(), settings);
+        Check("Milchglas sitzt links neben dem Maßstab mit gleicher Höhe und neutralem Hintergrund", !app.State.Settings.FrostedFolders && actionOrigin.X < scaleOrigin.X && Math.Abs(actionOrigin.Y - scaleOrigin.Y) < 1 && Equals(frostButton.Background, settings.PreviewScaleButton.Background));
+        frostButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+        await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        Check("Milchglas blendet die gesamte Transparenzzeile aus und zeigt den aktiven grünen Knopf", settings.TransparencySlider is null && !Descendants(settings).OfType<System.Windows.Controls.TextBlock>().Any(t => t.Text.Contains("Transparenz")) && ((SolidColorBrush)settings.FrostedFoldersButton!.Background).Color == Ui.Brush("#087F4B").Color && app.State.Settings.WindowOpacity == normalFolderOpacity && app.State.Settings.Opacity == miniatureOpacity);
+        app.Flush();
+        Check("Milchglas-Auswahl wird ohne Änderung der normalen Transparenz gespeichert", StateStore.Read(app.Store.Path).Settings.FrostedFolders && StateStore.Read(app.Store.Path).Settings.WindowOpacity == normalFolderOpacity);
+        settings.FrostedFoldersButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+        await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        Check("Ausschalten stellt die ursprüngliche Ordnertransparenz im Regler wieder her", Math.Abs(settings.TransparencySlider!.Value - (1 - normalFolderOpacity) * 100) < .001);
+        settings.FrostedFoldersButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+        await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        Check("Erneutes Einschalten entfernt den Regler bei weiterhin nutzbarer Größensteuerung", settings.TransparencySlider is null && settings.SizeSlider!.IsVisible && settings.FrostedFoldersButton!.IsVisible);
+        SaveImage(settings, Path.Combine(app.DataDirectory, "frosted-folder-settings.png"));
+        var frostStops = ((LinearGradientBrush)Ui.WindowGlass(app.State.Settings, app.State.Groups[0])).GradientStops.Select(s => s.Color).ToArray();
+        double sharedGlass = app.State.Settings.Glass; string? groupColor = app.State.Groups[0].Color;
+        app.State.Settings.Glass = .45; app.State.Groups[0].Color = "#FF0000"; app.ApplyAppearance();
+        Check("Milchglas übernimmt weder Miniaturfarbe noch gemeinsamen Klar-Matt-Stil", ((LinearGradientBrush)Ui.WindowGlass(app.State.Settings, app.State.Groups[0])).GradientStops.Select(s => s.Color).SequenceEqual(frostStops));
+        app.State.Settings.Glass = sharedGlass; app.State.Groups[0].Color = groupColor; app.ApplyAppearance();
+        settings.Close(); app.Open(app.Bubbles[0]); await Task.Delay(250);
+        var frosted = app.CurrentFlyout!;
+        Check("Milchglas verwendet eine einzige Alpha-Fläche ohne rechteckigen DWM-Glaslayer", frosted.Frosted && frosted.AllowsTransparency && ((long)Native.GetWindowLongPtr(Native.Handle(frosted), Native.GwlExStyle) & 0x80000) != 0 && Native.DwmGetWindowAttribute(Native.Handle(frosted), 38, out int frostBackdrop, 4) == 0 && frostBackdrop == 1);
+        bool samplingEnabled = !SystemParameters.HighContrast && Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 1) is not 0;
+        Check("Milchglas übernimmt den tatsächlichen Hintergrund bei erlaubter Windows-Transparenz", !samplingEnabled || frosted.HasFrostSample);
+        var frostPattern = FrostPattern();
+        var blurred = FolderFrost.Blur(frostPattern, new Int32Rect(24, 24, 112, 112));
+        Check("Milchglas weichzeichnet den Hintergrund ohne ihn durch eine einfarbige Fläche zu ersetzen", Math.Abs(BitmapPixel(blurred, 55, 56).R - BitmapPixel(blurred, 56, 56).R) < 40 && BitmapPixel(blurred, 104, 56).R - BitmapPixel(blurred, 8, 56).R > 180);
+        frosted.SetFrostSampleForTest(blurred); // Images contain only fixture pixels, never a user desktop capture.
+        Check("Milchglas beschneidet alle vier nativen Ecken und die tatsächlichen Glaspixel", AllCornersClipped(frosted) && AllCornerPixelsTransparent(frosted));
+        SaveImage(frosted, Path.Combine(app.DataDirectory, "frosted-folder-surface.png"));
+        double savedRoundness = app.State.Settings.CornerRoundness;
+        app.State.Settings.CornerRoundness = 45; app.ApplyAppearance(); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        Check("Milchglas übernimmt starke Rundung einschließlich unsichtbarer Hintergrundpixel", AllCornersClipped(frosted) && !RegionContains(frosted, 12, 12) && PixelAlpha(frosted, 12, 12) == 0 && AllCornerPixelsTransparent(frosted));
+        Native.SetWindowRgn(Native.Handle(frosted), 0, true); // Simulate a later native/WPF reset without a size change.
+        Ui.RefreshRounding(frosted);
+        Check("Verlorene native Kontur wird bei unveränderten Maßen wiederhergestellt", AllCornersClipped(frosted));
+        app.State.Settings.CornerRoundness = 0; app.ApplyAppearance(); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        Check("Null Rundung ist auch bei Milchglas wirklich rechteckig", RegionContains(frosted, 1, 1));
+        app.State.Settings.CornerRoundness = savedRoundness; app.ApplyAppearance(); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        frosted.Width += 24; await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        Check("Milchglaskontur bleibt auch nach nativer Größenänderung vollständig transparent gerundet", AllCornersClipped(frosted) && AllCornerPixelsTransparent(frosted));
+        Check("Milchglas erfasst den Hintergrund einmal pro Öffnen und nicht bei Regleränderungen", frosted.FrostCaptureCount == 1);
+        app.State.Settings.FrostedFolderOpacity = 0; app.ApplyAppearance(); await Task.Delay(200);
+        Check("Alter vollständig transparenter Milchglaswert kann den neuen Effekt nicht unsichtbar machen", app.CurrentFlyout!.Frosted && FolderAppearance.Opacity(app.State.Settings) == .55);
+        app.CloseFlyout(); GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        using var frostProcess = Process.GetCurrentProcess(); frostProcess.Refresh(); int frostHandles = frostProcess.HandleCount;
+        for (int i = 0; i < 12; i++) { app.Open(app.Bubbles[0]); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle); app.CloseFlyout(); }
+        GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); frostProcess.Refresh();
+        Check("Wiederholtes Öffnen und Schließen von Milchglas bindet keine stetig wachsenden Handles", frostProcess.HandleCount - frostHandles < 25);
+        app.Open(app.Bubbles[0]); await Task.Delay(150);
+        app.State.Settings.FrostedFolders = false; app.ApplyAppearance(); await Task.Delay(200);
+        Check("Milchglas aus stellt den bisherigen transparenten Ordnermodus vollständig wieder her", app.CurrentFlyout is { AllowsTransparency: true, Frosted: false } && app.State.Settings.WindowOpacity == normalFolderOpacity && app.State.Settings.Opacity == miniatureOpacity && PixelAlpha(app.CurrentFlyout, 216, app.CurrentFlyout.ActualHeight - 8) == matteAlpha);
         app.State.Settings.WindowOpacity = 0; app.ApplyAppearance();
         Check("100 Prozent Transparenz entfernt Ordnerfläche und Rahmen bei sichtbaren Icons", PixelAlpha(app.CurrentFlyout!, 216, app.CurrentFlyout!.ActualHeight - 8) == 0 && PixelAlpha(app.CurrentFlyout!, 216, app.CurrentFlyout!.ActualHeight - 1) == 0 && Descendants(app.CurrentFlyout!).OfType<System.Windows.Controls.Image>().All(i => i.Opacity == 1 && i.Source is not null));
         app.State.Settings.Glass = .55; app.State.Settings.WindowOpacity = .63; app.ApplyAppearance();
@@ -516,6 +575,27 @@ internal static class SmokeTests
         }
     }
     private static bool HasRoundedRegion(Window window) => !RegionContains(window, 0, 0) && RegionContains(window, window.ActualWidth / 2, window.ActualHeight / 2);
+    private static bool AllCornersClipped(Window window) => HasRoundedRegion(window)
+        && !RegionContains(window, 1, 1) && !RegionContains(window, window.ActualWidth - 2, 1)
+        && !RegionContains(window, 1, window.ActualHeight - 2) && !RegionContains(window, window.ActualWidth - 2, window.ActualHeight - 2);
+    private static bool AllCornerPixelsTransparent(Window window) => PixelAlpha(window, 1, 1) == 0
+        && PixelAlpha(window, window.ActualWidth - 2, 1) == 0 && PixelAlpha(window, 1, window.ActualHeight - 2) == 0
+        && PixelAlpha(window, window.ActualWidth - 2, window.ActualHeight - 2) == 0;
+    private static BitmapSource FrostPattern()
+    {
+        var pixels = new byte[160 * 160 * 4];
+        for (int y = 0; y < 160; y++) for (int x = 0; x < 160; x++)
+        {
+            int at = (y * 160 + x) * 4; byte value = x < 80 ? (byte)0 : (byte)255;
+            pixels[at] = pixels[at + 1] = pixels[at + 2] = value; pixels[at + 3] = 255;
+        }
+        var result = BitmapSource.Create(160, 160, 96, 96, PixelFormats.Pbgra32, null, pixels, 160 * 4); result.Freeze(); return result;
+    }
+    private static Color BitmapPixel(BitmapSource bitmap, int x, int y)
+    {
+        var pixel = new byte[4]; bitmap.CopyPixels(new Int32Rect(x, y, 1, 1), pixel, 4, 0);
+        return Color.FromArgb(pixel[3], pixel[2], pixel[1], pixel[0]);
+    }
     private static byte PixelAlpha(Window window, double x, double y)
     {
         window.UpdateLayout();
