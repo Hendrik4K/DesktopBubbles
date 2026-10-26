@@ -31,12 +31,17 @@ function Same-Tree($expected, [string]$directory) {
     foreach ($key in $expected.Keys) { if ($expected[$key] -ne $current[$key]) { return $false } }
     return $true
 }
+function Read-Autostart {
+    $key = [Microsoft.Win32.Registry]::CurrentUser.OpenSubKey('Software\Microsoft\Windows\CurrentVersion\Run', $false)
+    if ($null -eq $key) { return $null }
+    try { return $key.GetValue('DesktopBubbles', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames) }
+    finally { $key.Dispose() }
+}
 $realApp = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)) 'Programs\DesktopBubbles'
 $realState = Join-Path $realApp 'data\groups.json'
 $stateBefore = if (Test-Path -LiteralPath $realState) { (Get-FileHash -LiteralPath $realState).Hash } else { '' }
 $realExeBefore = if (Test-Path -LiteralPath (Join-Path $realApp 'DesktopBubbles.exe')) { (Get-FileHash -LiteralPath (Join-Path $realApp 'DesktopBubbles.exe')).Hash } else { '' }
-$runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
-$startupBefore = Get-ItemPropertyValue -LiteralPath $runKey -Name DesktopBubbles -ErrorAction SilentlyContinue
+$startupBefore = Read-Autostart
 $reg = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{A47AA47E-3E32-4A89-A51B-407DFA0A0902}_is1'
 $registrationBefore = Test-Path -LiteralPath $reg
 try {
@@ -78,7 +83,7 @@ try {
     Check 'Deinstallation entfernt das Programm und erhält persönliche Daten' (!(Test-Path (Join-Path $program 'DesktopBubbles.exe')) -and (Same-Tree $expected $data))
     Check 'Deinstallation erhält die externe Datensicherung' (Same-Tree $expected $backup.FullName)
     Check 'Echte Nutzergruppen und Programmdatei unverändert' (($stateBefore -eq '' -or (Get-FileHash -LiteralPath $realState).Hash -eq $stateBefore) -and ($realExeBefore -eq '' -or (Get-FileHash (Join-Path $realApp 'DesktopBubbles.exe')).Hash -eq $realExeBefore))
-    Check 'Echter Autostart und Installationsregistrierung unverändert' ((Get-ItemPropertyValue -LiteralPath $runKey -Name DesktopBubbles -ErrorAction SilentlyContinue) -eq $startupBefore -and (Test-Path -LiteralPath $reg) -eq $registrationBefore)
+    Check 'Echter Autostart und Installationsregistrierung unverändert' ((Read-Autostart) -eq $startupBefore -and (Test-Path -LiteralPath $reg) -eq $registrationBefore)
 }
 finally {
     [ordered]@{Checks=$checks;FixtureRoot=$root;RealInstallChanged=$false;ProductionInstallExecuted=$false} | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $root 'results.json') -Encoding utf8
