@@ -1,12 +1,14 @@
-# DesktopBubbles · 1.7.0
+# DesktopBubbles — App folders & desktop organizer for Windows 11
 
 <img src="https://raw.githubusercontent.com/Hendrik4K/DesktopBubbles/v1.7.0/src/DesktopBubbles/Assets/DesktopBubbles.png" width="88" height="88" alt="DesktopBubbles Rauchglas-Logo">
 
 **Many shortcuts. One bubble. More room for your desktop. ✨**
 
-App folders for your Windows 11 desktop: group your shortcuts into a glass bubble, click to open, and pick the app you want. Hold an icon to make it wiggle, then drop it onto another to swap their places.
+**Free, open-source app folders for Windows 11.** Organize desktop shortcuts into compact glass bubbles: click a bubble, choose an app, and return to a less cluttered desktop. Think iPhone-style folders for your PC, with drag-and-drop shortcuts and adjustable colors, sizes and transparency.
 
-**Viele Launcher. Eine Bubble. Mehr Platz auf deinem Desktop.** Steam, Epic, Battle.net und Co. müssen nicht einzeln den Desktop belegen. Pack sie in einen App-Ordner, öffne ihn mit einem Klick und wähle, was du starten möchtest. Danach bleibt wieder die kleine Miniatur. Dein Hintergrund bekommt seinen Platz zurück. 🚀
+**Desktop aufräumen und Verknüpfungen gruppieren.** Steam, Epic, Battle.net und Co. müssen nicht einzeln den Desktop belegen. Pack sie in einen App-Ordner, öffne ihn mit einem Klick und wähle, was du starten möchtest. Danach bleibt wieder die kleine Miniatur. So bekommst du Smartphone-ähnliche Ordner für deinen Windows-Desktop. 🚀
+
+**Version 1.7.0 · Windows 11 x64 · MIT license**
 
 **[Windows-11-Installer herunterladen](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.7.0/DesktopBubbles-Setup-1.7.0.exe)** · [Portable ZIP](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.7.0/DesktopBubbles-win-x64-v1.7.0.zip) · [Release](https://github.com/Hendrik4K/DesktopBubbles/releases/latest) · [MIT-Lizenz](LICENSE) · [Fehler melden](https://github.com/Hendrik4K/DesktopBubbles/issues)
 
@@ -16,12 +18,19 @@ App folders for your Windows 11 desktop: group your shortcuts into a glass bubbl
     <th>Desktop-Bubbles &amp; Einstellungen</th>
   </tr>
   <tr>
-    <td width="34%" valign="middle"><img src="docs/screenshots/desktopbubbles-before-after.gif" width="100%" alt="Vorher: einzelne Launcher-Verknüpfungen. Nachher: eine DesktopBubble mit aufklappbarem App-Ordner."></td>
-    <td width="66%" valign="middle"><img src="docs/screenshots/desktopbubbles-desktop-settings.png" width="100%" alt="DesktopBubbles auf dem Windows-Desktop: transparente App-Ordner und die Einstellungen für Farbe, Transparenz, Größe und Eckenrundung."></td>
+    <td width="34%" valign="middle"><img src="docs/screenshots/desktopbubbles-before-after.gif" width="100%" alt="Desktop aufräumen: sieben einzelne Gaming-Launcher werden in einem kompakten App-Ordner gruppiert, der per Klick seine Verknüpfungen zeigt."></td>
+    <td width="66%" valign="middle"><img src="docs/screenshots/desktopbubbles-desktop-settings.png" width="100%" alt="DesktopBubbles für Windows 11: zwei transparente Desktop-Ordner neben der Verwaltung mit Gruppenliste und Reglern für Transparenz, Größe und runde Ecken."></td>
   </tr>
 </table>
 
-## Funktionen
+## Organize shortcuts, launchers and workspaces
+
+- **Gaming launcher organization:** keep shortcuts to Steam, Epic Games, Battle.net and other launchers together; the launchers themselves stay installed in their original locations.
+- **Work and hobby groups:** separate coding tools, creative apps, folders and web links into desktop shortcut groups.
+- **Desktop customization:** choose compact previews, folder sizes, colors and transparency for a minimalist desktop. An optional frosted-glass folder effect blurs the background once when opened, rather than continuously.
+- **Drag and drop:** add shortcuts, move them between bubbles or return them to the desktop. Hold an icon until it wiggles, then drop it onto another to swap their positions.
+
+## Funktionen: App-Ordner und Desktop-Anpassung
 
 - **Neu in 1.7.0: installieren und loslegen.** Benutzer-Installer mit Startmenüeintrag, optionaler Desktop-Verknüpfung und geprüfter Datensicherung bei Updates. Persönliche Daten bleiben bei der Deinstallation erhalten.
 - **Milchglas für Ordner:** eigener zuschaltbarer Effekt mit sauberen runden Ecken. Der Hintergrund wird beim Öffnen einmal weichgezeichnet übernommen; die Symbole bleiben scharf.
@@ -38,7 +47,9 @@ App folders for your Windows 11 desktop: group your shortcuts into a glass bubbl
 
 C# / WPF / Win32, ohne Browser-Runtime oder Administratorrechte. Keine Konten, Telemetrie oder automatischen Uploads. Das Öffnen gewählter Programme, Weblinks oder des Repositorys kann Netzwerkzugriffe auslösen.
 
-## Loslegen
+## Download & installation / In wenigen Schritten loslegen
+
+**English quick start:** download the Windows installer above, quit any running copy from its tray menu before updating, then install and launch **DesktopBubbles** from Windows Search. Click **Neu** to create a group, drag shortcuts onto it, and click its desktop bubble to choose an app. The interface currently uses German labels. The installer includes the .NET runtime; no separate runtime installation is needed. See the update and unsigned-app notes below before switching from a portable copy.
 
 1. Den Installer von der [Release-Seite](https://github.com/Hendrik4K/DesktopBubbles/releases/latest) starten. Er installiert für dein Benutzerkonto und legt **DesktopBubbles** im Startmenü an. Die .NET-Desktop-Laufzeit ist enthalten.
 2. **DesktopBubbles** über die Windows-Suche starten und mit **Neu** eine Bubble erstellen. Rechtsklick auf den Suchtreffer → **An Start anheften** funktioniert wie bei anderen Windows-Apps.
@@ -52,6 +63,24 @@ Alternativ das portable ZIP vollständig in einen beschreibbaren Ordner entpacke
 **Bereits portable unterwegs?** Ein Installer-Update erhält vorhandene Daten unter `%LOCALAPPDATA%\Programs\DesktopBubbles\data`. Bei Daten an einem anderen Ort zuerst in der bisherigen App exportieren und den vollständigen Datenordner sichern; unterschiedliche portable Datenstände werden nicht automatisch zusammengeführt. [Sicher umsteigen](docs/STARTUP.md), [Installer und Datenerhalt](docs/INSTALLER.md).
 
 Setup und App sind nicht signiert; Windows kann einen Hinweis auf einen unbekannten Herausgeber anzeigen. Es gibt keinen automatischen Updater. **Desktop-Anbindung ist experimentell**: normale Fenster dürfen die Bubbles überdecken. [Prüfstand und Plattformgrenzen](docs/TESTS.md).
+
+## FAQ / Häufige Fragen zu Desktop-Ordnern
+
+### Can I get iPhone-style app folders on Windows?
+
+DesktopBubbles offers a similar interaction on Windows 11: a compact preview opens into a grid of shortcuts. It is an independent Windows app; the bubbles are its own windows rather than native Explorer folder icons.
+
+### Wie kann ich meinen Desktop aufräumen, ohne Programme zu verschieben?
+
+Ziehe die Verknüpfungen in eine Bubble für Gaming, Arbeit oder andere Aufgaben. Die installierten Programme bleiben an ihrem Ort. Persönliche Desktop-Verknüpfungen werden zunächst geprüft kopiert und standardmäßig danach vom Desktop entfernt. Diese Übernahme lässt sich in den Einstellungen auf reines Kopieren umstellen. Details stehen unter [Bedienung](#bedienung).
+
+### Is this a game launcher or a replacement for the Windows Start menu?
+
+It groups and opens your existing shortcuts. It does not install games, combine launcher accounts or replace Windows Search or the Start menu. You can also organize non-gaming apps, folders and web links.
+
+### Ist der Desktop-Organizer kostenlos und auch portabel nutzbar?
+
+Ja. DesktopBubbles ist unter MIT veröffentlicht. Es gibt einen Benutzer-Installer und eine portable ZIP; beide sind oben verlinkt. Zum Ausprobieren ist kein Konto erforderlich. Beachte die Hinweise zu Datensicherung, unsignierten Downloads und experimenteller Desktop-Anbindung unter Installation und [Bekannte Grenzen](#bekannte-grenzen).
 
 ## Bedienung
 
