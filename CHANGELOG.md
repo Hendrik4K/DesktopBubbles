@@ -1,5 +1,10 @@
 # Änderungen
 
+## 1.7.1 · 11.11.2026
+
+- Neues App-Symbol mit schillernden Regenbogen-Seifenblasen für EXE, Fenster, Taskleiste, Tray und Installer. Neun ICO-Auflösungen von 16 bis 256 Pixeln erhalten den transparenten Hintergrund; das bereitgestellte PNG bleibt unverändert.
+- README zeigt das neue Logo. Bedienung, Datenformat und Speicherorte bleiben unverändert.
+
 ## 1.7.0 · 27.10.2026
 
 - Windows-Installer mit Startmenüeintrag, optionaler Desktop-Verknüpfung und Deinstallation unter dem Benutzerkonto. Updates sichern vorhandene Daten geprüft; Deinstallation erhält persönliche Daten und Sicherungen. Eine separat baubare UI-Vorschau enthält kein App-Paket und führt keine Installation aus. Details: docs/INSTALLER.md.

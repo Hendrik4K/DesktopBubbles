@@ -1,6 +1,6 @@
 # DesktopBubbles-Branding
 
-Das aktuelle Rauchglas-Symbol mit neun Kacheln wurde am 24.10.2026 vom Projektinhaber Hendrik4K als PNG für die Verwendung als App-Icon und Logo bereitgestellt. Es ersetzt die zuvor ausprobierten Frostglas- und Kristallglas-Varianten.
+Das aktuelle Symbol mit schillernden Regenbogen-Seifenblasen wurde am 11.11.2026 vom Projektinhaber Hendrik4K als PNG für die Verwendung als App-Icon und Logo bereitgestellt. Es ersetzt das bisherige Rauchglas-Symbol mit neun Kacheln.
 
 - DesktopBubbles.ico: aus dem PNG konvertierte Datei für EXE, Fenster/Taskleiste und Tray; 16/20/24/32/40/48/64/128/256 px, jeweils mit Alphakanal.
 - DesktopBubbles.png: unveränderte bereitgestellte PNG-Datei für das Logo im Fenster.

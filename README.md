@@ -1,6 +1,6 @@
 # DesktopBubbles — App folders & desktop organizer for Windows 11
 
-<img src="https://raw.githubusercontent.com/Hendrik4K/DesktopBubbles/v1.7.0/src/DesktopBubbles/Assets/DesktopBubbles.png" width="88" height="88" alt="DesktopBubbles Rauchglas-Logo">
+<img src="src/DesktopBubbles/Assets/DesktopBubbles.png" width="88" height="88" alt="DesktopBubbles Logo mit schillernden Regenbogen-Seifenblasen">
 
 **Many shortcuts. One bubble. More room for your desktop. ✨**
 
@@ -8,9 +8,9 @@
 
 **Desktop aufräumen und Verknüpfungen gruppieren.** Steam, Epic, Battle.net und Co. müssen nicht einzeln den Desktop belegen. Pack sie in einen App-Ordner, öffne ihn mit einem Klick und wähle, was du starten möchtest. Danach bleibt wieder die kleine Miniatur. So bekommst du Smartphone-ähnliche Ordner für deinen Windows-Desktop. 🚀
 
-**Version 1.7.0 · Windows 11 x64 · MIT license**
+**Version 1.7.1 · Windows 11 x64 · MIT license**
 
-**[Windows-11-Installer herunterladen](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.7.0/DesktopBubbles-Setup-1.7.0.exe)** · [Portable ZIP](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.7.0/DesktopBubbles-win-x64-v1.7.0.zip) · [Release](https://github.com/Hendrik4K/DesktopBubbles/releases/latest) · [MIT-Lizenz](LICENSE) · [Fehler melden](https://github.com/Hendrik4K/DesktopBubbles/issues)
+**[Windows-11-Installer herunterladen](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.7.1/DesktopBubbles-Setup-1.7.1.exe)** · [Portable ZIP](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.7.1/DesktopBubbles-win-x64-v1.7.1.zip) · [Release](https://github.com/Hendrik4K/DesktopBubbles/releases/latest) · [MIT-Lizenz](LICENSE) · [Fehler melden](https://github.com/Hendrik4K/DesktopBubbles/issues)
 
 <table>
   <tr>
@@ -31,6 +31,8 @@
 - **Drag and drop:** add shortcuts, move them between bubbles or return them to the desktop. Hold an icon until it wiggles, then drop it onto another to swap their positions.
 
 ## Funktionen: App-Ordner und Desktop-Anpassung
+
+- **Neu in 1.7.1:** schillernde Seifenblasen als App-, Taskleisten-, Tray- und Installer-Symbol.
 
 - **Neu in 1.7.0: installieren und loslegen.** Benutzer-Installer mit Startmenüeintrag, optionaler Desktop-Verknüpfung und geprüfter Datensicherung bei Updates. Persönliche Daten bleiben bei der Deinstallation erhalten.
 - **Milchglas für Ordner:** eigener zuschaltbarer Effekt mit sauberen runden Ecken. Der Hintergrund wird beim Öffnen einmal weichgezeichnet übernommen; die Symbole bleiben scharf.
@@ -139,14 +141,14 @@ Vor Löschen der App **Einstellungen → Verknüpfungen auf Desktop zurücklegen
 Windows 11 x64 und .NET-8-SDK beziehungsweise Visual Studio mit .NET-Desktopentwicklung. Keine Drittanbieter-NuGet-Laufzeitabhängigkeiten.
 
 ```powershell
-.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.7.0
+.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.7.1
 # Mit vorhandenem SDK:
-.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.7.0
+.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.7.1
 # Native Tests mit isolierten Testdaten auf interaktivem Windows-Desktop:
-.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.7.0\DesktopBubbles.exe
+.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.7.1\DesktopBubbles.exe
 # Optionaler Installer-Build:
 .\tools\Get-InnoSetup.ps1
-.\tools\Build-Installer.ps1 -Payload .\artifacts\DesktopBubbles-win-x64-v1.7.0
+.\tools\Build-Installer.ps1 -Payload .\artifacts\DesktopBubbles-win-x64-v1.7.1
 ```
 
 Build erstellt die portable Ausgabe, führt die Kernprüfungen aus und packt ZIPs sowie SHA-256-Prüfsummen. Native Tests laufen separat. `dotnet test` ist nicht der Einstieg für die ausführbare Konsolensuite. CI baut App und Installer und prüft Core sowie isolierte Installer-Abläufe auf GitHub Actions. Inno Setup ist nur ein zusätzliches Buildwerkzeug. [Architektur](docs/ARCHITECTURE.md), [Entwicklerregeln](docs/DEVELOPMENT.md), [Release](docs/RELEASE.md), [Design-QA](design-qa.md).
@@ -161,4 +163,4 @@ Feedback zu Bugs, Bedienung und Tests auf weiteren Windows-Systemen ist unter [I
 - WPF-Aufnahmen erfassen nicht den vom Desktop zusammengesetzten Hintergrund. Hoher Kontrast und verschiedene Skalierungen müssen zusätzlich visuell geprüft werden.
 - WPF hat einen Speichergrundbedarf. CPU-/RAM-Messungen belegen keine Spiele-Frametimes oder GPU-Leistung.
 
-Eigener Projektcode unter MIT. Das Rauchglas-Logo, das Demo-GIF und die Desktop-Aufnahme wurden vom Projektinhaber bereitgestellt und unverändert übernommen; App-Symbole stammen aus der lokalen Windows-Shell. Die portable Ausgabe enthält die Lizenzhinweise ihrer .NET-Laufzeit. [Branding](src/DesktopBubbles/Assets/README.md).
+Eigener Projektcode unter MIT. Das Seifenblasen-Logo, das Demo-GIF und die Desktop-Aufnahme wurden vom Projektinhaber bereitgestellt und unverändert übernommen; App-Symbole stammen aus der lokalen Windows-Shell. Die portable Ausgabe enthält die Lizenzhinweise ihrer .NET-Laufzeit. [Branding](src/DesktopBubbles/Assets/README.md).
