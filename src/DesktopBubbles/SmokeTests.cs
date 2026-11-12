@@ -235,13 +235,13 @@ internal static class SmokeTests
         settings.PreviewScaleButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         Check("Vorschau lässt sich ohne Änderung der echten Ordnergröße zurück auf 1 zu 3 schalten", Math.Abs(settings.AppearancePreview.Width * 3 - expectedFootprint.Width) < .001 && settings.PreviewFootprint == expectedFootprint);
         SaveImage(settings, Path.Combine(app.DataDirectory, "window-settings.png"));
-        settings.Close(); app.Open(app.Bubbles[0]); await Task.Delay(200);
+        settings.Close(); app.Open(app.Bubbles[0]); await Task.Delay(200); await SettleMotion();
         Check("Live-Vorschau entspricht der echten Rasterhöhe und -breite", Math.Abs(app.CurrentFlyout!.ActualWidth - expectedFootprint.Width) < 2 && Math.Abs(app.CurrentFlyout.ActualHeight - expectedFootprint.Height) < 2);
         Check("Window-Größe skaliert das echte Raster und seine Icons", Math.Abs(app.CurrentFlyout!.Width - 432) < 1 && Descendants(app.CurrentFlyout).OfType<System.Windows.Controls.Image>().Any(i => i.Width > 72));
         byte firstOpacity = PixelAlpha(app.CurrentFlyout!, 216, app.CurrentFlyout!.ActualHeight - 8);
-        app.Open(app.Bubbles[1]); await Task.Delay(200);
+        app.Open(app.Bubbles[1]); await Task.Delay(200); await SettleMotion();
         Check("Größe und Transparenz gelten auch für den anderen Ordner", Math.Abs(app.CurrentFlyout!.Width - 432) < 1 && PixelAlpha(app.CurrentFlyout!, 216, app.CurrentFlyout!.ActualHeight - 8) == firstOpacity);
-        app.Open(app.Bubbles[0]); await Task.Delay(200);
+        app.Open(app.Bubbles[0]); await Task.Delay(200); await SettleMotion();
         Check("Window rundet auch die äußere Windows-Fläche", HasRoundedRegion(app.CurrentFlyout!));
         Check("Ordner verwendet eine transparente Alpha-Fläche ohne DWM-Hintergrundrechteck", app.CurrentFlyout!.AllowsTransparency && ((long)Native.GetWindowLongPtr(Native.Handle(app.CurrentFlyout), Native.GwlExStyle) & 0x80000) != 0 && Native.DwmGetWindowAttribute(Native.Handle(app.CurrentFlyout), 38, out int backdrop, 4) == 0 && backdrop == 1);
         Check("Ordner-Außenecke ist tatsächlich transparent gerendert", PixelAlpha(app.CurrentFlyout!, 1, 1) == 0);
@@ -274,7 +274,7 @@ internal static class SmokeTests
         app.State.Settings.Glass = .45; app.State.Groups[0].Color = "#FF0000"; app.ApplyAppearance();
         Check("Milchglas übernimmt weder Miniaturfarbe noch gemeinsamen Klar-Matt-Stil", ((LinearGradientBrush)Ui.WindowGlass(app.State.Settings, app.State.Groups[0])).GradientStops.Select(s => s.Color).SequenceEqual(frostStops));
         app.State.Settings.Glass = sharedGlass; app.State.Groups[0].Color = groupColor; app.ApplyAppearance();
-        settings.Close(); app.Open(app.Bubbles[0]); await Task.Delay(250);
+        settings.Close(); app.Open(app.Bubbles[0]); await Task.Delay(250); await SettleMotion();
         var frosted = app.CurrentFlyout!;
         Check("Milchglas verwendet eine einzige Alpha-Fläche ohne rechteckigen DWM-Glaslayer", frosted.Frosted && frosted.AllowsTransparency && ((long)Native.GetWindowLongPtr(Native.Handle(frosted), Native.GwlExStyle) & 0x80000) != 0 && Native.DwmGetWindowAttribute(Native.Handle(frosted), 38, out int frostBackdrop, 4) == 0 && frostBackdrop == 1);
         bool samplingEnabled = !SystemParameters.HighContrast && Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 1) is not 0;
@@ -297,15 +297,20 @@ internal static class SmokeTests
         frosted.Width += 24; await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         Check("Milchglaskontur bleibt auch nach nativer Größenänderung vollständig transparent gerundet", AllCornersClipped(frosted) && AllCornerPixelsTransparent(frosted));
         Check("Milchglas erfasst den Hintergrund einmal pro Öffnen und nicht bei Regleränderungen", frosted.FrostCaptureCount == 1);
-        app.State.Settings.FrostedFolderOpacity = 0; app.ApplyAppearance(); await Task.Delay(200);
+        app.State.Settings.FrostedFolderOpacity = 0; app.ApplyAppearance(); await Task.Delay(200); await SettleMotion();
         Check("Alter vollständig transparenter Milchglaswert kann den neuen Effekt nicht unsichtbar machen", app.CurrentFlyout!.Frosted && FolderAppearance.Opacity(app.State.Settings) == .55);
         app.CloseFlyout(); GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+        await SettleWindows();
         using var frostProcess = Process.GetCurrentProcess(); frostProcess.Refresh(); int frostHandles = frostProcess.HandleCount;
+        int frostWindows = System.Windows.Application.Current.Windows.Count;
         for (int i = 0; i < 12; i++) { app.Open(app.Bubbles[0]); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle); app.CloseFlyout(); }
+        // Folding folders finish their close animation first; count only after every window has gone.
+        await SettleWindows();
+        Check("Zurückfaltende Ordner und ihre Übergangsfenster schließen vollständig", System.Windows.Application.Current.Windows.Count == frostWindows);
         GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); frostProcess.Refresh();
         Check("Wiederholtes Öffnen und Schließen von Milchglas bindet keine stetig wachsenden Handles", frostProcess.HandleCount - frostHandles < 25);
-        app.Open(app.Bubbles[0]); await Task.Delay(150);
-        app.State.Settings.FrostedFolders = false; app.ApplyAppearance(); await Task.Delay(200);
+        app.Open(app.Bubbles[0]); await Task.Delay(150); await SettleMotion();
+        app.State.Settings.FrostedFolders = false; app.ApplyAppearance(); await Task.Delay(200); await SettleMotion();
         Check("Milchglas aus stellt den bisherigen transparenten Ordnermodus vollständig wieder her", app.CurrentFlyout is { AllowsTransparency: true, Frosted: false } && app.State.Settings.WindowOpacity == normalFolderOpacity && app.State.Settings.Opacity == miniatureOpacity && PixelAlpha(app.CurrentFlyout, 216, app.CurrentFlyout.ActualHeight - 8) == matteAlpha);
         app.State.Settings.WindowOpacity = 0; app.ApplyAppearance();
         Check("100 Prozent Transparenz entfernt Ordnerfläche und Rahmen bei sichtbaren Icons", PixelAlpha(app.CurrentFlyout!, 216, app.CurrentFlyout!.ActualHeight - 8) == 0 && PixelAlpha(app.CurrentFlyout!, 216, app.CurrentFlyout!.ActualHeight - 1) == 0 && Descendants(app.CurrentFlyout!).OfType<System.Windows.Controls.Image>().All(i => i.Opacity == 1 && i.Source is not null));
@@ -370,12 +375,14 @@ internal static class SmokeTests
         Check("Esc beendet zuerst das Sortieren und stoppt die Wackelanimationen", sorting.IsVisible && !sorting.Reorder.IsSorting && Descendants(sorting).OfType<System.Windows.Controls.Button>().All(b => ((System.Windows.Controls.Image)b.Content).RenderTransform == Transform.Identity));
         app.Shortcuts.Swap(app.State, sorting.Group, originalOrder[0], originalOrder[^1]); app.Changed();
         app.ShowSettings(); settings = System.Windows.Application.Current.Windows.OfType<SettingsWindow>().Single();
+        await SettleWindows();
         Check("Mini-Bubble nach Schließen wieder sichtbar", !app.Bubbles[0].Expanded && ((UIElement)app.Bubbles[0].Content).Opacity == 1);
-        app.Open(app.Bubbles[0]); await Task.Delay(200); settings.Activate(); await Task.Delay(250);
+        app.Open(app.Bubbles[0]); await Task.Delay(200); settings.Activate(); await Task.Delay(250); await SettleMotion();
         Check("Fokuswechsel schließt Flyout", !app.HasFlyout);
         app.CloseFlyout(); await Task.Delay(100);
         // Warm up framework template and popup caches before checking repeated lifetime cycles.
         for (int i = 0; i < 5; i++) { app.Open(app.Bubbles[0]); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle); app.CloseFlyout(); }
+        await SettleWindows();
         GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
         using var process = Process.GetCurrentProcess(); process.Refresh(); int before = process.HandleCount; long memoryBefore = GC.GetTotalMemory(true);
         var timings = new List<double>();
@@ -385,6 +392,7 @@ internal static class SmokeTests
             await Dispatcher.Yield(DispatcherPriority.ApplicationIdle); watch.Stop(); timings.Add(watch.Elapsed.TotalMilliseconds);
             app.CloseFlyout(); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         }
+        await SettleWindows();
         GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect(); process.Refresh();
         long memoryAfter = GC.GetTotalMemory(true); int after = process.HandleCount;
         Check("60 Öffnen/Schließen-Zyklen", !app.HasFlyout);
@@ -454,7 +462,7 @@ internal static class SmokeTests
         app.State.Groups.Remove(returnGroup); app.Changed();
         outbound.Cleanup(); programDrag.Cleanup();
         var missingEntry = Targets.Create(Path.Combine(app.DataDirectory, "missing-shortcut.lnk"), "Defekter Eintrag");
-        var deleteGroup = app.State.Groups[0]; deleteGroup.Items.Add(missingEntry); app.Changed(); app.Open(app.Bubbles[0]); await Task.Delay(250);
+        var deleteGroup = app.State.Groups[0]; deleteGroup.Items.Add(missingEntry); app.Changed(); app.Open(app.Bubbles[0]); await Task.Delay(250); await SettleMotion();
         var missingButton = Descendants(app.CurrentFlyout!).OfType<System.Windows.Controls.Button>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == missingEntry.Name);
         var entryMenu = missingButton.ContextMenu!.Items.OfType<System.Windows.Controls.MenuItem>().ToArray();
         Check("Symbolmenü bietet Starten, Zurück zum Desktop und Aus Gruppe löschen", entryMenu.Select(m => (string)m.Header).SequenceEqual(new[] { "Starten", "Zurück zum Desktop", "Aus Gruppe löschen" }));
@@ -531,7 +539,7 @@ internal static class SmokeTests
         app.State.Settings.Theme = "Dark"; Ui.ApplyTheme(app.State.Settings); app.Rebuild(); settings.RefreshPage();
         await Task.Delay(350); settings.Show(); settings.Activate(); await Task.Delay(100);
         SaveImage(settings, Path.Combine(app.DataDirectory, "settings-dark.png"));
-        app.Open(app.Bubbles[0]); await Task.Delay(350);
+        app.Open(app.Bubbles[0]); await Task.Delay(350); await SettleMotion();
         SaveImage(app.CurrentFlyout!, Path.Combine(app.DataDirectory, "flyout-dark.png"));
         app.CloseFlyout(); settings.Hide(); app.Changed(); app.Flush();
         Check("Persistenz nach UI-Änderungen", StateStore.Read(app.Store.Path).Groups[0].Items.Count == 5);
@@ -581,6 +589,26 @@ internal static class SmokeTests
     private static bool AllCornerPixelsTransparent(Window window) => PixelAlpha(window, 1, 1) == 0
         && PixelAlpha(window, window.ActualWidth - 2, 1) == 0 && PixelAlpha(window, 1, window.ActualHeight - 2) == 0
         && PixelAlpha(window, window.ActualWidth - 2, window.ActualHeight - 2) == 0;
+    // Waits until no open or close animation is running any more.
+    private static async Task SettleMotion()
+    {
+        for (int i = 0; i < 80; i++)
+        {
+            var windows = System.Windows.Application.Current.Windows.Cast<Window>();
+            if (!windows.Any(w => w is FlyoutWindow { Animating: true } || w.GetType().Name == "GlassOverlay")) return;
+            await Task.Delay(50);
+        }
+    }
+    // Waits until no folder and no motion overlay is open any more (close animations included).
+    private static async Task SettleWindows()
+    {
+        for (int i = 0; i < 80; i++)
+        {
+            var windows = System.Windows.Application.Current.Windows.Cast<Window>();
+            if (!windows.Any(w => w is FlyoutWindow || w.GetType().Name == "GlassOverlay")) return;
+            await Task.Delay(50);
+        }
+    }
     private static BitmapSource FrostPattern()
     {
         var pixels = new byte[160 * 160 * 4];

@@ -21,10 +21,18 @@ internal sealed class FlyoutWindow : Window
     private bool placementQueued;
     internal FolderReorder Reorder { get; }
     internal bool Frosted { get; }
+    internal bool Liquid { get; }
     internal int FrostCaptureCount { get; private set; }
     internal bool HasFrostSample => frostSample is not null;
-    private BitmapSource? frostSample;
+    internal bool HasLiquidSample => liquidSample is not null;
+    private BitmapSource? frostSample, liquidSample;
     private bool closed;
+    private FolderMotion? motion;
+    private bool folding, folded;
+    private bool Animate => app.State.Settings.Animations && SystemParameters.ClientAreaAnimation && !app.Exiting;
+    internal bool Animating => motion?.Running == true;
+    // An animated folder hides its miniature itself, once the travelling glass has replaced it.
+    internal bool HidesAnchor => Animate;
     private readonly Dictionary<Guid, Button> buttons = [];
     public FlyoutWindow(App app, BubbleWindow anchor)
     {
@@ -33,10 +41,11 @@ internal sealed class FlyoutWindow : Window
         var settings = app.State.Settings;
         Width = settings.Columns * settings.TileSize + 48;
         SizeToContent = SizeToContent.Height; MaxHeight = 640;
-        Frosted = settings.FrostedFolders;
+        Liquid = settings.LiquidGlass; Frosted = !Liquid && settings.FrostedFolders;
         Ui.Chrome(this, radius: () => AppearanceGeometry.Radius(app.State.Settings.CornerRoundness, ActualWidth, ActualHeight), perPixel: true);
         surface = new Border { CornerRadius = new CornerRadius(settings.WindowCornerRadius), Background = Ui.WindowGlass(settings, Group), BorderBrush = FrameBrush(), BorderThickness = new Thickness(1), Padding = new Thickness(22) };
-        if (Frosted) surface.Opacity = 0; // Commit an empty alpha surface before sampling the background.
+        // Commit an empty alpha surface before sampling the background, or before the glass travels in.
+        if (Frosted || Liquid || Animate) surface.Opacity = 0;
         var root = new StackPanel(); surface.Child = root; Content = surface;
         scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = grid };
         Reorder = new FolderReorder(this, scroll,
@@ -63,7 +72,7 @@ internal sealed class FlyoutWindow : Window
             if (Reorder.IsSorting) Reorder.Stop(); else Reorder.CancelPress();
             Dispatcher.BeginInvoke(() => { if (!busy && !IsActive && !HasContextMenu() && IsVisible) Close(); });
         };
-        Closed += (_, _) => { closed = true; Reorder.Dispose(); frostSample = null; surface.Background = null; };
+        Closed += (_, _) => { closed = true; motion?.Stop(); Reorder.Dispose(); frostSample = liquidSample = null; surface.Background = null; };
         SourceInitialized += (_, _) => { Native.ToolWindow(this); Ui.Backdrop(this, settings); Ui.RefreshRounding(this); };
         SizeChanged += (_, _) =>
         {
@@ -78,32 +87,73 @@ internal sealed class FlyoutWindow : Window
         Loaded += async (_, _) =>
         {
             await Populate(); Place();
-            if (Frosted)
+            if (Frosted || Liquid)
             {
+                // The miniature is still on screen and the folder may open over it; keep it out of the sample.
+                bool excluded = anchor.ExcludeFromCapture(true);
+                if (!excluded) anchor.SetExpanded(true);
                 await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-                if (closed) return;
+                if (closed) { if (excluded) anchor.ExcludeFromCapture(false); return; }
                 Native.DwmFlush();
                 FrostCaptureCount++;
-                frostSample = FolderFrost.Capture(Native.Bounds(this));
-                surface.Background = SurfaceBrush(); surface.Opacity = 1;
+                try
+                {
+                    if (Liquid) liquidSample = RenderLiquid();
+                    else frostSample = FolderFrost.Capture(Native.Bounds(this));
+                }
+                finally { if (excluded) anchor.ExcludeFromCapture(false); }
+                surface.Background = SurfaceBrush(); surface.BorderBrush = FrameBrush();
             }
-            if (settings.Animations && SystemParameters.ClientAreaAnimation)
-            {
-                var animation = new DoubleAnimation(.55, 1, TimeSpan.FromMilliseconds(settings.AnimationMilliseconds)) { FillBehavior = FillBehavior.Stop, EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
-                surface.BeginAnimation(OpacityProperty, animation);
-            }
+            if (!closed && !folding && Animate && CreateMotion() is { } next) { motion = next; next.Open(hideAnchor: () => anchor.SetExpanded(true)); }
+            else { surface.Opacity = 1; if (!closed) anchor.SetExpanded(true); }
             buttons.Values.FirstOrDefault()?.Focus();
         };
+    }
+    private FolderMotion? CreateMotion()
+    {
+        if (anchor.GlassBounds() is not { Width: > 0 } glass) return null;
+        UpdateLayout();
+        var settings = app.State.Settings;
+        double scale = Native.GetDpiForWindow(Native.Handle(this)) / 96d;
+        double fromRadius = settings.BubbleCornerRadius * glass.Width / Math.Max(1, settings.MiniatureSize);
+        double toRadius = AppearanceGeometry.Radius(settings.CornerRoundness, ActualWidth, ActualHeight) * scale;
+        return new FolderMotion(this, surface, buttons.Values.ToList(), glass, fromRadius, toRadius,
+            hideSurface: () => { surface.Background = Brushes.Transparent; surface.BorderBrush = Brushes.Transparent; },
+            showSurface: () => { surface.Opacity = 1; surface.Background = SurfaceBrush(); surface.BorderBrush = FrameBrush(); });
+    }
+    // Closing folds the glass back into the miniature first; the window closes once it has landed.
+    protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        base.OnClosing(e);
+        if (e.Cancel || folded || !IsLoaded || !Animate) { motion?.Stop(); return; }
+        e.Cancel = true;
+        if (folding) return;
+        folding = true; IsHitTestVisible = false;
+        if (Reorder.IsSorting) Reorder.Stop(); else Reorder.CancelPress();
+        motion?.Stop();
+        motion = CreateMotion();
+        if (motion is null) { folded = true; Dispatcher.BeginInvoke(Close); return; }
+        motion.Close(reveal: () => anchor.SetExpanded(false), done: () => { folded = true; Close(); });
     }
     private bool HasContextMenu() => buttons.Values.Any(b => b.ContextMenu?.IsOpen == true) || ContextMenu?.IsOpen == true;
     internal void RefreshAppearance()
     {
         surface.Background = SurfaceBrush(); surface.BorderBrush = FrameBrush(); Ui.RefreshRounding(this);
     }
-    private Brush SurfaceBrush() => frostSample is null ? Ui.WindowGlass(app.State.Settings, Group)
+    private Brush SurfaceBrush() => liquidSample is not null ? LiquidGlass.Material(liquidSample)
+        : frostSample is null ? Ui.WindowGlass(app.State.Settings, Group)
         : FolderFrost.Material(frostSample, Ui.WindowGlass(app.State.Settings, Group));
     internal void SetFrostSampleForTest(BitmapSource sample) { frostSample = sample; surface.Background = SurfaceBrush(); }
-    private Brush FrameBrush() => !SystemParameters.HighContrast && FolderAppearance.Opacity(app.State.Settings) <= 0 ? Brushes.Transparent : Ui.GlassRim();
+    // The lens carries its own lit rim; a second drawn border would double the outline.
+    private Brush FrameBrush() => liquidSample is not null || (!SystemParameters.HighContrast && FolderAppearance.Opacity(app.State.Settings) <= 0) ? Brushes.Transparent : Ui.GlassRim();
+    private BitmapSource? RenderLiquid()
+    {
+        var bounds = Native.Bounds(this);
+        if (FolderFrost.CaptureSharp(bounds, out var crop) is not { } sample) return null;
+        double scale = Native.GetDpiForWindow(Native.Handle(this)) / 96d;
+        double radius = AppearanceGeometry.Radius(app.State.Settings.CornerRoundness, ActualWidth, ActualHeight) * scale;
+        return LiquidGlass.Render(sample, crop, Ui.LiquidOptions(app.State.Settings, Group, radius, scale));
+    }
     private void Place()
     {
         UpdateLayout();

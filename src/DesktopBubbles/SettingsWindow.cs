@@ -45,6 +45,7 @@ internal sealed class SettingsWindow : Window
     internal Slider? TransparencySlider { get; private set; }
     internal Slider? SizeSlider { get; private set; }
     internal Slider? RoundingSlider { get; private set; }
+    internal Slider? LiquidStrengthSlider { get; private set; }
     internal LiveMeasurementBar Measurement { get; }
     internal ColorPickerPanel? Picker { get; private set; }
     public SettingsWindow(App app)
@@ -185,9 +186,16 @@ internal sealed class SettingsWindow : Window
             if (Scope == AppearanceScope.Bubbles)
             {
                 var glass = new StackPanel { Margin = new Thickness(0, 0, 12, 0) }; glass.Children.Add(Ui.Text("Glas", 13, weight: FontWeights.SemiBold));
-                GlassSelector = new ComboBox { ItemsSource = new[] { "Klar", "Matt" }, SelectedIndex = settings.Glass > .65 ? 1 : 0, MinWidth = 0, Margin = new Thickness(0, 14, 0, 0) };
-                GlassSelector.ToolTip = "Gemeinsamer Glasstil: Klar ist leichter, Matt dichter. Gilt für Miniaturen und Ordner ohne eigenen Milchglas-Effekt.";
-                GlassSelector.SelectionChanged += (_, _) => { settings.Glass = GlassSelector.SelectedIndex == 1 ? .85 : .45; app.ApplyAppearance(); };
+                GlassSelector = new ComboBox { ItemsSource = new[] { "Klar", "Matt", "Liquid" }, SelectedIndex = settings.LiquidGlass ? 2 : settings.Glass > .65 ? 1 : 0, MinWidth = 0, Margin = new Thickness(0, 14, 0, 0) };
+                GlassSelector.ToolTip = "Gemeinsamer Glasstil: Klar ist leichter, Matt dichter. Liquid bricht den echten Hintergrund an den Kanten wie eine Glaslinse und gilt für Miniaturen und Ordner.";
+                GlassSelector.SelectionChanged += (_, _) =>
+                {
+                    bool liquid = GlassSelector.SelectedIndex == 2, toggled = liquid != settings.LiquidGlass;
+                    settings.LiquidGlass = liquid;
+                    if (!liquid) settings.Glass = GlassSelector.SelectedIndex == 1 ? .85 : .45;
+                    app.ApplyAppearance();
+                    if (toggled) Dispatcher.BeginInvoke(RefreshPage); // Show or hide the strength slider.
+                };
                 glass.Children.Add(GlassSelector); Grid.SetColumn(glass, 1); colorRow.Children.Add(glass);
                 preview.Width = preview.Height = 108; preview.Padding = new Thickness(12); preview.BorderThickness = new Thickness(1); preview.VerticalAlignment = VerticalAlignment.Top;
                 Grid.SetColumn(preview, 2); colorRow.Children.Add(preview);
@@ -229,6 +237,14 @@ internal sealed class SettingsWindow : Window
                 }, value => $"{value:0} %");
             System.Windows.Automation.AutomationProperties.SetName(TransparencySlider, "Transparenz · " + ScopeLabel(Scope));
             if (Scope != AppearanceScope.App) TransparencySlider.ToolTip = "Gilt für alle " + (Scope == AppearanceScope.Bubbles ? "Miniaturen" : "Ordner") + ". 100 % blendet Fläche und Rahmen aus. App-Symbole bleiben sichtbar.";
+        }
+        LiquidStrengthSlider = null;
+        if (Scope != AppearanceScope.App && settings.LiquidGlass)
+        {
+            // One shared value, shown on both tabs right below the transparency.
+            LiquidStrengthSlider = AddSlider(root, "Liquid-Stärke", 0, 100, settings.LiquidStrength * 100, value => { settings.LiquidStrength = value / 100; app.ApplyAppearance(); }, value => $"{value:0} %");
+            System.Windows.Automation.AutomationProperties.SetName(LiquidStrengthSlider, "Liquid-Stärke · " + ScopeLabel(Scope));
+            LiquidStrengthSlider.ToolTip = "Wie tief die Glaskante ist und wie stark sie den Hintergrund bricht. Gilt gemeinsam für Miniaturen und Ordner; Ordner übernehmen sie beim nächsten Öffnen.";
         }
         SizeSlider = null;
         if (Scope == AppearanceScope.Window)

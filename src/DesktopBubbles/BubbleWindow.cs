@@ -17,6 +17,13 @@ internal sealed class BubbleWindow : Window
     private PixelRect startWindow;
     private bool dragging, pressed;
     private bool closing;
+    // Liquid glass: one background sample per placement, retried while other windows cover the tile.
+    private System.Windows.Media.Imaging.BitmapSource? lens;
+    private readonly System.Windows.Threading.DispatcherTimer resample;
+    private bool sampling, live;
+    private readonly System.Diagnostics.Stopwatch liveClock = new();
+    private TimeSpan liveFrame;
+    internal bool HasLiquidSample => lens is not null;
     public bool Expanded { get; private set; }
     public bool Embedded { get; private set; }
     public BubbleWindow(App app, BubbleGroup group)
@@ -38,6 +45,8 @@ internal sealed class BubbleWindow : Window
         name.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 4, ShadowDepth = 1, Opacity = .8, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance };
         name.Visibility = group.ShowName ? Visibility.Visible : Visibility.Collapsed;
         root.Children.Add(name);
+        resample = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
+        resample.Tick += (_, _) => { resample.Stop(); _ = SampleLiquid(); };
         canvas = new Grid { Width = size + 28, Height = size + 40 }; canvas.Children.Add(root);
         Content = new Viewbox { Stretch = Stretch.Fill, Child = canvas };
         System.Windows.Automation.AutomationProperties.SetName(this, group.Name);
@@ -46,6 +55,7 @@ internal sealed class BubbleWindow : Window
         PreviewMouseLeftButtonDown += (_, e) =>
         {
             Native.GetCursorPos(out startCursor); startWindow = Native.Bounds(this);
+            BeginLiveGlass(); // Set the capture exclusion once per press, never mid-drag.
             pressed = true; dragging = false; CaptureMouse(); e.Handled = true;
         };
         MouseMove += (_, _) =>
@@ -54,18 +64,27 @@ internal sealed class BubbleWindow : Window
             Native.GetCursorPos(out var p);
             double dx = p.X - startCursor.X, dy = p.Y - startCursor.Y;
             if (!dragging && Math.Abs(dx) + Math.Abs(dy) < 6) return;
-            if (!dragging) app.CloseFlyout();
+            if (!dragging) { app.CloseFlyout(); resample.Stop(); }
             dragging = true; Native.Position(this, startWindow.X + dx, startWindow.Y + dy);
+            LiveGlass();
         };
         PreviewMouseLeftButtonUp += (_, e) =>
         {
             if (!pressed) return;
-            pressed = false; ReleaseMouseCapture();
-            if (dragging) { SavePosition(); app.Changed(); }
+            bool moved = dragging;
+            pressed = dragging = false; ReleaseMouseCapture(); // A finished drag must not block the next glass sample.
+            EndLiveGlass();
+            if (moved) { SavePosition(); app.Changed(); }
             else app.Toggle(this);
             e.Handled = true;
         };
-        LostMouseCapture += (_, _) => { if (pressed && dragging) { SavePosition(); app.Changed(); } pressed = false; };
+        LostMouseCapture += (_, _) =>
+        {
+            bool moved = pressed && dragging;
+            pressed = dragging = false;
+            EndLiveGlass();
+            if (moved) { SavePosition(); app.Changed(); }
+        };
         DragOver += (_, e) => { e.Effects = app.IsInternalDrag(e.Data) ? DragDropEffects.Move : e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None; e.Handled = true; };
         Drop += (_, e) => { app.ReceiveDrop(Group, e.Data, true); e.Handled = true; };
         SourceInitialized += (_, _) =>
@@ -83,14 +102,101 @@ internal sealed class BubbleWindow : Window
             Embedded = app.Host.Attach(this, app.State.Settings.DesktopIntegration);
             RestorePosition();
             await LoadIcons();
+            ScheduleLiquid();
         };
-        Closed += (_, _) => closing = true;
+        Closed += (_, _) => { closing = true; resample.Stop(); lens = null; };
+    }
+    private void ScheduleLiquid(double milliseconds = 400)
+    {
+        if (closing || !app.State.Settings.LiquidGlass) return;
+        resample.Stop(); resample.Interval = TimeSpan.FromMilliseconds(milliseconds); resample.Start();
+    }
+    private void ApplyMaterial()
+    {
+        var settings = app.State.Settings;
+        bool liquid = lens is not null && settings.LiquidGlass;
+        glass.Background = liquid ? LiquidGlass.Material(lens!) : Ui.Glass(settings, Group);
+        // The lens carries its own lit rim and must map 1:1 onto the tile's pixels.
+        glass.BorderBrush = liquid ? Brushes.Transparent : Ui.BubbleRim(settings, Group);
+        glass.BorderThickness = new Thickness(liquid ? 0 : 1);
+    }
+    private async Task SampleLiquid()
+    {
+        if (closing || sampling || !app.State.Settings.LiquidGlass) return;
+        if (dragging || pressed) { ScheduleLiquid(); return; } // Never touch the affinity under a held mouse button.
+        if (Expanded || !IsVisible || GlassBounds() is not { } bounds) { ScheduleLiquid(4000); return; }
+        if (bounds.Width < 4 || Covered(bounds)) { ScheduleLiquid(4000); return; }
+        sampling = true;
+        var content = (UIElement)Content;
+        bool excluded = ExcludeFromCapture(true);
+        try
+        {
+            // Excluded from capture, the tile stays on screen; an embedded child window cannot be
+            // excluded and turns transparent for the moment of the sample instead.
+            if (!excluded) content.Opacity = 0;
+            await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            if (closing) return;
+            if (dragging || pressed) { ScheduleLiquid(); return; }
+            Native.DwmFlush();
+            RenderLens(bounds);
+        }
+        finally { sampling = false; if (excluded && !live) ExcludeFromCapture(false); if (!closing) content.Opacity = Expanded ? 0 : 1; }
+    }
+    private bool RenderLens(PixelRect bounds)
+    {
+        var sample = FolderFrost.CaptureSharp(bounds, out var crop);
+        if (sample is null || !app.State.Settings.LiquidGlass) return false;
+        double scale = bounds.Width / Math.Max(1, glass.ActualWidth);
+        lens = LiquidGlass.Render(sample, crop, Ui.LiquidOptions(app.State.Settings, Group, app.State.Settings.BubbleCornerRadius * scale, scale));
+        ApplyMaterial(); return true;
+    }
+    // While dragging, a tile excluded from capture can re-render its lens from what lies beneath
+    // at its current spot: one small capture and refraction pass, at most every 33 ms.
+    // An embedded tile cannot be excluded and keeps its last lens until it is dropped.
+    private void BeginLiveGlass()
+    {
+        live = app.State.Settings.LiquidGlass && ExcludeFromCapture(true);
+        liveClock.Restart(); liveFrame = TimeSpan.FromSeconds(-1); // First move renders at once.
+    }
+    private void LiveGlass()
+    {
+        if (!live || closing || liveClock.Elapsed - liveFrame < TimeSpan.FromMilliseconds(33) || GlassBounds() is not { Width: >= 4 } bounds) return;
+        liveFrame = liveClock.Elapsed;
+        RenderLens(bounds);
+    }
+    private void EndLiveGlass()
+    {
+        if (!live) return;
+        live = false; ExcludeFromCapture(false);
+    }
+    // WDA_EXCLUDEFROMCAPTURE: screen captures see what lies behind, the screen still shows the tile.
+    // Only top-level windows support it; returns false for a tile embedded in the desktop.
+    internal bool ExcludeFromCapture(bool value)
+        => !closing && Native.SetWindowDisplayAffinity(Native.Handle(this), value ? 0x11u : 0u);
+    // Physical screen pixels of the glass tile, without the name label.
+    internal PixelRect? GlassBounds()
+    {
+        if (PresentationSource.FromVisual(glass) is null) return null;
+        var topLeft = glass.PointToScreen(new Point()); var bottomRight = glass.PointToScreen(new Point(glass.ActualWidth, glass.ActualHeight));
+        return new PixelRect(topLeft.X, topLeft.Y, bottomRight.X - topLeft.X, bottomRight.Y - topLeft.Y);
+    }
+    // Any foreign window over the tile would end up inside the glass.
+    private bool Covered(PixelRect bounds)
+    {
+        var hwnd = Native.Handle(this);
+        foreach (var (fx, fy) in new[] { (.5, .5), (.15, .15), (.85, .15), (.15, .85), (.85, .85) })
+        {
+            var hit = Native.WindowFromPoint(new Native.Point { X = (int)(bounds.X + bounds.Width * fx), Y = (int)(bounds.Y + bounds.Height * fy) });
+            if (hit != hwnd && !Native.IsChild(hwnd, hit)) return true;
+        }
+        return false;
     }
     public void Finish() { closing = true; Close(); }
     public void RefreshAppearance()
     {
         double size = app.State.Settings.MiniatureSize;
-        glass.Background = Ui.Glass(app.State.Settings, Group); glass.BorderBrush = Ui.BubbleRim(app.State.Settings, Group);
+        if (!app.State.Settings.LiquidGlass) lens = null;
+        ApplyMaterial();
         glass.CornerRadius = new CornerRadius(app.State.Settings.BubbleCornerRadius);
         glass.Width = glass.Height = size; glass.Padding = new Thickness(size * 10 / 76);
         canvas.Width = size + 28; canvas.Height = size + 40; RestorePosition();
@@ -117,6 +223,7 @@ internal sealed class BubbleWindow : Window
         if (Math.Abs(Group.X - p.X) > .5 || Math.Abs(Group.Y - p.Y) > .5) app.RequestSave();
         Group.X = p.X; Group.Y = p.Y;
         Group.Monitor = System.Windows.Forms.Screen.FromPoint(new System.Drawing.Point((int)p.X, (int)p.Y)).DeviceName;
+        ScheduleLiquid(); // Placement, size, DPI and wallpaper changes all pass through here.
     }
     private void SavePosition()
     {

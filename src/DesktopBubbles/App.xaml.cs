@@ -221,7 +221,7 @@ public partial class App : System.Windows.Application
     {
         StateStore.Validate(State); Ui.ApplyTheme(State.Settings); RequestSave();
         foreach (var bubble in bubbles) bubble.RefreshAppearance();
-        if (flyout is { } current && current.Frosted != State.Settings.FrostedFolders)
+        if (flyout is { } current && (current.Liquid != State.Settings.LiquidGlass || current.Frosted != (!State.Settings.LiquidGlass && State.Settings.FrostedFolders)))
         {
             var anchor = bubbles.FirstOrDefault(b => b.Group.Id == current.Group.Id);
             if (anchor is not null) Open(anchor); else CloseFlyout();
@@ -285,11 +285,12 @@ public partial class App : System.Windows.Application
         current.Closed += (_, _) => { window.SetExpanded(false); lastClose = DateTime.UtcNow; lastGroup = current.Group.Id; if (flyout == current) flyout = null; };
         // Seed on the anchor's monitor before first layout; WPF then adopts its DPI.
         var a = Native.Bounds(window); Native.Position(current, a.X, a.Y);
-        try { window.SetExpanded(true); current.Show(); current.Activate(); }
+        try { if (!current.HidesAnchor) window.SetExpanded(true); current.Show(); current.Activate(); }
         catch { window.SetExpanded(false); flyout = null; current.Close(); throw; }
     }
     internal void CloseFlyout() { var current = flyout; flyout = null; current?.Close(); }
     internal FlyoutWindow? CurrentFlyout => flyout;
+    internal bool Exiting => exiting;
     private ShortcutDrag? activeDrag;
     internal bool IsInternalDrag(IDataObject data)
     {

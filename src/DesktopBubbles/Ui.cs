@@ -176,6 +176,12 @@ internal static class Ui
         var bottom = Dark ? Color.FromArgb(alpha, 29, 35, 43) : Color.FromArgb(alpha, 230, 237, 242);
         var brush = new LinearGradientBrush(top, bottom, 90); brush.Freeze(); return brush;
     }
+    // A whisper of the group color; the refracted background carries the look.
+    public static LiquidGlass.Options LiquidOptions(BubbleSettings settings, BubbleGroup? group, double radius, double scale)
+    {
+        ColorValue.TryParse(AppearancePreferences.Color(settings, group), out var rgb);
+        return new(radius, scale, Dark, Color.FromRgb(rgb.R, rgb.G, rgb.B), Dark ? .1 : .08, settings.LiquidStrength);
+    }
     public static Brush BubbleRim(BubbleSettings settings, BubbleGroup group)
         => !SystemParameters.HighContrast && settings.Opacity <= 0 ? Brushes.Transparent : GlassRim();
     private static Brush Material(string tint, double opacity, bool matte)

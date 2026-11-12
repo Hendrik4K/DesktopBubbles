@@ -16,7 +16,12 @@ namespace DesktopBubbles;
 internal static class FolderFrost
 {
     internal static BitmapSource? Capture(PixelRect bounds)
+        => CaptureSharp(bounds, out var crop) is { } source ? Blur(source, crop) : null;
+
+    // The unblurred sample keeps a bleed around the bounds; liquid glass bends those pixels inward.
+    internal static BitmapSource? CaptureSharp(PixelRect bounds, out Int32Rect crop)
     {
+        crop = default;
         if (SystemParameters.HighContrast) return null;
         if (Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 1) is int value && value == 0) return null;
         const int bleed = 36;
@@ -51,8 +56,8 @@ internal static class FolderFrost
             finally { bitmap.UnlockBits(locked); }
             source.Freeze();
             int x = Math.Max(0, (int)Math.Round(bounds.X) - sample.Left), y = Math.Max(0, (int)Math.Round(bounds.Y) - sample.Top);
-            var crop = new Int32Rect(x, y, Math.Min((int)Math.Ceiling(bounds.Width), sample.Width - x), Math.Min((int)Math.Ceiling(bounds.Height), sample.Height - y));
-            return Blur(source, crop);
+            crop = new Int32Rect(x, y, Math.Min((int)Math.Ceiling(bounds.Width), sample.Width - x), Math.Min((int)Math.Ceiling(bounds.Height), sample.Height - y));
+            return crop.Width > 0 && crop.Height > 0 ? source : null;
         }
         catch (Exception ex) when (ex is Win32Exception or ExternalException or ArgumentException or InvalidOperationException)
         {
@@ -63,13 +68,17 @@ internal static class FolderFrost
 
     internal static BitmapSource Blur(BitmapSource source, Int32Rect crop)
     {
+        var result = new CroppedBitmap(Soften(source, 24), crop); result.Freeze(); return result;
+    }
+
+    internal static BitmapSource Soften(BitmapSource source, double radius)
+    {
         var image = new Image { Source = source, Stretch = Stretch.Fill,
-            Effect = new BlurEffect { Radius = 24, KernelType = KernelType.Gaussian, RenderingBias = RenderingBias.Performance } };
+            Effect = new BlurEffect { Radius = radius, KernelType = KernelType.Gaussian, RenderingBias = RenderingBias.Performance } };
         var size = new Size(source.PixelWidth, source.PixelHeight);
         image.Measure(size); image.Arrange(new Rect(size)); image.UpdateLayout();
         var target = new RenderTargetBitmap(source.PixelWidth, source.PixelHeight, 96, 96, PixelFormats.Pbgra32);
-        target.Render(image); target.Freeze();
-        var result = new CroppedBitmap(target, crop); result.Freeze(); return result;
+        target.Render(image); target.Freeze(); return target;
     }
 
     internal static Brush Material(BitmapSource sample, Brush tint)

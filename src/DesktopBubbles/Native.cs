@@ -50,6 +50,7 @@ internal static class Native
     [DllImport("dwmapi.dll")] internal static extern int DwmGetWindowAttribute(nint hwnd, int attr, out int value, int size);
     [DllImport("dwmapi.dll")] internal static extern int DwmExtendFrameIntoClientArea(nint hwnd, ref Margins margins);
     [DllImport("dwmapi.dll")] internal static extern int DwmFlush();
+    [DllImport("user32.dll")] internal static extern bool SetWindowDisplayAffinity(nint hwnd, uint affinity);
     [DllImport("user32.dll")] internal static extern bool DestroyIcon(nint icon);
     [DllImport("gdi32.dll")] internal static extern bool DeleteObject(nint obj);
     [DllImport("gdi32.dll")] internal static extern nint CreateRoundRectRgn(int left, int top, int right, int bottom, int ellipseWidth, int ellipseHeight);
