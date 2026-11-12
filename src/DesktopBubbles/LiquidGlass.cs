@@ -4,25 +4,69 @@ using System.Windows.Media.Imaging;
 
 namespace DesktopBubbles;
 
-// A rounded lens rendered once per background sample. The bezel bends pixels from
-// just outside the outline into the glass (with slight color separation), the body
-// stays calm and lightly softened, and a directional rim catches the light. The same
-// signed distance field yields an antialiased alpha edge, so DWM never sees a square.
+// A rounded lens over a background sample. The bezel bends pixels from just outside the
+// outline into the glass (with slight color separation), the body stays calm and lightly
+// softened, and a directional rim catches the light. The same signed distance field yields
+// an antialiased alpha edge, so DWM never sees a square.
+// Rendering has two stages: Prepare softens a sample once; Render refracts any rectangle of
+// it. Moving glass prepares once and renders every frame, rows in parallel and, while in
+// motion, at reduced resolution.
 internal static class LiquidGlass
 {
     internal readonly record struct Options(double Radius, double Scale, bool Dark, Color Tint, double TintAmount, double Strength = .6);
 
+    // Softened BGRA pixels of a background sample; X/Y place it in physical screen pixels.
+    internal sealed record Backdrop(byte[] Pixels, int Width, int Height, double X = 0, double Y = 0);
+
     // Light falls from the upper left, like the system highlight on iOS glass.
     private const double LightX = -.6, LightY = -.8;
 
-    internal static BitmapSource Render(BitmapSource background, Int32Rect lens, Options options)
+    internal static Backdrop Prepare(BitmapSource background, double scale, double x = 0, double y = 0)
     {
-        var soft = new FormatConvertedBitmap(FolderFrost.Soften(background, Math.Max(1.5, 2.5 * options.Scale)), PixelFormats.Bgra32, null, 0);
-        int sw = soft.PixelWidth, sh = soft.PixelHeight, stride = sw * 4;
-        var src = new byte[stride * sh]; soft.CopyPixels(src, stride, 0);
+        var source = new FormatConvertedBitmap(background, PixelFormats.Bgra32, null, 0);
+        int width = source.PixelWidth, height = source.PixelHeight;
+        var pixels = new byte[width * height * 4]; source.CopyPixels(pixels, width * 4, 0);
+        // Two box passes approximate the light Gaussian softening, in a few milliseconds even
+        // for a whole folder plus its travel path.
+        int radius = Math.Max(1, (int)Math.Round(1.6 * scale));
+        for (int pass = 0; pass < 2; pass++) { Box(pixels, width, height, radius, horizontal: true); Box(pixels, width, height, radius, horizontal: false); }
+        return new(pixels, width, height, x, y);
+    }
 
-        int w = lens.Width, h = lens.Height;
-        var dst = new byte[w * h * 4];
+    private static void Box(byte[] pixels, int width, int height, int radius, bool horizontal)
+    {
+        int lines = horizontal ? height : width, length = horizontal ? width : height;
+        int stride = horizontal ? 4 : width * 4, lineStep = horizontal ? width * 4 : 4;
+        Parallel.For(0, lines, () => new int[length * 4], (line, _, buffer) =>
+        {
+            int start = line * lineStep;
+            for (int i = 0; i < length; i++) for (int c = 0; c < 4; c++) buffer[i * 4 + c] = pixels[start + i * stride + c];
+            for (int c = 0; c < 4; c++)
+            {
+                int sum = 0, span = radius * 2 + 1;
+                for (int k = -radius; k <= radius; k++) sum += buffer[Math.Clamp(k, 0, length - 1) * 4 + c];
+                for (int i = 0; i < length; i++)
+                {
+                    pixels[start + i * stride + c] = (byte)(sum / span);
+                    sum += buffer[Math.Min(i + radius + 1, length - 1) * 4 + c] - buffer[Math.Max(i - radius, 0) * 4 + c];
+                }
+            }
+            return buffer;
+        }, _ => { });
+    }
+
+    internal static BitmapSource Render(BitmapSource background, Int32Rect lens, Options options)
+        => Render(Prepare(background, options.Scale), lens.X, lens.Y, lens.Width, lens.Height, options);
+
+    // Renders the lens whose top-left lies at (left, top) inside the backdrop. A resolution
+    // below 1 renders fewer pixels for the same lens; the brush stretches them back.
+    internal static BitmapSource Render(Backdrop backdrop, double left, double top, int w, int h, Options options, double resolution = 1)
+    {
+        resolution = Math.Clamp(resolution, .1, 1);
+        int ow = Math.Max(1, (int)Math.Ceiling(w * resolution)), oh = Math.Max(1, (int)Math.Ceiling(h * resolution));
+        double step = w / (double)ow, stepY = h / (double)oh;
+        var src = backdrop.Pixels; int sw = backdrop.Width, sh = backdrop.Height;
+        var dst = new byte[ow * oh * 4];
         double hx = w / 2d, hy = h / 2d;
         double radius = Math.Clamp(options.Radius, 0, Math.Min(hx, hy));
         // Strength deepens the bezel relative to the tile, so small miniatures bend as visibly as folders.
@@ -35,15 +79,16 @@ internal static class LiquidGlass
         double reach = Math.Min(bezel * (.5 + .9 * strength), 34); // Stays inside the capture's 36 px bleed.
         double rim = 1.3 * options.Scale;
         double tint = Math.Clamp(options.TintAmount, 0, 1);
+        var color = options.Tint; bool dark = options.Dark;
 
-        for (int y = 0; y < h; y++)
+        Parallel.For(0, oh, oy =>
         {
-            double cy = y + .5 - hy;
-            for (int x = 0; x < w; x++)
+            double y = (oy + .5) * stepY, cy = y - hy;
+            for (int ox = 0; ox < ow; ox++)
             {
-                double cx = x + .5 - hx;
+                double x = (ox + .5) * step, cx = x - hx;
                 double inside = -Distance(cx, cy, hx, hy, radius);
-                double alpha = Math.Clamp(inside + .5, 0, 1);
+                double alpha = Math.Clamp(inside / step + .5, 0, 1);
                 if (alpha <= 0) continue;
                 double depth = -Distance(cx, cy, hx, hy, shapeRadius);
                 Normal(cx, cy, hx, hy, shapeRadius, out double nx, out double ny);
@@ -51,7 +96,7 @@ internal static class LiquidGlass
                 // Convex bezel: strongest bend at the outline, none past the bezel.
                 double u = Math.Clamp(depth / bezel, 0, 1), fall = (1 - u) * (1 - u) * (1 - u);
                 double shift = reach * fall;
-                double px = lens.X + x + .5, py = lens.Y + y + .5;
+                double px = left + x, py = top + y;
                 double r = Sample(src, sw, sh, px + nx * shift * (1 + split), py + ny * shift * (1 + split), 2);
                 double g = Sample(src, sw, sh, px + nx * shift, py + ny * shift, 1);
                 double b = Sample(src, sw, sh, px + nx * shift * (1 - split), py + ny * shift * (1 - split), 0);
@@ -59,23 +104,23 @@ internal static class LiquidGlass
                 // Glass lifts saturation a little and settles toward the mode's brightness.
                 double luma = .299 * r + .587 * g + .114 * b;
                 r = luma + (r - luma) * 1.3; g = luma + (g - luma) * 1.3; b = luma + (b - luma) * 1.3;
-                if (options.Dark) { r *= .8; g *= .8; b *= .82; }
+                if (dark) { r *= .8; g *= .8; b *= .82; }
                 else { r = r * .86 + 255 * .14; g = g * .86 + 255 * .14; b = b * .86 + 255 * .14; }
-                r += (options.Tint.R - r) * tint; g += (options.Tint.G - g) * tint; b += (options.Tint.B - b) * tint;
+                r += (color.R - r) * tint; g += (color.G - g) * tint; b += (color.B - b) * tint;
 
                 double facing = nx * LightX + ny * LightY;
-                double edge = Math.Exp(-Math.Max(0, inside) / rim);
+                double edge = Math.Exp(-Math.Max(0, inside) / Math.Max(rim, step));
                 double specular = edge * (.22 + .78 * Math.Pow(Math.Max(0, facing), 2) + .45 * Math.Pow(Math.Max(0, -facing), 2));
-                double glow = (1 - u) * (1 - u) * (options.Dark ? .07 : .12);
-                double light = Math.Min(1, specular * (options.Dark ? .7 : .9) + glow);
+                double glow = (1 - u) * (1 - u) * (dark ? .07 : .12);
+                double light = Math.Min(1, specular * (dark ? .7 : .9) + glow);
                 r += (255 - r) * light; g += (255 - g) * light; b += (255 - b) * light;
 
-                int i = (y * w + x) * 4;
+                int i = (oy * ow + ox) * 4;
                 dst[i] = Channel(b * alpha); dst[i + 1] = Channel(g * alpha); dst[i + 2] = Channel(r * alpha);
                 dst[i + 3] = Channel(255 * alpha);
             }
-        }
-        var result = BitmapSource.Create(w, h, 96, 96, PixelFormats.Pbgra32, null, dst, w * 4);
+        });
+        var result = BitmapSource.Create(ow, oh, 96, 96, PixelFormats.Pbgra32, null, dst, ow * 4);
         result.Freeze(); return result;
     }
 

@@ -26,6 +26,7 @@ internal sealed class FlyoutWindow : Window
     internal bool HasFrostSample => frostSample is not null;
     internal bool HasLiquidSample => liquidSample is not null;
     private BitmapSource? frostSample, liquidSample;
+    private LiquidGlass.Backdrop? motionBackdrop;
     private bool closed;
     private FolderMotion? motion;
     private bool folding, folded;
@@ -72,7 +73,7 @@ internal sealed class FlyoutWindow : Window
             if (Reorder.IsSorting) Reorder.Stop(); else Reorder.CancelPress();
             Dispatcher.BeginInvoke(() => { if (!busy && !IsActive && !HasContextMenu() && IsVisible) Close(); });
         };
-        Closed += (_, _) => { closed = true; motion?.Stop(); Reorder.Dispose(); frostSample = liquidSample = null; surface.Background = null; };
+        Closed += (_, _) => { closed = true; motion?.Stop(); Reorder.Dispose(); frostSample = liquidSample = null; motionBackdrop = null; surface.Background = null; };
         SourceInitialized += (_, _) => { Native.ToolWindow(this); Ui.Backdrop(this, settings); Ui.RefreshRounding(this); };
         SizeChanged += (_, _) =>
         {
@@ -119,7 +120,8 @@ internal sealed class FlyoutWindow : Window
         double toRadius = AppearanceGeometry.Radius(settings.CornerRoundness, ActualWidth, ActualHeight) * scale;
         return new FolderMotion(this, surface, buttons.Values.ToList(), glass, fromRadius, toRadius,
             hideSurface: () => { surface.Background = Brushes.Transparent; surface.BorderBrush = Brushes.Transparent; },
-            showSurface: () => { surface.Opacity = 1; surface.Background = SurfaceBrush(); surface.BorderBrush = FrameBrush(); });
+            showSurface: () => { surface.Opacity = 1; surface.Background = SurfaceBrush(); surface.BorderBrush = FrameBrush(); },
+            live: liquidSample is not null ? LiveGlass : null);
     }
     // Closing folds the glass back into the miniature first; the window closes once it has landed.
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
@@ -146,13 +148,28 @@ internal sealed class FlyoutWindow : Window
     internal void SetFrostSampleForTest(BitmapSource sample) { frostSample = sample; surface.Background = SurfaceBrush(); }
     // The lens carries its own lit rim; a second drawn border would double the outline.
     private Brush FrameBrush() => liquidSample is not null || (!SystemParameters.HighContrast && FolderAppearance.Opacity(app.State.Settings) <= 0) ? Brushes.Transparent : Ui.GlassRim();
+    // One capture covers the folder and, when animated, the whole path from the miniature.
+    // The resting folder glass and every frame of the motion refract the same background.
     private BitmapSource? RenderLiquid()
     {
         var bounds = Native.Bounds(this);
-        if (FolderFrost.CaptureSharp(bounds, out var crop) is not { } sample) return null;
+        var area = Animate && anchor.GlassBounds() is { Width: > 0 } glass ? FolderMotion.Path(glass, bounds) : bounds;
+        if (FolderFrost.CaptureSharp(area, out _, out var origin) is not { } sample) return null;
         double scale = Native.GetDpiForWindow(Native.Handle(this)) / 96d;
+        var backdrop = motionBackdrop = LiquidGlass.Prepare(sample, scale, origin.X, origin.Y);
         double radius = AppearanceGeometry.Radius(app.State.Settings.CornerRoundness, ActualWidth, ActualHeight) * scale;
-        return LiquidGlass.Render(sample, crop, Ui.LiquidOptions(app.State.Settings, Group, radius, scale));
+        return LiquidGlass.Render(backdrop, bounds.X - backdrop.X, bounds.Y - backdrop.Y, (int)Math.Round(bounds.Width), (int)Math.Round(bounds.Height),
+            Ui.LiquidOptions(app.State.Settings, Group, radius, scale));
+    }
+    // A frame of travelling liquid glass; small shapes render fully, large ones at half resolution.
+    private Brush? LiveGlass(PixelRect rect, double radius)
+    {
+        if (motionBackdrop is not { } backdrop || rect.Width < 2 || rect.Height < 2) return null;
+        var settings = app.State.Settings;
+        double scale = Native.GetDpiForWindow(Native.Handle(this)) / 96d;
+        var lens = LiquidGlass.Render(backdrop, rect.X - backdrop.X, rect.Y - backdrop.Y, (int)Math.Round(rect.Width), (int)Math.Round(rect.Height),
+            Ui.LiquidOptions(settings, Group, radius, scale), rect.Width * rect.Height > 60_000 ? .5 : 1);
+        return LiquidGlass.Material(lens, FolderAppearance.Opacity(settings), Ui.Dark);
     }
     private void Place()
     {

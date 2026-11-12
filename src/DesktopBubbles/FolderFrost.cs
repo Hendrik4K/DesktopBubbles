@@ -19,9 +19,12 @@ internal static class FolderFrost
         => CaptureSharp(bounds, out var crop) is { } source ? Blur(source, crop) : null;
 
     // The unblurred sample keeps a bleed around the bounds; liquid glass bends those pixels inward.
-    internal static BitmapSource? CaptureSharp(PixelRect bounds, out Int32Rect crop)
+    internal static BitmapSource? CaptureSharp(PixelRect bounds, out Int32Rect crop) => CaptureSharp(bounds, out crop, out _);
+
+    // origin: the sample's top-left in physical screen pixels, also when clipped at a screen edge.
+    internal static BitmapSource? CaptureSharp(PixelRect bounds, out Int32Rect crop, out Point origin)
     {
-        crop = default;
+        crop = default; origin = default;
         if (SystemParameters.HighContrast) return null;
         if (Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 1) is int value && value == 0) return null;
         const int bleed = 36;
@@ -30,6 +33,7 @@ internal static class FolderFrost
             (int)Math.Floor(bounds.X) - bleed, (int)Math.Floor(bounds.Y) - bleed,
             (int)Math.Ceiling(bounds.Width) + bleed * 2, (int)Math.Ceiling(bounds.Height) + bleed * 2));
         if (sample.Width <= 0 || sample.Height <= 0 || (long)sample.Width * sample.Height > 4_000_000) return null;
+        origin = new Point(sample.Left, sample.Top);
         try
         {
             using var bitmap = new System.Drawing.Bitmap(sample.Width, sample.Height, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
