@@ -1,13 +1,14 @@
 # Änderungen
 
-## Unveröffentlicht
+## 1.8.0 · 12.11.2026
 
 - Neuer Glasstil **Liquid** für Miniaturen und Ordner: Die Glaskante bricht den echten Hintergrund wie eine Linse, mit leichter Farbaufspaltung, Glanzkante von oben links und ruhiger Mitte. Wählbar unter Miniaturen → Glas; hat Vorrang vor Milchglas. Bestehende Konfigurationen starten mit Liquid aus.
 - Regler **Liquid-Stärke** direkt unter Transparenz in Miniaturen und Ordner, gemeinsamer Wert, Standard 60 %.
 - Miniaturen nehmen ihren Hintergrund einmal pro Platzierung auf und warten, solange ein anderes Fenster darüber liegt. Beim Ziehen wird das Glas live an der aktuellen Stelle neu berechnet (höchstens 30-mal pro Sekunde, nur während des Ziehens).
 - Die Miniatur wird für Hintergrundaufnahmen per Windows-Aufnahmeausschluss unsichtbar, bleibt aber auf dem Bildschirm sichtbar: kein Blinken und keine Miniatur im Ordnerglas. In den Desktop eingebettete Miniaturen blenden sich dafür weiterhin kurz aus.
 - Ordner öffnen und schließen mit Federanimation: Glas und Symbole wachsen aus der Miniatur, die Symbole fliegen aus ihrem Platz im 3×3-Raster an ihre Position und verformen sich dabei leicht; beim Schließen schrumpft alles vollständig in die Miniatur zurück. Bei deaktivierten Animationen öffnen und schließen Ordner wie bisher sofort.
-- Native Prüfungen warten auf das Ende der Animationen und prüfen zusätzlich, dass zurückfaltende Ordner und Übergangsfenster vollständig schließen.
+- Der Look der Miniatur blendet beim Öffnen weich in den des Ordners über (auch in Milchglas) und beim Schließen zurück. Miniatur, Animation und Ordner wechseln im selben Frame und pixelgenau; Hintergrundaufnahmen warten, solange eine Animation läuft. Die Beschriftung der Miniatur blendet weich aus und ein.
+- Native Prüfungen warten auf das Ende der Animationen und prüfen zusätzlich, dass zurückfaltende Ordner und Übergangsfenster vollständig schließen und die Symbole exakt auf der Miniatur starten und landen.
 - Während des Öffnens und Schließens bricht das Liquid-Glas Frame für Frame den echten Hintergrund unter der aktuellen Form; der Bewegungsweg wird dafür einmal aufgenommen. Der Transparenzregler wirkt auch auf Liquid: Standard zeigt die reine Linse, transparenter blendet sie aus, weniger transparent legt eine milchige Schicht darüber.
 - **Desktop-Verknüpfungen kehren zurück, solange DesktopBubbles nicht läuft:** Beim Beenden über das Tray werden übernommene Verknüpfungen vom persönlichen Desktop geprüft zurückgelegt und an ihre gemerkte Position gesetzt; ist der Platz belegt oder unbekannt, ordnet Windows sie selbst ein. Beim nächsten Start werden sie per Hash-geprüfter Löschung wieder übernommen, ihre aktuelle Position wird gemerkt. Veränderte Verknüpfungen bleiben auf dem Desktop, gelöschte bleiben in der Bubble. Beim Abmelden und Herunterfahren werden sie ohne Positionierung zurückgelegt. Nach einem Absturz oder erzwungenen Beenden bleiben sie wie bisher in der Bubble. Test- und Diagnoseläufe fassen den Desktop nicht an.
 
