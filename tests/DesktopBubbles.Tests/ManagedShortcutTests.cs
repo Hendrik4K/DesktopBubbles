@@ -291,6 +291,17 @@ internal static class ManagedShortcutTests
             assert(f.Manager.Unpark(f.State).Count == 1 && File.Exists(f.Manager.Resolve(f.Group.Items[0].Target)));
             assert(f.Manager.Park(f.State).Single().Path == source && File.Exists(source));
         });
+        test("Nach Verlegen des Desktops kommen übernommene Verknüpfungen auf den neuen Desktop zurück", () =>
+        {
+            var f = New(); var source = f.Link(); f.Manager.Add(f.State, f.Group, source); var target = f.Group.Items[0].Target;
+            // Same data folder, desktop now elsewhere (e.g. C:\Users\…\Desktop → D:\Desktop).
+            var moved = new FakePlatform(Path.Combine(f.Root, "NewDesktop")); Directory.CreateDirectory(moved.PersonalDesktop);
+            var manager = new ShortcutManager(new ShortcutVault(f.Root, moved), f.Store.Save);
+            var parked = manager.Park(f.State).Single();
+            assert(parked.Path == Path.Combine(moved.PersonalDesktop, "Launcher.url") && File.Exists(parked.Path) && !File.Exists(source));
+            assert(manager.Unpark(f.State).Count == 0 && !File.Exists(parked.Path) && File.Exists(manager.Resolve(target)));
+            assert(manager.CanRestore(target) && manager.Restore(target) == parked.Path && File.Exists(parked.Path));
+        });
         test("Kopiermodus und fremde Orte werden beim Beenden nicht auf den Desktop gelegt", () =>
         {
             var f = New(); f.State.Settings.MoveDesktopShortcuts = false; var source = f.Link();

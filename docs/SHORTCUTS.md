@@ -50,7 +50,7 @@ Beim Entfernen der letzten Gruppenreferenz wird ein übernommener persönlicher 
 
 Rückgabe verwendet eine geflushte temporäre Datei und Umbenennung ohne Überschreiben. Gleicher Hash am Ziel wird wiederverwendet. Anderer Inhalt erhält einen Namen wie `Launcher (Bubble 1).lnk`. Die Sicherung bleibt erhalten. Rechtsklick kann zusätzlich zurückholen; **Zahnrad → Desktop-Verknüpfungen wiederherstellen** bezieht erhaltene, weiterhin rückgabepflichtige Journale aus entfernten Gruppen ein.
 
-Nach einer nachträglichen Desktop-Umleitung wird eine alte Quelle konservativ nicht mehr als aktueller eigener Desktop anerkannt. Nutzdaten bleiben verfügbar, benötigen dann aber eine neue Zuordnung. Das Journal garantiert keine verteilte Transaktion über Cloud-Sync, mehrere Rechner oder beliebige Strom-/Datenträgerausfälle.
+Seit 1.8.1 gehen Rückgaben nach einer nachträglichen Desktop-Umleitung (etwa von `C:\Users\…\Desktop` nach `D:\Desktop`) auf den heutigen persönlichen Desktop. Maßgeblich ist der Übernahmevermerk im Journal, der nur bei Übernahme vom damaligen eigenen Desktop gesetzt wird; importierte Sicherungen tragen ihn nie. Am früheren Ort wird nichts geschrieben oder gelöscht. Das Journal garantiert keine verteilte Transaktion über Cloud-Sync, mehrere Rechner oder beliebige Strom-/Datenträgerausfälle.
 
 ## Herausziehen und zwischen Bubbles verschieben · 1.3.0
 

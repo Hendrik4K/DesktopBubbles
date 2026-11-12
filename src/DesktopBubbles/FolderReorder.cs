@@ -61,6 +61,15 @@ internal sealed class FolderReorder : IDisposable
             var point = e.GetPosition(owner);
             if (picked is not null)
             {
+                // Leaving the folder with a picked icon hands it to the regular, confirmed
+                // drag-out: dropped on the desktop it lands right there and leaves the bubble.
+                if (!new Rect(new Point(), owner.RenderSize).Contains(point))
+                {
+                    var leaving = picked; Stop();
+                    dragged = true; pressed = null;
+                    await export(button, leaving);
+                    return;
+                }
                 if (translation is not null) { translation.X = point.X - down.X; translation.Y = point.Y - down.Y; }
                 SetTarget(TargetAt(point)); return;
             }

@@ -1,5 +1,10 @@
 # Änderungen
 
+## Unveröffentlicht
+
+- Nach dem Verlegen des Desktop-Ordners (etwa nach `D:\Desktop`) kommen übernommene Verknüpfungen beim Beenden und über „Zurück zum Desktop“ auf den heutigen Desktop. Bisher blieben sie in diesem Fall in der Bubble.
+- Ein im Sortiermodus gegriffenes Symbol lässt sich aus dem Ordner herausziehen: Auf dem Desktop losgelassen, landet die Verknüpfung genau dort und verlässt die Bubble, wie beim direkten Herausziehen.
+
 ## 1.8.0 · 12.11.2026
 
 - Neuer Glasstil **Liquid** für Miniaturen und Ordner: Die Glaskante bricht den echten Hintergrund wie eine Linse, mit leichter Farbaufspaltung, Glanzkante von oben links und ruhiger Mitte. Wählbar unter Miniaturen → Glas; hat Vorrang vor Milchglas. Bestehende Konfigurationen starten mit Liquid aus.

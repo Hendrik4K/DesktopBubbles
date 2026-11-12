@@ -156,15 +156,18 @@ public sealed class ShortcutVault : IShortcutVault
     {
         try
         {
-            var record = ReadRecord(target);
-            return record is { MoveRequested: true } && platform.IsPersonalDesktopShortcut(record.Source);
+            return ReadRecord(target) is { MoveRequested: true };
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException) { return false; }
     }
+    // MoveRequested is only ever set for a link taken from the personal desktop of its time
+    // (Prepare checks it; imports never set it). Returns always go to today's personal desktop,
+    // also after the desktop folder was moved (e.g. C:\Users\…\Desktop → D:\Desktop). Only new
+    // files are written there; nothing at the former location is touched.
     public string? Restore(string target)
     {
         var record = ReadRecord(target);
-        if (record is null || !record.MoveRequested || !platform.IsPersonalDesktopShortcut(record.Source)) return null;
+        if (record is null || !record.MoveRequested) return null;
         Verify(target, record);
         if (record.RestoredPath is { } restored && platform.IsPersonalDesktopShortcut(restored) && Matches(restored, record.Sha256)) return restored;
         // A parked copy already lies on the desktop; it simply stays there.
@@ -176,7 +179,7 @@ public sealed class ShortcutVault : IShortcutVault
     public ParkedShortcut? Park(string target)
     {
         var record = ReadRecord(target);
-        if (record is null || !record.MoveRequested || !platform.IsPersonalDesktopShortcut(record.Source)) return null;
+        if (record is null || !record.MoveRequested) return null;
         if (record.Phase == "Parked" && record.ParkedPath is { } parked && platform.IsPersonalDesktopShortcut(parked) && Matches(parked, record.Sha256))
             return new(target, parked, record.DesktopX, record.DesktopY);
         if (record.Phase != "Owned") return null;
