@@ -35,6 +35,8 @@ public partial class App : System.Windows.Application
     private HwndSource? listener;
     private Mutex? mutex;
     private bool ownsMutex, exiting, dirty, saveWarning;
+    // Taken-over desktop shortcuts return to the desktop while the app is not running.
+    private bool parkOnExit, sessionEnding;
     private int recoveryAttempts;
     private DateTime lastClose;
     private Guid lastGroup;
@@ -76,6 +78,9 @@ public partial class App : System.Windows.Application
             Shortcuts = new ShortcutManager(Vault, state => { Store.Save(state); dirty = false; });
             var recoveryNotices = Shortcuts.Recover(State);
             foreach (var notice in recoveryNotices) Log.Write(notice);
+            // Test and diagnostic runs never touch the real desktop.
+            parkOnExit = !smoke && !visual && !e.Args.Contains("--measure-idle");
+            if (parkOnExit) foreach (var notice in Shortcuts.Unpark(State)) Log.Write(notice);
             saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
             saveTimer.Tick += (_, _) => { saveTimer.Stop(); Flush(); };
             recoveryTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(900) };
@@ -99,7 +104,7 @@ public partial class App : System.Windows.Application
             });
             SystemEvents.UserPreferenceChanged += PreferencesChanged;
             SystemEvents.DisplaySettingsChanged += DisplaysChanged;
-            SessionEnding += (_, _) => Flush();
+            SessionEnding += (_, _) => { sessionEnding = true; Flush(); };
             DispatcherUnhandledException += (_, args) => { Log.Write(args.Exception.ToString()); args.Handled = true; Ui.Error(args.Exception); };
             SetupTray();
             if (smoke)
@@ -487,9 +492,33 @@ public partial class App : System.Windows.Application
         if (dirty && MessageBox.Show("Änderungen konnten nicht gespeichert werden. Trotzdem beenden?", "DesktopBubbles", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
         exiting = true; Shutdown();
     }
+    // Lays every taken-over desktop shortcut back onto the desktop and, while Explorer runs,
+    // moves each icon to its remembered spot. A spot taken by another icon, or none known,
+    // leaves the placement to Explorer, which fills the desktop from the top left.
+    private void ParkShortcuts()
+    {
+        parkOnExit = false;
+        try
+        {
+            var parked = Shortcuts.Park(State, Log.Write);
+            Log.Write($"Desktop shortcuts parked: {parked.Count}");
+            if (sessionEnding) return; // Explorer is ending too; the remembered spots stay for next time.
+            var wanted = parked.Where(p => p.X is not null && p.Y is not null).ToList();
+            var deadline = DateTime.UtcNow.AddSeconds(3);
+            while (wanted.Count > 0 && DateTime.UtcNow < deadline)
+            {
+                Thread.Sleep(150); // Explorer picks up new desktop files asynchronously.
+                var (placed, settled) = DesktopIcons.Place(wanted.Select(p => (p.Path, p.X!.Value, p.Y!.Value)).ToList());
+                foreach (var item in wanted.Where(p => placed.Contains(p.Path))) Shortcuts.ConfirmPlacement(item.Target, item.X!.Value, item.Y!.Value);
+                wanted.RemoveAll(p => settled.Contains(p.Path));
+            }
+        }
+        catch (Exception ex) { Log.Write("Desktop shortcuts could not be parked completely: " + ex); }
+    }
     protected override void OnExit(ExitEventArgs e)
     {
         exiting = true; Flush(); saveTimer?.Stop(); recoveryTimer?.Stop();
+        if (parkOnExit) ParkShortcuts();
         SystemEvents.UserPreferenceChanged -= PreferencesChanged; SystemEvents.DisplaySettingsChanged -= DisplaysChanged;
         CloseFlyout(); foreach (var window in bubbles.ToArray()) { try { window.Finish(); } catch (InvalidOperationException) { } }
         tray?.Dispose(); trayIcon?.Dispose(); Icons.Dispose(); listener?.Dispose();

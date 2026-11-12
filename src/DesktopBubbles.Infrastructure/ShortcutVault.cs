@@ -13,6 +13,13 @@ public sealed class ShortcutRecord
     public string Phase { get; set; } = "Prepared";
     public bool MoveRequested { get; set; }
     public string? RestoredPath { get; set; }
+    // Where the icon sat on the desktop; it returns there while the app is not running.
+    public int? DesktopX { get; set; }
+    public int? DesktopY { get; set; }
+    // Phase "Parked": laid back onto the desktop at exit, taken over again at the next start.
+    public string? ParkedPath { get; set; }
+    public int? ParkedX { get; set; }
+    public int? ParkedY { get; set; }
 }
 
 /// <summary>Append-only recovery payloads. Config backups remain usable after removal/import.</summary>
@@ -105,7 +112,7 @@ public sealed class ShortcutVault : IShortcutVault
         if (existing is not null)
         {
             var previous = ReadRecord(existing)!;
-            if (move) { previous.MoveRequested = true; previous.Phase = "Prepared"; WriteRecord(previous); }
+            if (move) { previous.MoveRequested = true; previous.Phase = "Prepared"; RememberPosition(previous, source); WriteRecord(previous); }
             return new(existing, move);
         }
         if (!File.Exists(source)) throw new FileNotFoundException("Desktop-Verknüpfung wurde nicht gefunden.", source);
@@ -120,8 +127,14 @@ public sealed class ShortcutVault : IShortcutVault
             File.Delete(destination);
             throw new IOException("Diese Verknüpfung lässt sich nicht sicher umziehen. Das Original bleibt erhalten. Bitte die Anwendung direkt über „Installierte App“ oder ihre Programmdatei hinzufügen.");
         }
-        WriteRecord(new ShortcutRecord { FileName = name, Source = source, Sha256 = Hash(destination), MoveRequested = move });
+        var record = new ShortcutRecord { FileName = name, Source = source, Sha256 = Hash(destination), MoveRequested = move };
+        if (move) RememberPosition(record, source);
+        WriteRecord(record);
         return new(target, move);
+    }
+    private void RememberPosition(ShortcutRecord record, string path)
+    {
+        if (platform.DesktopIconPosition(path) is { } position) (record.DesktopX, record.DesktopY) = position;
     }
     public void Complete(PreparedShortcut prepared)
     {
@@ -153,9 +166,59 @@ public sealed class ShortcutVault : IShortcutVault
         var record = ReadRecord(target);
         if (record is null || !record.MoveRequested || !platform.IsPersonalDesktopShortcut(record.Source)) return null;
         Verify(target, record);
+        if (record.RestoredPath is { } restored && platform.IsPersonalDesktopShortcut(restored) && Matches(restored, record.Sha256)) return restored;
+        // A parked copy already lies on the desktop; it simply stays there.
+        var destination = record.Phase == "Parked" && record.ParkedPath is { } parked && platform.IsPersonalDesktopShortcut(parked) && Matches(parked, record.Sha256)
+            ? parked : PlaceOnDesktop(target, record);
+        record.RestoredPath = destination; record.Phase = "Restored"; record.ParkedPath = null; WriteRecord(record);
+        return destination;
+    }
+    public ParkedShortcut? Park(string target)
+    {
+        var record = ReadRecord(target);
+        if (record is null || !record.MoveRequested || !platform.IsPersonalDesktopShortcut(record.Source)) return null;
+        if (record.Phase == "Parked" && record.ParkedPath is { } parked && platform.IsPersonalDesktopShortcut(parked) && Matches(parked, record.Sha256))
+            return new(target, parked, record.DesktopX, record.DesktopY);
+        if (record.Phase != "Owned") return null;
+        Verify(target, record);
+        var path = PlaceOnDesktop(target, record);
+        record.Phase = "Parked"; record.ParkedPath = path; record.ParkedX = record.ParkedY = null; WriteRecord(record);
+        return new(target, path, record.DesktopX, record.DesktopY);
+    }
+    public void ConfirmPlacement(string target, int x, int y)
+    {
+        var record = ReadRecord(target); if (record is not { Phase: "Parked" }) return;
+        record.ParkedX = x; record.ParkedY = y; WriteRecord(record);
+    }
+    public string? Unpark(string target)
+    {
+        var record = ReadRecord(target);
+        if (record is not { Phase: "Parked" }) return null;
+        var path = record.ParkedPath;
+        if (path is null || !platform.IsPersonalDesktopShortcut(path) || !File.Exists(path))
+        {
+            // Deleted from the desktop meanwhile: the bubble keeps its verified copy.
+            record.Phase = "Owned"; record.ParkedPath = null; WriteRecord(record);
+            return "Geparkte Desktop-Verknüpfung fehlt; die Bubble verwendet ihre Kopie: " + Path.GetFileName(record.Source);
+        }
+        if (!Matches(path, record.Sha256))
+        {
+            // Edited on the desktop: never delete it. It stays there; the bubble keeps its copy.
+            record.Phase = "Copied"; record.MoveRequested = false; record.ParkedPath = null; WriteRecord(record);
+            return "Desktop-Verknüpfung wurde verändert und bleibt auf dem Desktop: " + path;
+        }
+        // Where we placed it is not news; a different spot means the user moved it.
+        if (platform.DesktopIconPosition(path) is { } now && (record.ParkedX is null ? record.DesktopX is null : now != (record.ParkedX.Value, record.ParkedY!.Value)))
+            (record.DesktopX, record.DesktopY) = now;
+        platform.DeleteOriginalIfUnchanged(path, record.Sha256);
+        record.Phase = "Owned"; record.ParkedPath = null; record.ParkedX = record.ParkedY = null; WriteRecord(record);
+        return null;
+    }
+    // Copies the vault file onto the personal desktop under its original name or a free variant.
+    private string PlaceOnDesktop(string target, ShortcutRecord record)
+    {
         Directory.CreateDirectory(platform.PersonalDesktop);
         var destination = Path.Combine(platform.PersonalDesktop, Path.GetFileName(record.Source));
-        if (record.RestoredPath is { } restored && platform.IsPersonalDesktopShortcut(restored) && Matches(restored, record.Sha256)) return restored;
         // Never overwrite a desktop file, including a different shortcut with the same name.
         for (int i = 0; ; i++)
         {
@@ -174,7 +237,6 @@ public sealed class ShortcutVault : IShortcutVault
             }
             finally { if (File.Exists(temp)) File.Delete(temp); }
         }
-        record.RestoredPath = destination; record.Phase = "Restored"; WriteRecord(record);
         return destination;
     }
     public IReadOnlyList<string> Recover(ISet<string> referenced)

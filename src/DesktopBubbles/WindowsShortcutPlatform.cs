@@ -42,6 +42,14 @@ internal sealed class WindowsShortcutPlatform(string? desktopOverride = null) : 
             if (shell is not null) Marshal.FinalReleaseComObject(shell);
         }
     }
+    // One desktop enumeration serves a burst of lookups, e.g. all shortcuts at start.
+    private (DateTime Time, List<DesktopIcons.Item>? Items) iconCache;
+    public (int X, int Y)? DesktopIconPosition(string path)
+    {
+        if (desktopOverride is not null) return null; // Fixture desktops have no Explorer view.
+        if (DateTime.UtcNow - iconCache.Time > TimeSpan.FromSeconds(2)) iconCache = (DateTime.UtcNow, DesktopIcons.Items());
+        return iconCache.Items?.FirstOrDefault(i => string.Equals(i.Path, path, StringComparison.OrdinalIgnoreCase)) is { Path: not null } item ? (item.X, item.Y) : null;
+    }
     public void DeleteOriginalIfUnchanged(string path, string sha256)
     {
         if (!IsPersonalDesktopShortcut(path) || (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0) throw new IOException("Diese Datei wird nicht vom Desktop entfernt.");

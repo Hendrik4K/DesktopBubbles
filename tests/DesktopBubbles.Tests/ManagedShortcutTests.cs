@@ -258,6 +258,45 @@ internal static class ManagedShortcutTests
         {
             var f = New(); f.Group.ShowName = false; f.State.Settings.MoveDesktopShortcuts = false; f.Store.Save(f.State); var state = f.Store.Load(); assert(!state.Groups[0].ShowName && !state.Settings.MoveDesktopShortcuts);
         });
+        test("Beenden legt übernommene Verknüpfung mit Position zurück, Start übernimmt sie wieder", () =>
+        {
+            var f = New(); var source = f.Link(); f.Platform.Positions[source] = (300, 120);
+            f.Manager.Add(f.State, f.Group, source); var target = f.Group.Items.Single().Target;
+            assert(!File.Exists(source));
+            var parked = f.Manager.Park(f.State).Single();
+            assert(parked.Path == source && File.Exists(source) && parked.X == 300 && parked.Y == 120 && f.Group.Items.Single().Target == target);
+            assert(f.Manager.Park(f.State).Single().Path == source); // A second exit reuses the parked file.
+            f.Manager.ConfirmPlacement(target, 300, 120);
+            assert(f.Manager.Unpark(f.State).Count == 0 && !File.Exists(source) && File.Exists(f.Manager.Resolve(target)));
+            assert(f.Manager.Park(f.State).Single() is { X: 300, Y: 120 } && File.Exists(source));
+        });
+        test("Auf dem Desktop verschobene geparkte Verknüpfung merkt sich die neue Position", () =>
+        {
+            var f = New(); var source = f.Link(); f.Platform.Positions[source] = (10, 10);
+            f.Manager.Add(f.State, f.Group, source); f.Manager.Park(f.State); f.Manager.ConfirmPlacement(f.Group.Items[0].Target, 10, 10);
+            f.Platform.Positions[source] = (500, 260); f.Manager.Unpark(f.State);
+            assert(f.Manager.Park(f.State).Single() is { X: 500, Y: 260 });
+        });
+        test("Veränderte geparkte Verknüpfung bleibt auf dem Desktop und wird nicht gelöscht", () =>
+        {
+            var f = New(); var source = f.Link(); f.Manager.Add(f.State, f.Group, source); f.Manager.Park(f.State);
+            File.WriteAllText(source, "[InternetShortcut]\nURL=https://example.org");
+            var notices = f.Manager.Unpark(f.State);
+            assert(notices.Count == 1 && File.ReadAllText(source).Contains("example.org") && f.Manager.Park(f.State).Count == 0 && File.Exists(f.Manager.Resolve(f.Group.Items[0].Target)));
+        });
+        test("Gelöschte geparkte Verknüpfung bleibt in der Bubble und kehrt beim nächsten Beenden zurück", () =>
+        {
+            var f = New(); var source = f.Link(); f.Manager.Add(f.State, f.Group, source); f.Manager.Park(f.State);
+            File.Delete(source);
+            assert(f.Manager.Unpark(f.State).Count == 1 && File.Exists(f.Manager.Resolve(f.Group.Items[0].Target)));
+            assert(f.Manager.Park(f.State).Single().Path == source && File.Exists(source));
+        });
+        test("Kopiermodus und fremde Orte werden beim Beenden nicht auf den Desktop gelegt", () =>
+        {
+            var f = New(); f.State.Settings.MoveDesktopShortcuts = false; var source = f.Link();
+            f.Manager.Add(f.State, f.Group, source); File.Delete(source);
+            assert(f.Manager.Park(f.State).Count == 0 && !File.Exists(source));
+        });
         test("Popup-Zentrum und vier Bildschirmkanten", () =>
         {
             assert(Placement.Flyout(new(800, 500, 100, 100), 400, 400, new(0, 0, 1920, 1080)) == (650, 350));
@@ -284,6 +323,8 @@ internal static class ManagedShortcutTests
     private sealed class FakePlatform(string desktop) : IShortcutPlatform
     {
         public bool DenyDelete, Valid = true;
+        public Dictionary<string, (int X, int Y)> Positions { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public (int X, int Y)? DesktopIconPosition(string path) => File.Exists(path) && Positions.TryGetValue(path, out var p) ? p : null;
         public string PersonalDesktop => desktop;
         public bool IsPersonalDesktopShortcut(string path) => Path.IsPathFullyQualified(path) && Path.GetDirectoryName(path) == desktop && Path.GetExtension(path) is ".lnk" or ".url";
         public bool ValidateRelocatedShortcut(string source, string copy) => Valid;

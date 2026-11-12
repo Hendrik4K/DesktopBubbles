@@ -8,9 +8,13 @@ public interface IShortcutPlatform
     bool ValidateRelocatedShortcut(string source, string copy);
     void DeleteOriginalIfUnchanged(string path, string sha256);
     string PersonalDesktop { get; }
+    // Optional: the icon's spot in the desktop view, in view coordinates. Null when unknown.
+    (int X, int Y)? DesktopIconPosition(string path) => null;
 }
 
 public sealed record PreparedShortcut(string Target, bool RemoveOriginal);
+// A desktop shortcut laid back onto the desktop while the app is not running.
+public sealed record ParkedShortcut(string Target, string Path, int? X, int? Y);
 public interface IShortcutVault
 {
     string Resolve(string target);
@@ -21,6 +25,9 @@ public interface IShortcutVault
     void ConfirmExport(string target);
     string? FindBySource(string source);
     IReadOnlyList<string> Recover(ISet<string> referenced);
+    ParkedShortcut? Park(string target);
+    void ConfirmPlacement(string target, int x, int y);
+    string? Unpark(string target);
 }
 
 /// <summary>Use cases commit state before removing originals. The vault keeps recovery copies.</summary>
@@ -122,4 +129,33 @@ public sealed class ShortcutManager(IShortcutVault vault, Action<BubbleState> pe
         return true;
     }
     public IReadOnlyList<string> Recover(BubbleState state) => vault.Recover(state.Groups.SelectMany(g => g.Items).Select(e => e.Target).ToHashSet(StringComparer.Ordinal));
+
+    /// <summary>On exit: lay every taken-over desktop shortcut back onto the desktop. Groups keep their entries.</summary>
+    public IReadOnlyList<ParkedShortcut> Park(BubbleState state, Action<string>? notice = null)
+    {
+        var parked = new List<ParkedShortcut>();
+        foreach (var target in Managed(state))
+        {
+            try { if (vault.Park(target) is { } item) parked.Add(item); }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+            { notice?.Invoke("Verknüpfung bleibt in der Bubble: " + target + " · " + ex.Message); }
+        }
+        return parked;
+    }
+    public void ConfirmPlacement(string target, int x, int y) => vault.ConfirmPlacement(target, x, y);
+
+    /// <summary>On start: take the parked desktop shortcuts back. Changed or missing ones are reported, never deleted.</summary>
+    public IReadOnlyList<string> Unpark(BubbleState state)
+    {
+        var notices = new List<string>();
+        foreach (var target in Managed(state))
+        {
+            try { if (vault.Unpark(target) is { } notice) notices.Add(notice); }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+            { notices.Add("Desktop-Verknüpfung bleibt zusätzlich auf dem Desktop: " + target + " · " + ex.Message); }
+        }
+        return notices;
+    }
+    private static IEnumerable<string> Managed(BubbleState state)
+        => state.Groups.SelectMany(g => g.Items).Select(e => e.Target).Where(ManagedTargets.IsManaged).Distinct(StringComparer.Ordinal);
 }
