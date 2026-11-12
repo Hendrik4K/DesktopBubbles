@@ -340,7 +340,7 @@ internal static class SmokeTests
         Check("Flyout öffnet", app.CurrentFlyout is { IsVisible: true });
         Check("Geöffnetes Raster enthält keinerlei sichtbaren Text", !Descendants(app.CurrentFlyout!).OfType<System.Windows.Controls.TextBlock>().Any());
         Check("Kacheln behalten zugängliche App-Namen", Descendants(app.CurrentFlyout!).OfType<System.Windows.Controls.Button>().All(b => !string.IsNullOrWhiteSpace(System.Windows.Automation.AutomationProperties.GetName(b))));
-        Check("Mini-Bubble während geöffnetem Raster ausgeblendet", app.Bubbles[0].Expanded && ((UIElement)app.Bubbles[0].Content).Opacity == 0);
+        Check("Mini-Bubble während geöffnetem Raster ausgeblendet", app.Bubbles[0].Expanded && !app.Bubbles[0].TileVisible);
         var anchorBounds = Native.Bounds(app.Bubbles[0]); var popupBounds = Native.Bounds(app.CurrentFlyout!);
         var workArea = Native.WorkArea(anchorBounds.X + anchorBounds.Width / 2, anchorBounds.Y + anchorBounds.Height / 2);
         var expectedPopup = Placement.Flyout(anchorBounds, popupBounds.Width, popupBounds.Height, workArea);
@@ -392,7 +392,7 @@ internal static class SmokeTests
             }
             Check("Fliegende Symbole starten und landen exakt auf den Symbolen der Miniatur", measured > 0 && worst < 1, $"Abweichung={worst:0.00} px bei {measured} Symbolen");
         }
-        Check("Mini-Bubble nach Schließen wieder sichtbar", !app.Bubbles[0].Expanded && ((UIElement)app.Bubbles[0].Content).Opacity == 1);
+        Check("Mini-Bubble nach Schließen wieder sichtbar", !app.Bubbles[0].Expanded && app.Bubbles[0].TileVisible && ((UIElement)app.Bubbles[0].Content).Opacity == 1);
         app.Open(app.Bubbles[0]); await Task.Delay(200); settings.Activate(); await Task.Delay(250); await SettleMotion();
         Check("Fokuswechsel schließt Flyout", !app.HasFlyout);
         app.CloseFlyout(); await Task.Delay(100);

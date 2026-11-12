@@ -80,6 +80,8 @@ internal sealed class FolderMotion
     }
 
     public bool Running => pending || step is not null;
+    // True while any open or close motion has an overlay on screen.
+    internal static bool Active => GlassOverlay.Any;
 
     public void Open(Action hideAnchor)
     {
@@ -124,7 +126,7 @@ internal sealed class FolderMotion
             }
             if (!last) return false;
             // The overlay now covers the miniature exactly: reveal it underneath, then retire.
-            reveal(); overlay!.Retire(); overlay = null; done(); return true;
+            reveal(); overlay!.Reveal(false); overlay.Retire(); overlay = null; done(); return true;
         }, ready: null);
     }
 
@@ -171,6 +173,9 @@ internal sealed class FolderMotion
         {
             if (!pending || overlay != target) return;
             pending = false;
+            // One dispatcher pass swaps both windows, so they reach DWM in the same render pass:
+            // never a frame without glass, never two translucent layers stacked.
+            target.Reveal(true);
             ready?.Invoke();
             hideSurface(); surface.Opacity = 1;
             foreach (var track in tracks) track.Real.Opacity = 0;
@@ -184,7 +189,7 @@ internal sealed class FolderMotion
     {
         showSurface();
         foreach (var track in tracks) track.Real.Opacity = 1;
-        overlay?.Retire(); overlay = null;
+        overlay?.Reveal(false); overlay?.Retire(); overlay = null;
     }
 
     private void OnRendering(object? sender, EventArgs e)
@@ -279,11 +284,19 @@ internal sealed class FolderMotion
             blob = new Border { Background = snapshot };
             // The miniature's material rides on top of the folder's and crossfades with it.
             mini = new Border { Background = miniature, BorderBrush = miniatureRim, BorderThickness = new Thickness(miniatureRim is null ? 0 : 1), Opacity = 0 };
-            var canvas = new Canvas(); canvas.Children.Add(blob); canvas.Children.Add(mini);
+            // Built and composed invisibly; Reveal swaps it in together with the window it replaces.
+            var canvas = new Canvas { Opacity = 0 }; canvas.Children.Add(blob); canvas.Children.Add(mini);
             foreach (var icon in icons) canvas.Children.Add(icon);
             Content = canvas;
-            Closed += (_, _) => closed = true;
+            alive++;
+            Closed += (_, _) => { closed = true; alive--; };
         }
+
+        // Open overlays; background captures wait while any is on screen, so they never contain one.
+        private static int alive;
+        public static bool Any => alive > 0;
+
+        public void Reveal(bool visible) => ((UIElement)Content).Opacity = visible ? 1 : 0;
 
         // first lays out frame zero before anything is drawn; ready runs once DWM shows it.
         public void Present(Action first, Action ready)

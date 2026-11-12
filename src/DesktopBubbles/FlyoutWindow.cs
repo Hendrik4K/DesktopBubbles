@@ -93,6 +93,8 @@ internal sealed class FlyoutWindow : Window
                 // The miniature is still on screen and the folder may open over it; keep it out of the sample.
                 bool excluded = anchor.ExcludeFromCapture(true);
                 if (!excluded) anchor.SetExpanded(true);
+                // A folder still folding away elsewhere must not end up in this glass.
+                for (int wait = 0; wait < 16 && FolderMotion.Active && !closed; wait++) await Task.Delay(50);
                 await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                 if (closed) { if (excluded) anchor.ExcludeFromCapture(false); return; }
                 Native.DwmFlush();

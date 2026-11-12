@@ -12,6 +12,7 @@ internal sealed class BubbleWindow : Window
     private readonly App app;
     public BubbleGroup Group { get; }
     private readonly Border glass;
+    private readonly TextBlock label;
     private readonly Grid canvas;
     private Native.Point startCursor;
     private PixelRect startWindow;
@@ -40,7 +41,7 @@ internal sealed class BubbleWindow : Window
             BorderBrush = Ui.BubbleRim(app.State.Settings, group), Background = Ui.Glass(app.State.Settings, group), Padding = new Thickness(size * 10 / 76),
         };
         root.Children.Add(glass);
-        var name = Ui.Text(group.Name, 12); name.Foreground = Brushes.White; name.TextAlignment = TextAlignment.Center;
+        var name = label = Ui.Text(group.Name, 12); name.Foreground = Brushes.White; name.TextAlignment = TextAlignment.Center;
         name.MaxHeight = 32; name.Margin = new Thickness(-4, 6, -4, 0);
         name.Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 4, ShadowDepth = 1, Opacity = .8, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance };
         name.Visibility = group.ShowName ? Visibility.Visible : Visibility.Collapsed;
@@ -124,6 +125,8 @@ internal sealed class BubbleWindow : Window
     {
         if (closing || sampling || !app.State.Settings.LiquidGlass) return;
         if (dragging || pressed) { ScheduleLiquid(); return; } // Never touch the affinity under a held mouse button.
+        // A folder or its motion overlay may lie over the tile, even in the tile's own look.
+        if (FolderMotion.Active || app.HasFlyout) { ScheduleLiquid(800); return; }
         if (Expanded || !IsVisible || GlassBounds() is not { } bounds) { ScheduleLiquid(4000); return; }
         if (bounds.Width < 4 || Covered(bounds)) { ScheduleLiquid(4000); return; }
         sampling = true;
@@ -136,11 +139,11 @@ internal sealed class BubbleWindow : Window
             if (!excluded) content.Opacity = 0;
             await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             if (closing) return;
-            if (dragging || pressed) { ScheduleLiquid(); return; }
+            if (dragging || pressed || FolderMotion.Active || app.HasFlyout) { ScheduleLiquid(); return; }
             Native.DwmFlush();
             RenderLens(bounds);
         }
-        finally { sampling = false; if (excluded && !live) ExcludeFromCapture(false); if (!closing) content.Opacity = Expanded ? 0 : 1; }
+        finally { sampling = false; if (excluded && !live) ExcludeFromCapture(false); if (!closing) content.Opacity = 1; }
     }
     private bool RenderLens(PixelRect bounds)
     {
@@ -160,7 +163,7 @@ internal sealed class BubbleWindow : Window
     }
     private void LiveGlass()
     {
-        if (!live || closing || liveClock.Elapsed - liveFrame < TimeSpan.FromMilliseconds(33) || GlassBounds() is not { Width: >= 4 } bounds) return;
+        if (!live || closing || FolderMotion.Active || liveClock.Elapsed - liveFrame < TimeSpan.FromMilliseconds(33) || GlassBounds() is not { Width: >= 4 } bounds) return;
         liveFrame = liveClock.Elapsed;
         RenderLens(bounds);
     }
@@ -213,9 +216,16 @@ internal sealed class BubbleWindow : Window
         if (closing) return;
         Expanded = value;
         // Keep the HWND and its physical bounds for placement and DPI. Transparent pixels pass through.
-        ((UIElement)Content).Opacity = value ? 0 : 1;
+        // The tile swaps instantly (the folder or its motion shows it); the label fades softly.
+        glass.Opacity = value ? 0 : 1;
         IsHitTestVisible = !value;
+        double target = value ? 0 : 1;
+        if (app.State.Settings.Animations && SystemParameters.ClientAreaAnimation)
+            label.BeginAnimation(OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(target, TimeSpan.FromMilliseconds(value ? 120 : 220))
+                { EasingFunction = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseOut } });
+        else { label.BeginAnimation(OpacityProperty, null); label.Opacity = target; }
     }
+    internal bool TileVisible => glass.Opacity > 0;
     public void RestorePosition()
     {
         // A desktop host can span monitors while its child HWNDs inherit one DPI.
