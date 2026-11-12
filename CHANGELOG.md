@@ -3,7 +3,9 @@
 ## Unveröffentlicht
 
 - Nach dem Verlegen des Desktop-Ordners (etwa nach `D:\Desktop`) kommen übernommene Verknüpfungen beim Beenden und über „Zurück zum Desktop“ auf den heutigen Desktop. Bisher blieben sie in diesem Fall in der Bubble.
-- Ein im Sortiermodus gegriffenes Symbol lässt sich aus dem Ordner herausziehen: Auf dem Desktop losgelassen, landet die Verknüpfung genau dort und verlässt die Bubble, wie beim direkten Herausziehen.
+- Herausziehen aus Ordnern funktioniert wieder: Symbol anklicken, ohne Haltepause auf den Desktop ziehen und loslassen; die Verknüpfung landet dort und verlässt die Bubble. Die Zieh-Logik bekam zuvor keine Mausbewegungen, weil der gedrückte Button sie selbst abfing.
+- Im Sortiermodus tauschen zwei Symbole ihre Plätze mit einer weichen Federbewegung, das gegriffene gleitet von dort, wo es losgelassen wurde.
+- Direktes Ziehen ohne Wackelmodus tauscht innerhalb desselben Ordners keine Plätze mehr; dort zeigt der Mauszeiger „nicht möglich“. Verschieben in eine andere Bubble bleibt möglich.
 
 ## 1.8.0 · 12.11.2026
 

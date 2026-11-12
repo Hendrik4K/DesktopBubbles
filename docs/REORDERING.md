@@ -11,7 +11,7 @@ Verfügbar ab Version 1.6.0. Bestehende Gruppen und das Datenschema 6 bleiben er
 
 Loslassen auf einer freien Stelle oder außerhalb des Ordners bricht den aktuellen Griff ab. Das Öffnen eines Kontextmenüs bricht ebenfalls den Griff ab. Beim Schließen oder Deaktivieren des Ordners enden Sortiermodus und Animationen.
 
-Ein kurzer Klick startet weiterhin die gewählte Anwendung. Direktes Ziehen ohne vorheriges Gedrückthalten bleibt die bestehende Drag-&-Drop-Bedienung, etwa zum Desktop oder in eine andere Gruppe. Im Sortiermodus startet ein normaler Klick keine Anwendung. Die vorhandenen Kontextmenü-Aktionen bleiben verfügbar.
+Ein kurzer Klick startet weiterhin die gewählte Anwendung. Direktes Ziehen ohne vorheriges Gedrückthalten bleibt die bestehende Drag-&-Drop-Bedienung, etwa zum Desktop oder in eine andere Gruppe; innerhalb desselben Ordners tauscht es seit 1.8.1 keine Plätze. Getauschte Symbole gleiten mit einer Federbewegung an ihren neuen Platz. Im Sortiermodus startet ein normaler Klick keine Anwendung. Die vorhandenen Kontextmenü-Aktionen bleiben verfügbar.
 
 ## Implementierung
 

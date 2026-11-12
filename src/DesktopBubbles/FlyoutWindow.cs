@@ -52,7 +52,13 @@ internal sealed class FlyoutWindow : Window
         var root = new StackPanel(); surface.Child = root; Content = surface;
         scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = grid };
         Reorder = new FolderReorder(this, scroll,
-            (first, second) => WithDialog(() => { try { app.SwapEntries(Group, first, second); } catch (Exception ex) { Ui.Error(ex); } _ = Populate(); }),
+            (first, second, released) => WithDialog(() =>
+            {
+                // Where both icons are drawn right now: the picked one where it was let go.
+                var from = new Dictionary<Guid, Point> { [first.Id] = SlotOf(first.Id) + released, [second.Id] = SlotOf(second.Id) };
+                try { app.SwapEntries(Group, first, second); } catch (Exception ex) { Ui.Error(ex); }
+                _ = Populate(); GlideFrom(from);
+            }),
             async (button, entry) =>
             {
                 busy = true;
@@ -63,7 +69,7 @@ internal sealed class FlyoutWindow : Window
         System.Windows.Automation.AutomationProperties.SetName(this, Group.Name);
         ContextMenu = CreateAddMenu();
         AllowDrop = true;
-        DragOver += (_, e) => { e.Effects = app.IsInternalDrag(e.Data) ? DragDropEffects.Move : e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None; e.Handled = true; };
+        DragOver += (_, e) => { e.Effects = app.DropEffect(e.Data, Group); e.Handled = true; };
         Drop += (_, e) =>
         {
             app.ReceiveDrop(Group, e.Data); _ = Populate();
@@ -144,6 +150,36 @@ internal sealed class FlyoutWindow : Window
         motion = CreateMotion();
         if (motion is null) { folded = true; Dispatcher.BeginInvoke(Close); return; }
         motion.Close(reveal: () => anchor.SetExpanded(false), done: () => { folded = true; Close(); });
+    }
+    private Point SlotOf(Guid id) => buttons.TryGetValue(id, out var button) && button.IsVisible ? button.TranslatePoint(new Point(), grid) : new Point();
+    // After a swap the icons are already in their new slots; each starts drawn where it was
+    // and glides home, so the two visibly trade places instead of jumping.
+    private void GlideFrom(IReadOnlyDictionary<Guid, Point> from)
+    {
+        if (!app.State.Settings.Animations || !SystemParameters.ClientAreaAnimation) return;
+        grid.UpdateLayout();
+        var spring = new Spring(.36, .86);
+        double duration = spring.SettleTime;
+        foreach (var (id, start) in from)
+        {
+            if (!buttons.TryGetValue(id, out var button)) continue;
+            var delta = start - button.TranslatePoint(new Point(), grid);
+            if (delta.Length < .5) continue;
+            var shift = new TranslateTransform(delta.X, delta.Y); button.RenderTransform = shift;
+            Panel.SetZIndex(button, 5);
+            var ease = new SpringEase(spring, duration) { EasingMode = EasingMode.EaseIn }; // EaseIn = the curve as written.
+            var time = TimeSpan.FromSeconds(duration);
+            var x = new DoubleAnimation(delta.X, 0, time) { EasingFunction = ease };
+            var y = new DoubleAnimation(delta.Y, 0, time) { EasingFunction = ease };
+            x.Completed += (_, _) => { button.RenderTransform = Transform.Identity; Panel.SetZIndex(button, 0); };
+            shift.BeginAnimation(TranslateTransform.XProperty, x); shift.BeginAnimation(TranslateTransform.YProperty, y);
+        }
+    }
+    // The same closed-form spring as the folder motion, as a WPF easing curve.
+    private sealed class SpringEase(Spring spring, double duration) : EasingFunctionBase
+    {
+        protected override double EaseInCore(double t) => t >= 1 ? 1 : spring.Value(t * duration);
+        protected override Freezable CreateInstanceCore() => new SpringEase(spring, duration);
     }
     private bool HasContextMenu() => buttons.Values.Any(b => b.ContextMenu?.IsOpen == true) || ContextMenu?.IsOpen == true;
     internal void RefreshAppearance()

@@ -86,7 +86,7 @@ internal sealed class BubbleWindow : Window
             EndLiveGlass();
             if (moved) { SavePosition(); app.Changed(); }
         };
-        DragOver += (_, e) => { e.Effects = app.IsInternalDrag(e.Data) ? DragDropEffects.Move : e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None; e.Handled = true; };
+        DragOver += (_, e) => { e.Effects = app.DropEffect(e.Data, Group); e.Handled = true; };
         Drop += (_, e) => { app.ReceiveDrop(Group, e.Data, true); e.Handled = true; };
         SourceInitialized += (_, _) =>
         {

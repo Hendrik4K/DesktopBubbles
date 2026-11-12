@@ -13,7 +13,8 @@ internal sealed class FolderReorder : IDisposable
 {
     private readonly Window owner;
     private readonly FrameworkElement viewport;
-    private readonly Action<AppEntry, AppEntry> swap;
+    // Swap receives where the picked icon was let go, relative to its own slot.
+    private readonly Action<AppEntry, AppEntry, Vector> swap;
     private readonly Func<Button, AppEntry, Task> export;
     private readonly Func<bool> animate;
     private readonly DispatcherTimer hold = new() { Interval = TimeSpan.FromMilliseconds(500) };
@@ -27,7 +28,7 @@ internal sealed class FolderReorder : IDisposable
     internal bool HoldPending => hold.IsEnabled;
     internal bool HasPickedEntry => picked is not null;
 
-    public FolderReorder(Window owner, FrameworkElement viewport, Action<AppEntry, AppEntry> swap, Func<Button, AppEntry, Task> export, Func<bool> animate)
+    public FolderReorder(Window owner, FrameworkElement viewport, Action<AppEntry, AppEntry, Vector> swap, Func<Button, AppEntry, Task> export, Func<bool> animate)
     {
         this.owner = owner; this.viewport = viewport; this.swap = swap; this.export = export; this.animate = animate;
         hold.Tick += HoldElapsed; owner.PreviewMouseLeftButtonDown += BackgroundDown;
@@ -63,15 +64,7 @@ internal sealed class FolderReorder : IDisposable
             var point = e.GetPosition(owner);
             if (picked is not null)
             {
-                // Leaving the folder with a picked icon hands it to the regular, confirmed
-                // drag-out: dropped on the desktop it lands right there and leaves the bubble.
-                if (!new Rect(new Point(), owner.RenderSize).Contains(point))
-                {
-                    var leaving = picked; Stop();
-                    dragged = true; pressed = null;
-                    await export(button, leaving);
-                    return;
-                }
+                // Wiggle mode only reorders; dragging out of the folder is the plain drag's job.
                 if (translation is not null) { translation.X = point.X - down.X; translation.Y = point.Y - down.Y; }
                 SetTarget(TargetAt(point)); return;
             }
@@ -119,9 +112,10 @@ internal sealed class FolderReorder : IDisposable
     private void DropOn(Button? destination)
     {
         var source = picked;
+        var offset = translation is null ? new Vector() : new Vector(translation.X, translation.Y);
         AppEntry? other = destination is not null && entries.TryGetValue(destination, out var found) ? found : null;
         CancelPress();
-        if (source is not null && other is not null && source != other) swap(source, other);
+        if (source is not null && other is not null && source != other) swap(source, other, offset);
     }
     private Button? TargetAt(Point point)
     {

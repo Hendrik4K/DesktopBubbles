@@ -297,6 +297,10 @@ public partial class App : System.Windows.Application
     internal FlyoutWindow? CurrentFlyout => flyout;
     internal bool Exiting => exiting;
     private ShortcutDrag? activeDrag;
+    // Effect shown while dragging over a bubble or folder of the given group.
+    internal DragDropEffects DropEffect(IDataObject data, BubbleGroup group)
+        => IsInternalDrag(data) ? activeDrag?.Group == group ? DragDropEffects.None : DragDropEffects.Move
+            : data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None;
     internal bool IsInternalDrag(IDataObject data)
     {
         if (activeDrag is null) return false;
@@ -311,10 +315,11 @@ public partial class App : System.Windows.Application
     {
         if (IsInternalDrag(data) && activeDrag is { } drag)
         {
+            // Within one folder only the wiggle mode reorders; a plain drag changes nothing there.
+            if (drag.Group == group) { drag.Internal = true; return; }
             try
             {
-                if (drag.Group == group && index is { } position && position >= 0 && position < group.Items.Count) Shortcuts.Swap(State, group, drag.Entry, group.Items[position]);
-                else Shortcuts.Transfer(State, drag.Group, group, drag.Entry, index);
+                Shortcuts.Transfer(State, drag.Group, group, drag.Entry, index);
                 drag.Internal = true; Changed();
             }
             catch (Exception ex) { Ui.Error(ex); }

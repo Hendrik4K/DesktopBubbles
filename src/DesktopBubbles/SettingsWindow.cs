@@ -124,7 +124,7 @@ internal sealed class SettingsWindow : Window
             if (group == selected) button.SetResourceReference(Button.BackgroundProperty, "HoverFill"); else button.Background = Brushes.Transparent;
             button.BorderThickness = new Thickness(0); button.ToolTip = group.Name + " · Rechtsklick für Aktionen";
             button.ContextMenu = GroupActionsMenu.Create(app, group); button.AllowDrop = true;
-            button.DragOver += (_, e) => { e.Effects = app.IsInternalDrag(e.Data) ? DragDropEffects.Move : e.Data.GetDataPresent(DataFormats.FileDrop) ? DragDropEffects.Copy : DragDropEffects.None; e.Handled = true; };
+            button.DragOver += (_, e) => { e.Effects = app.DropEffect(e.Data, group); e.Handled = true; };
             button.Drop += (_, e) => { app.ReceiveDrop(group, e.Data, true); e.Handled = true; };
             groups.Children.Add(button);
         }
