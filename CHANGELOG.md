@@ -1,5 +1,14 @@
 # Änderungen
 
+## Unveröffentlicht
+
+- Neuer Glasstil **Liquid** für Miniaturen und Ordner: Die Glaskante bricht den echten Hintergrund wie eine Linse, mit leichter Farbaufspaltung, Glanzkante von oben links und ruhiger Mitte. Wählbar unter Miniaturen → Glas; hat Vorrang vor Milchglas. Bestehende Konfigurationen starten mit Liquid aus.
+- Regler **Liquid-Stärke** direkt unter Transparenz in Miniaturen und Ordner, gemeinsamer Wert, Standard 60 %.
+- Miniaturen nehmen ihren Hintergrund einmal pro Platzierung auf und warten, solange ein anderes Fenster darüber liegt. Beim Ziehen wird das Glas live an der aktuellen Stelle neu berechnet (höchstens 30-mal pro Sekunde, nur während des Ziehens).
+- Die Miniatur wird für Hintergrundaufnahmen per Windows-Aufnahmeausschluss unsichtbar, bleibt aber auf dem Bildschirm sichtbar: kein Blinken und keine Miniatur im Ordnerglas. In den Desktop eingebettete Miniaturen blenden sich dafür weiterhin kurz aus.
+- Ordner öffnen und schließen mit Federanimation: Glas und Symbole wachsen aus der Miniatur, die Symbole fliegen aus ihrem Platz im 3×3-Raster an ihre Position und verformen sich dabei leicht; beim Schließen schrumpft alles vollständig in die Miniatur zurück. Bei deaktivierten Animationen öffnen und schließen Ordner wie bisher sofort.
+- Native Prüfungen warten auf das Ende der Animationen und prüfen zusätzlich, dass zurückfaltende Ordner und Übergangsfenster vollständig schließen.
+
 ## 1.7.1 · 11.11.2026
 
 - Neues App-Symbol mit schillernden Regenbogen-Seifenblasen für EXE, Fenster, Taskleiste, Tray und Installer. Neun ICO-Auflösungen von 16 bis 256 Pixeln erhalten den transparenten Hintergrund; das bereitgestellte PNG bleibt unverändert.
