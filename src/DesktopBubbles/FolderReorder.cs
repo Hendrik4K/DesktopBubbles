@@ -52,7 +52,9 @@ internal sealed class FolderReorder : IDisposable
             }
             else pressed = null;
         };
-        button.MouseMove += async (_, e) =>
+        // Preview: a pressed, mouse-capturing ButtonBase marks MouseMove handled in its class
+        // handler, so a plain MouseMove subscription never sees the drag.
+        button.PreviewMouseMove += async (_, e) =>
         {
             if (pressed != button || releasing) return;
             // Capture changes can generate hover moves; only button-up, lost

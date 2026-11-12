@@ -326,10 +326,13 @@ public partial class App : System.Windows.Application
         try
         {
             var drag = new ShortcutDrag(this, group, entry); activeDrag = drag; DragDropEffects result;
+            Log.Write("Drag out started: " + entry.Name);
             try { result = DragDrop.DoDragDrop(source, drag.Data, DragDropEffects.Copy | DragDropEffects.Move); }
             finally { activeDrag = null; }
+            Log.Write($"Drag out ended: effect={result}, internal={drag.Internal}");
             if (drag.Internal || result == DragDropEffects.None) { drag.Cleanup(); return; }
             bool confirmed = await drag.Confirmed(result);
+            Log.Write($"Drag out confirmed={confirmed}");
             if (Shortcuts.CompleteExport(State, group, entry, confirmed)) Changed();
             else if (result != DragDropEffects.None) Log.Write("Drop not confirmed: kept bubble entry and staging copy.");
             if (confirmed) drag.Cleanup();
