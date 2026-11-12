@@ -30,6 +30,9 @@ internal sealed class FlyoutWindow : Window
     private bool closed;
     private FolderMotion? motion;
     private bool folding, folded;
+    // Optional auto close: counts only while the mouse is off the folder.
+    private readonly System.Windows.Threading.DispatcherTimer autoClose = new();
+    internal bool AutoCloseArmed => autoClose.IsEnabled;
     private bool Animate => app.State.Settings.Animations && SystemParameters.ClientAreaAnimation && !app.Exiting;
     internal bool Animating => motion?.Running == true;
     // An animated folder hides its miniature itself, once the travelling glass has replaced it.
@@ -81,7 +84,16 @@ internal sealed class FlyoutWindow : Window
             if (Reorder.IsSorting) Reorder.Stop(); else Reorder.CancelPress();
             Dispatcher.BeginInvoke(() => { if (!busy && !IsActive && !HasContextMenu() && IsVisible) Close(); });
         };
-        Closed += (_, _) => { closed = true; motion?.Stop(); Reorder.Dispose(); frostSample = liquidSample = null; motionBackdrop = null; surface.Background = null; };
+        autoClose.Tick += (_, _) =>
+        {
+            autoClose.Stop();
+            // Never in the middle of something: re-arm and wait for the next quiet stretch.
+            if (busy || HasContextMenu() || Reorder.IsSorting || Reorder.HoldPending || IsMouseOver || Animating) { ArmAutoClose(); return; }
+            if (app.CurrentFlyout == this) app.CloseFlyout(); else Close();
+        };
+        MouseEnter += (_, _) => autoClose.Stop();
+        MouseLeave += (_, _) => ArmAutoClose();
+        Closed += (_, _) => { closed = true; autoClose.Stop(); motion?.Stop(); Reorder.Dispose(); frostSample = liquidSample = null; motionBackdrop = null; surface.Background = null; };
         SourceInitialized += (_, _) => { Native.ToolWindow(this); Ui.Backdrop(this, settings); Ui.RefreshRounding(this); };
         SizeChanged += (_, _) =>
         {
@@ -119,7 +131,16 @@ internal sealed class FlyoutWindow : Window
             else { surface.Opacity = 1; if (!closed) anchor.SetExpanded(true); }
             buttons.Values.FirstOrDefault()?.Focus();
             Prepared = true;
+            ArmAutoClose();
         };
+    }
+    private void ArmAutoClose()
+    {
+        autoClose.Stop();
+        var settings = app.State.Settings;
+        if (!settings.AutoCloseFolders || closed || folding || !Prepared || IsMouseOver) return;
+        autoClose.Interval = TimeSpan.FromSeconds(Math.Clamp(settings.AutoCloseSeconds, 1, 120));
+        autoClose.Start();
     }
     private FolderMotion? CreateMotion()
     {
@@ -185,6 +206,7 @@ internal sealed class FlyoutWindow : Window
     internal void RefreshAppearance()
     {
         surface.Background = SurfaceBrush(); surface.BorderBrush = FrameBrush(); Ui.RefreshRounding(this);
+        ArmAutoClose(); // Picks up a switched setting or a new duration.
     }
     private Brush SurfaceBrush() => liquidSample is not null ? LiquidGlass.Material(liquidSample, FolderAppearance.Opacity(app.State.Settings), Ui.Dark)
         : frostSample is null ? Ui.WindowGlass(app.State.Settings, Group)

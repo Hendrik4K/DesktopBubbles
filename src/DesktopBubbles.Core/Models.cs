@@ -24,6 +24,8 @@ public sealed class BubbleSettings
     public bool FrostedFolders { get; set; }
     public bool LiquidGlass { get; set; } // Refracting glass for miniatures and folders; takes precedence over frost.
     public double LiquidStrength { get; set; } = .6; // 0..1: bezel depth, bend and color separation.
+    public bool AutoCloseFolders { get; set; } // Close an open folder after a pause without the mouse on it.
+    public int AutoCloseSeconds { get; set; } = 5;
     public double FrostedFolderOpacity { get; set; } = .55;
     public double AppCornerRadius { get; set; } = 8;
     public double BubbleCornerRadius { get; set; } = 20;

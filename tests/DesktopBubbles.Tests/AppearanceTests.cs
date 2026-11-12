@@ -20,6 +20,12 @@ internal static class AppearanceTests
             FolderAppearance.SetTransparency(settings, 60); settings.FrostedFolders = true;
             assert(Math.Abs(settings.WindowOpacity - .4) < .0001 && FolderAppearance.Opacity(settings) == FolderAppearance.FrostedOpacity);
         });
+        test("Automatisches Schließen ist aus und bleibt zwischen 1 und 120 Sekunden", () =>
+        {
+            var state = new BubbleState(); assert(!state.Settings.AutoCloseFolders && state.Settings.AutoCloseSeconds == 5);
+            state.Settings.AutoCloseSeconds = 0; StateStore.Validate(state); assert(state.Settings.AutoCloseSeconds == 1);
+            state.Settings.AutoCloseSeconds = 999; StateStore.Validate(state); assert(state.Settings.AutoCloseSeconds == 120);
+        });
         test("Liquid hat Vorrang vor Milchglas und folgt der normalen Ordnertransparenz", () =>
         {
             var settings = new BubbleSettings { WindowOpacity = .27, FrostedFolders = true, LiquidGlass = true };

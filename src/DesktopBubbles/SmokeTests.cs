@@ -137,7 +137,12 @@ internal static class SmokeTests
         Check("Verwaltung verwendet feste dezente Ecken statt eigenem Rundungsregler", app.State.Settings.AppCornerRadius == Ui.AppRadius && !settings.AllowsTransparency);
         var gear = Descendants(settings).OfType<System.Windows.Controls.Button>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Einstellungen");
         gear.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(100);
-        Check("Zahnrad zeigt App-Darstellung und allgemeine Checkboxen", settings.Scope == AppearanceScope.App && Descendants(settings).OfType<System.Windows.Controls.CheckBox>().Count() == 5);
+        Check("Zahnrad zeigt App-Darstellung und allgemeine Checkboxen", settings.Scope == AppearanceScope.App && Descendants(settings).OfType<System.Windows.Controls.CheckBox>().Count() == 6);
+        // Auto close sits right below the shared bubble colors, its seconds on the right.
+        var linkOrigin = settings.LinkColorsCheckBox!.TranslatePoint(new Point(), settings); var autoOrigin = settings.AutoCloseCheckBox!.TranslatePoint(new Point(), settings);
+        Check("„Bubble automatisch schließen“ steht unter der Farbkopplung, Sekunden rechts daneben, standardmäßig aus",
+            autoOrigin.Y > linkOrigin.Y && Math.Abs(autoOrigin.X - linkOrigin.X) < 1 && settings.AutoCloseCheckBox.IsChecked == false
+            && settings.AutoCloseSeconds!.Text == "5 s" && settings.AutoCloseSeconds.TranslatePoint(new Point(), settings).X > autoOrigin.X + 150);
         Check("Einstellungen verbergen die Ansichtsreiter", !Descendants(settings).OfType<System.Windows.Controls.Button>().Any(b => b.Content is string text && text is "Miniatur" or "Ordner"));
         var back = Descendants(settings).OfType<System.Windows.Controls.Button>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Zurück zur Miniaturansicht");
         back.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
@@ -395,6 +400,18 @@ internal static class SmokeTests
         Check("Mini-Bubble nach Schließen wieder sichtbar", !app.Bubbles[0].Expanded && app.Bubbles[0].TileVisible && ((UIElement)app.Bubbles[0].Content).Opacity == 1);
         app.Open(app.Bubbles[0]); await Task.Delay(200); settings.Activate(); await Task.Delay(250); await SettleMotion();
         Check("Fokuswechsel schließt Flyout", !app.HasFlyout);
+        app.CloseFlyout(); await SettleWindows();
+        app.State.Settings.AutoCloseFolders = true; app.State.Settings.AutoCloseSeconds = 1;
+        app.Open(app.Bubbles[0]); await Task.Delay(200); await SettleMotion();
+        var autoFolder = app.CurrentFlyout;
+        // The real pointer may happen to rest on the folder; then the countdown rightly waits.
+        if (autoFolder is { IsMouseOver: false })
+        {
+            Check("Automatisches Schließen zählt ohne Maus auf dem Ordner", autoFolder.AutoCloseArmed);
+            await Task.Delay(1600); await SettleWindows();
+            Check("Ordner schließt sich nach der eingestellten Zeit ohne Maus selbst", !app.HasFlyout && !autoFolder.IsVisible);
+        }
+        app.State.Settings.AutoCloseFolders = false; app.State.Settings.AutoCloseSeconds = 5; app.CloseFlyout(); await SettleWindows();
         app.CloseFlyout(); await Task.Delay(100);
         // Warm up framework template and popup caches before checking repeated lifetime cycles.
         for (int i = 0; i < 5; i++) { app.Open(app.Bubbles[0]); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle); app.CloseFlyout(); }

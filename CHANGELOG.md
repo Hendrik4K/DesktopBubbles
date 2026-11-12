@@ -2,6 +2,8 @@
 
 ## Unveröffentlicht
 
+- Neue Einstellung **Bubble automatisch schließen** unter „Bubble-Farben für alle übernehmen“, mit Sekundenwahl rechts daneben (1–120 s, Standard 5 s, standardmäßig aus). Ein geöffneter Ordner schließt sich nach dieser Zeit ohne Maus auf ihm; mit der Maus darauf läuft keine Zeit ab. Während Sortieren, Ziehen, offener Menüs oder Dialoge schließt nichts.
+
 - Nach dem Verlegen des Desktop-Ordners (etwa nach `D:\Desktop`) kommen übernommene Verknüpfungen beim Beenden und über „Zurück zum Desktop“ auf den heutigen Desktop. Bisher blieben sie in diesem Fall in der Bubble.
 - Herausziehen aus Ordnern funktioniert wieder: Symbol anklicken, ohne Haltepause auf den Desktop ziehen und loslassen; die Verknüpfung landet dort und verlässt die Bubble. Die Zieh-Logik bekam zuvor keine Mausbewegungen, weil der gedrückte Button sie selbst abfing.
 - Im Sortiermodus tauschen zwei Symbole ihre Plätze mit einer weichen Federbewegung, das gegriffene gleitet von dort, wo es losgelassen wurde.

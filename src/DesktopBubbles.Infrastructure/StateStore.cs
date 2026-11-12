@@ -117,6 +117,7 @@ public sealed class StateStore(string path)
         s.WindowOpacity = double.IsFinite(s.WindowOpacity) ? Math.Clamp(s.WindowOpacity, 0, .95) : .35;
         s.FrostedFolderOpacity = double.IsFinite(s.FrostedFolderOpacity) ? Math.Clamp(s.FrostedFolderOpacity, 0, 1) : .55;
         s.LiquidStrength = double.IsFinite(s.LiquidStrength) ? Math.Clamp(s.LiquidStrength, 0, 1) : .6;
+        s.AutoCloseSeconds = Math.Clamp(s.AutoCloseSeconds, 1, 120);
         s.AppCornerRadius = 8;
         s.CornerRoundness = double.IsFinite(s.CornerRoundness) ? Math.Clamp(s.CornerRoundness, 0, 50) : 14;
         s.AppOpacity = double.IsFinite(s.AppOpacity) ? Math.Clamp(s.AppOpacity, .2, .95) : .65;

@@ -46,6 +46,8 @@ internal sealed class SettingsWindow : Window
     internal Slider? SizeSlider { get; private set; }
     internal Slider? RoundingSlider { get; private set; }
     internal Slider? LiquidStrengthSlider { get; private set; }
+    internal CheckBox? AutoCloseCheckBox { get; private set; }
+    internal TextBlock? AutoCloseSeconds { get; private set; }
     internal LiveMeasurementBar Measurement { get; }
     internal ColorPickerPanel? Picker { get; private set; }
     public SettingsWindow(App app)
@@ -433,6 +435,30 @@ internal sealed class SettingsWindow : Window
         reset.ToolTip = "Setzt App- und alle Bubble-Farben zurück. Transparenz, Größe und Rundung bleiben erhalten.";
         reset.Margin = new Thickness(0); reset.Padding = new Thickness(10, 7, 10, 7); reset.VerticalAlignment = VerticalAlignment.Center;
         Grid.SetColumn(reset, 1); colors.Children.Add(reset); root.Children.Add(colors);
+        // Auto close: switch on the left, seconds stepper on the right.
+        var closing = new Grid { Margin = new Thickness(0, 0, 0, 8) }; closing.ColumnDefinitions.Add(new ColumnDefinition()); closing.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var s = app.State.Settings;
+        AutoCloseCheckBox = new CheckBox { Content = new TextBlock { Text = "Bubble automatisch schließen", TextWrapping = TextWrapping.Wrap }, IsChecked = s.AutoCloseFolders, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
+        AutoCloseCheckBox.ToolTip = "Schließt einen geöffneten Ordner, wenn die Maus so lange nicht auf ihm war. Mit der Maus darauf läuft keine Zeit ab.";
+        var seconds = Ui.Text("", 13); seconds.MinWidth = 44; seconds.TextAlignment = TextAlignment.Center; seconds.VerticalAlignment = VerticalAlignment.Center;
+        var stepper = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        Button less = null!, more = null!;
+        Button Step(string glyph, string name, int delta)
+        {
+            var button = Ui.IconButton(glyph, name, () => { s.AutoCloseSeconds = Math.Clamp(s.AutoCloseSeconds + delta, 1, 120); ShowSeconds(); app.ApplyAppearance(); });
+            button.Padding = new Thickness(7); return button;
+        }
+        less = Step("", "Eine Sekunde weniger", -1); more = Step("", "Eine Sekunde mehr", 1);
+        void ShowSeconds()
+        {
+            seconds.Text = $"{s.AutoCloseSeconds} s"; less.IsEnabled = s.AutoCloseFolders && s.AutoCloseSeconds > 1; more.IsEnabled = s.AutoCloseFolders && s.AutoCloseSeconds < 120;
+            seconds.Opacity = stepper.Opacity = s.AutoCloseFolders ? 1 : .45;
+            System.Windows.Automation.AutomationProperties.SetName(seconds, $"Ordner schließen nach {s.AutoCloseSeconds} Sekunden");
+        }
+        AutoCloseCheckBox.Click += (_, _) => { s.AutoCloseFolders = AutoCloseCheckBox.IsChecked == true; ShowSeconds(); app.ApplyAppearance(); };
+        stepper.Children.Add(less); stepper.Children.Add(seconds); stepper.Children.Add(more); ShowSeconds();
+        AutoCloseSeconds = seconds;
+        closing.Children.Add(AutoCloseCheckBox); Grid.SetColumn(stepper, 1); closing.Children.Add(stepper); root.Children.Add(closing);
         CheckBox Check(string text, bool value, Action<bool> set)
         {
             var box = new CheckBox { Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap }, IsChecked = value };
