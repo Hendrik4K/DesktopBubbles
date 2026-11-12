@@ -42,9 +42,11 @@ internal readonly record struct Spring(double Response, double Damping)
 // composed before the previous one steps aside, so no frame shows a gap.
 internal sealed class FolderMotion
 {
-    // Horizontal and vertical springs differ a little: that difference is the jelly.
-    private static readonly Spring GlassX = new(.46, .8), GlassY = new(.52, .78);
-    private static readonly Spring IconMove = new(.44, .76), IconWidth = new(.38, .62), IconHeight = new(.5, .6);
+    // Horizontal and vertical springs differ in pace: that difference is the jelly. They are
+    // critically damped, so nothing grows past its final size and shrinks back while settling.
+    private static readonly Spring GlassX = new(.42, 1), GlassY = new(.5, 1);
+    // Icons travel with a hint of follow-through; their size settles without visible swelling.
+    private static readonly Spring IconMove = new(.42, .86), IconWidth = new(.36, .94), IconHeight = new(.46, .92);
     private static readonly Spring CloseX = new(.36, .94), CloseY = new(.4, .92), CloseIcon = new(.34, .96);
     private const double IconStagger = .012, ExtraFade = .1;
 
