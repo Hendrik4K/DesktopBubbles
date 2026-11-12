@@ -54,7 +54,10 @@ internal sealed class FolderMotion
     private readonly PixelRect from, to; // Physical pixels: miniature glass and folder surface.
     private readonly double fromRadius, toRadius; // Physical pixels.
     private readonly Action hideSurface, showSurface;
-    private readonly Func<PixelRect, double, Brush?>? live; // Refracts the real background for the current shape.
+    // Refracts the real background for the current shape; p runs 0 (miniature) to 1 (folder).
+    private readonly Func<PixelRect, double, double, Brush?>? live;
+    // The miniature's own glass and rim, faded out as the glass becomes the folder (and back in on close).
+    private readonly Brush? miniature, miniatureRim;
     private readonly Stopwatch clock = new();
     private GlassOverlay? overlay;
     private Track[] tracks = [];
@@ -63,9 +66,10 @@ internal sealed class FolderMotion
 
     private sealed record Track(FrameworkElement Real, Image Ghost, PixelRect Mini, PixelRect Final, bool InMiniature, double Delay);
 
-    public FolderMotion(Window folder, Border surface, IReadOnlyList<Button> buttons, PixelRect from, double fromRadius, double toRadius, Action hideSurface, Action showSurface, Func<PixelRect, double, Brush?>? live = null)
+    public FolderMotion(Window folder, Border surface, IReadOnlyList<Button> buttons, PixelRect from, double fromRadius, double toRadius, Action hideSurface, Action showSurface,
+        Func<PixelRect, double, double, Brush?>? live = null, Brush? miniature = null, Brush? miniatureRim = null)
     {
-        this.live = live;
+        this.live = live; this.miniature = miniature; this.miniatureRim = miniatureRim;
         this.folder = folder; this.surface = surface; this.buttons = buttons; this.from = from; this.fromRadius = fromRadius; this.toRadius = toRadius;
         this.hideSurface = hideSurface; this.showSurface = showSurface;
         to = Native.Bounds(folder);
@@ -80,7 +84,8 @@ internal sealed class FolderMotion
             + Math.Max(IconMove.SettleTime, Math.Max(IconWidth.SettleTime, IconHeight.SettleTime)));
         Start(t =>
         {
-            Glass(Lerp(from, to, GlassX.Value(t), GlassY.Value(t)), Radius(Math.Min(GlassX.Value(t), GlassY.Value(t))));
+            double grow = Math.Min(GlassX.Value(t), GlassY.Value(t));
+            Glass(Lerp(from, to, GlassX.Value(t), GlassY.Value(t)), Radius(grow), grow);
             foreach (var track in tracks)
             {
                 double local = t - track.Delay;
@@ -102,7 +107,7 @@ internal sealed class FolderMotion
         {
             double px = 1 - CloseX.Value(t), py = 1 - CloseY.Value(t);
             // Shrinks all the way onto the miniature; no fading on the way.
-            Glass(Lerp(from, to, px, py), Radius(Math.Min(px, py)));
+            Glass(Lerp(from, to, px, py), Radius(Math.Min(px, py)), Math.Min(px, py));
             double q = 1 - CloseIcon.Value(t);
             foreach (var track in tracks)
             {
@@ -144,7 +149,7 @@ internal sealed class FolderMotion
         // Closest icons leave first, so the grid unfolds outward from the miniature.
         tracks = list.OrderBy(x => Math.Pow(x.Final.X + x.Final.Width / 2 - center.X, 2) + Math.Pow(x.Final.Y + x.Final.Height / 2 - center.Y, 2))
             .Select((x, rank) => x with { Delay = rank * IconStagger }).ToArray();
-        overlay = new GlassOverlay(folder, Union(from, to), glass, tracks.Select(x => x.Ghost));
+        overlay = new GlassOverlay(folder, Union(from, to), glass, tracks.Select(x => x.Ghost), miniature, miniatureRim);
     }
 
     // Shows the overlay with the first frame already laid out, waits until DWM has composed
@@ -194,7 +199,13 @@ internal sealed class FolderMotion
         return bitmap;
     }
 
-    private void Glass(PixelRect rect, double radius) => overlay!.Glass(rect, radius, live?.Invoke(rect, radius));
+    private void Glass(PixelRect rect, double radius, double p)
+    {
+        p = Math.Clamp(p, 0, 1);
+        // The miniature's look is gone by three quarters of the way; smoothstep keeps both ends soft.
+        double fade = Math.Clamp(p / .75, 0, 1); fade = fade * fade * (3 - 2 * fade);
+        overlay!.Glass(rect, radius, live?.Invoke(rect, radius, p), miniature is null && miniatureRim is null ? 0 : 1 - fade);
+    }
 
     // Screen area the glass can cover while travelling, overshoot included.
     internal static PixelRect Path(PixelRect from, PixelRect to) => Union(from, to);
@@ -226,13 +237,13 @@ internal sealed class FolderMotion
     private sealed class GlassOverlay : Window
     {
         private readonly Window folder;
-        private readonly Border blob;
+        private readonly Border blob, mini;
         private readonly Brush snapshot;
         private readonly PixelRect bounds;
         private double scale = 1;
         private bool closed;
 
-        public GlassOverlay(Window folder, PixelRect bounds, BitmapSource glass, IEnumerable<Image> icons)
+        public GlassOverlay(Window folder, PixelRect bounds, BitmapSource glass, IEnumerable<Image> icons, Brush? miniature, Brush? miniatureRim)
         {
             this.folder = folder; this.bounds = bounds;
             WindowStyle = WindowStyle.None; ResizeMode = ResizeMode.NoResize; AllowsTransparency = true; Background = Brushes.Transparent;
@@ -240,7 +251,9 @@ internal sealed class FolderMotion
             Left = -32000; Top = -32000; Width = 1; Height = 1;
             snapshot = new ImageBrush(glass) { Stretch = Stretch.Fill }; snapshot.Freeze();
             blob = new Border { Background = snapshot };
-            var canvas = new Canvas(); canvas.Children.Add(blob);
+            // The miniature's material rides on top of the folder's and crossfades with it.
+            mini = new Border { Background = miniature, BorderBrush = miniatureRim, BorderThickness = new Thickness(miniatureRim is null ? 0 : 1), Opacity = 0 };
+            var canvas = new Canvas(); canvas.Children.Add(blob); canvas.Children.Add(mini);
             foreach (var icon in icons) canvas.Children.Add(icon);
             Content = canvas;
             Closed += (_, _) => closed = true;
@@ -275,11 +288,14 @@ internal sealed class FolderMotion
             Dispatcher.InvokeAsync(async () => { Native.DwmFlush(); await Task.Delay(50); if (!closed) Close(); });
         }
 
-        public void Glass(PixelRect rect, double radius, Brush? material)
+        public void Glass(PixelRect rect, double radius, Brush? material, double miniature)
         {
+            var corner = new CornerRadius(Math.Clamp(radius, 0, Math.Min(rect.Width, rect.Height) / 2) / scale);
             Place(blob, rect);
-            blob.Background = material ?? snapshot;
-            blob.CornerRadius = new CornerRadius(Math.Clamp(radius, 0, Math.Min(rect.Width, rect.Height) / 2) / scale);
+            blob.Background = material ?? snapshot; blob.CornerRadius = corner;
+            Place(mini, rect); mini.CornerRadius = corner; mini.Opacity = miniature;
+            // Material on material would double up mid-way; the folder layer fades in as the miniature fades out.
+            blob.Opacity = miniature <= 0 ? 1 : Math.Clamp(1.25 - miniature, 0, 1);
         }
 
         public void Ghost(Image icon, PixelRect rect, double opacity) { Place(icon, rect); icon.Opacity = opacity; }

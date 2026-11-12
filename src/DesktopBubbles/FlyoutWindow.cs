@@ -121,7 +121,10 @@ internal sealed class FlyoutWindow : Window
         return new FolderMotion(this, surface, buttons.Values.ToList(), glass, fromRadius, toRadius,
             hideSurface: () => { surface.Background = Brushes.Transparent; surface.BorderBrush = Brushes.Transparent; },
             showSurface: () => { surface.Opacity = 1; surface.Background = SurfaceBrush(); surface.BorderBrush = FrameBrush(); },
-            live: liquidSample is not null ? LiveGlass : null);
+            live: liquidSample is not null ? LiveGlass : null,
+            // Without a live lens, the miniature's own glass crossfades into the folder's material.
+            miniature: liquidSample is null ? Ui.Glass(settings, Group) : null,
+            miniatureRim: liquidSample is null ? Ui.BubbleRim(settings, Group) : null);
     }
     // Closing folds the glass back into the miniature first; the window closes once it has landed.
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
@@ -162,14 +165,16 @@ internal sealed class FlyoutWindow : Window
             Ui.LiquidOptions(app.State.Settings, Group, radius, scale));
     }
     // A frame of travelling liquid glass; small shapes render fully, large ones at half resolution.
-    private Brush? LiveGlass(PixelRect rect, double radius)
+    // Its transparency moves from the miniature's setting (p = 0) to the folder's (p = 1).
+    private Brush? LiveGlass(PixelRect rect, double radius, double p)
     {
         if (motionBackdrop is not { } backdrop || rect.Width < 2 || rect.Height < 2) return null;
         var settings = app.State.Settings;
         double scale = Native.GetDpiForWindow(Native.Handle(this)) / 96d;
         var lens = LiquidGlass.Render(backdrop, rect.X - backdrop.X, rect.Y - backdrop.Y, (int)Math.Round(rect.Width), (int)Math.Round(rect.Height),
             Ui.LiquidOptions(settings, Group, radius, scale), rect.Width * rect.Height > 60_000 ? .5 : 1);
-        return LiquidGlass.Material(lens, FolderAppearance.Opacity(settings), Ui.Dark);
+        double opacity = settings.Opacity + (FolderAppearance.Opacity(settings) - settings.Opacity) * p;
+        return LiquidGlass.Material(lens, opacity, Ui.Dark);
     }
     private void Place()
     {
