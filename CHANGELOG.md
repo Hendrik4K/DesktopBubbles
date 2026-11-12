@@ -1,6 +1,6 @@
 # Änderungen
 
-## Unveröffentlicht
+## 1.8.1 · 12.11.2026
 
 - Neue Einstellung **Bubble automatisch schließen** unter „Bubble-Farben für alle übernehmen“, mit Sekundenwahl rechts daneben (1–120 s, Standard 5 s, standardmäßig aus). Ein geöffneter Ordner schließt sich nach dieser Zeit ohne Maus auf ihm; mit der Maus darauf läuft keine Zeit ab. Während Sortieren, Ziehen, offener Menüs oder Dialoge schließt nichts.
 
