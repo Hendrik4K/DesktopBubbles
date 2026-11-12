@@ -20,6 +20,15 @@ internal static class AppearanceTests
             FolderAppearance.SetTransparency(settings, 60); settings.FrostedFolders = true;
             assert(Math.Abs(settings.WindowOpacity - .4) < .0001 && FolderAppearance.Opacity(settings) == FolderAppearance.FrostedOpacity);
         });
+        test("Liquid hat Vorrang vor Milchglas und folgt der normalen Ordnertransparenz", () =>
+        {
+            var settings = new BubbleSettings { WindowOpacity = .27, FrostedFolders = true, LiquidGlass = true };
+            assert(!FolderAppearance.Frosted(settings) && FolderAppearance.Opacity(settings) == .27);
+            FolderAppearance.SetTransparency(settings, 80);
+            assert(Math.Abs(settings.WindowOpacity - .2) < .0001 && settings.FrostedFolders);
+            settings.LiquidGlass = false;
+            assert(FolderAppearance.Frosted(settings) && FolderAppearance.Opacity(settings) == FolderAppearance.FrostedOpacity);
+        });
         test("Milchglas und beide Transparenzen bleiben nach Speichern und Umschalten erhalten", () =>
         {
             string path = Path.Combine(fixtureRoot, "frost-roundtrip.json");

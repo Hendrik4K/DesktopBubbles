@@ -115,7 +115,7 @@ internal sealed class BubbleWindow : Window
     {
         var settings = app.State.Settings;
         bool liquid = lens is not null && settings.LiquidGlass;
-        glass.Background = liquid ? LiquidGlass.Material(lens!) : Ui.Glass(settings, Group);
+        glass.Background = liquid ? LiquidGlass.Material(lens!, settings.Opacity, Ui.Dark) : Ui.Glass(settings, Group);
         // The lens carries its own lit rim and must map 1:1 onto the tile's pixels.
         glass.BorderBrush = liquid ? Brushes.Transparent : Ui.BubbleRim(settings, Group);
         glass.BorderThickness = new Thickness(liquid ? 0 : 1);

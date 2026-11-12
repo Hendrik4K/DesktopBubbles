@@ -222,7 +222,7 @@ internal sealed class SettingsWindow : Window
                 Grid.SetColumn(options, 1); colorRow.Children.Add(options);
             }
         }
-        bool frosted = Scope == AppearanceScope.Window && settings.FrostedFolders;
+        bool frosted = Scope == AppearanceScope.Window && FolderAppearance.Frosted(settings);
         double opacity = Scope switch { AppearanceScope.App => settings.AppOpacity, AppearanceScope.Window => FolderAppearance.Opacity(settings), _ => settings.Opacity };
         if (!frosted)
         {
@@ -264,6 +264,12 @@ internal sealed class SettingsWindow : Window
             FrostedFoldersButton.Foreground = frosted ? Brushes.White : Ui.Resource("Ink");
             FrostedFoldersButton.ToolTip = frosted ? "Milchglas ausschalten · normale Farbe und Transparenz wieder verwenden" : "Milchglas für Ordner einschalten";
             System.Windows.Automation.AutomationProperties.SetName(FrostedFoldersButton, frosted ? "Milchglas für Ordner ausschalten" : "Milchglas für Ordner einschalten");
+            if (settings.LiquidGlass)
+            {
+                FrostedFoldersButton.IsEnabled = false;
+                ToolTipService.SetShowOnDisabled(FrostedFoldersButton, true);
+                FrostedFoldersButton.ToolTip = "Liquid ist aktiv und hat Vorrang vor Milchglas. Unter Miniaturen → Glas umstellen.";
+            }
             previewActions.Children.Add(FrostedFoldersButton); previewActions.Children.Add(PreviewScaleButton);
             DockPanel.SetDock(previewActions, Dock.Right); previewBar.Children.Add(previewActions);
             previewDimensions = Ui.Text("", 12, "Muted"); previewDimensions.VerticalAlignment = VerticalAlignment.Center; previewBar.Children.Add(previewDimensions); root.Children.Add(previewBar);

@@ -165,7 +165,7 @@ internal static class Ui
         return Material(AppearancePreferences.Color(settings, group), Math.Clamp(settings.Opacity, 0, .95), settings.Glass > .65);
     }
     public static Brush WindowGlass(BubbleSettings settings, BubbleGroup? group = null)
-        => settings.FrostedFolders ? FrostedMaterial(FolderAppearance.FrostedOpacity)
+        => FolderAppearance.Frosted(settings) ? FrostedMaterial(FolderAppearance.FrostedOpacity)
             : Material(AppearancePreferences.Color(settings, group), Math.Clamp(settings.WindowOpacity, 0, .95), settings.Glass > .65);
     private static Brush FrostedMaterial(double opacity)
     {

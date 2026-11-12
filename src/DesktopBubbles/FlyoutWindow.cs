@@ -140,7 +140,7 @@ internal sealed class FlyoutWindow : Window
     {
         surface.Background = SurfaceBrush(); surface.BorderBrush = FrameBrush(); Ui.RefreshRounding(this);
     }
-    private Brush SurfaceBrush() => liquidSample is not null ? LiquidGlass.Material(liquidSample)
+    private Brush SurfaceBrush() => liquidSample is not null ? LiquidGlass.Material(liquidSample, FolderAppearance.Opacity(app.State.Settings), Ui.Dark)
         : frostSample is null ? Ui.WindowGlass(app.State.Settings, Group)
         : FolderFrost.Material(frostSample, Ui.WindowGlass(app.State.Settings, Group));
     internal void SetFrostSampleForTest(BitmapSource sample) { frostSample = sample; surface.Background = SurfaceBrush(); }

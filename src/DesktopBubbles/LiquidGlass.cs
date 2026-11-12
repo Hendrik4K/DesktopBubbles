@@ -79,9 +79,28 @@ internal static class LiquidGlass
         result.Freeze(); return result;
     }
 
-    internal static Brush Material(BitmapSource lens)
+    // The shared transparency slider works on liquid glass too. The default opacity shows the
+    // pure lens; more transparent fades the lens out (100 % shows nothing, as in the other
+    // styles), less transparent lays an increasingly dense milky layer over it.
+    internal const double PureOpacity = .35;
+    internal static Brush Material(BitmapSource lens, double opacity, bool dark)
     {
-        var brush = new ImageBrush(lens) { Stretch = Stretch.Fill }; brush.Freeze(); return brush;
+        double clear = Math.Clamp(opacity / PureOpacity, 0, 1), milk = Math.Clamp((opacity - PureOpacity) / (.95 - PureOpacity), 0, 1);
+        if (clear <= 0) return Brushes.Transparent;
+        var drawing = new DrawingGroup();
+        using (var context = drawing.Open())
+        {
+            var bounds = new Rect(0, 0, 1, 1);
+            context.PushOpacity(clear); context.DrawImage(lens, bounds); context.Pop();
+            if (milk > 0)
+            {
+                // The surrounding Border clips this layer to the same rounded contour as the lens.
+                var layer = new SolidColorBrush(dark ? Color.FromRgb(38, 43, 52) : Color.FromRgb(244, 246, 250));
+                context.PushOpacity(milk * .78); context.DrawRectangle(layer, null, bounds); context.Pop();
+            }
+        }
+        drawing.Freeze();
+        var brush = new DrawingBrush(drawing) { Stretch = Stretch.Fill }; brush.Freeze(); return brush;
     }
 
     private static double Distance(double x, double y, double hx, double hy, double r)
