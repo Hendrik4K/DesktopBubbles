@@ -173,6 +173,13 @@ internal sealed class BubbleWindow : Window
     // Only top-level windows support it; returns false for a tile embedded in the desktop.
     internal bool ExcludeFromCapture(bool value)
         => !closing && Native.SetWindowDisplayAffinity(Native.Handle(this), value ? 0x11u : 0u);
+    // The icon grid in physical pixels, from the same numbers the tile is laid out with.
+    internal FolderMotion.MiniatureLayout GridLayout(PixelRect glassBounds)
+    {
+        double size = app.State.Settings.MiniatureSize, tile = glassBounds.Width / Math.Max(1, size);
+        return new(size * 10 / 76 * tile, glass.BorderThickness.Left * tile, tile);
+    }
+    internal IEnumerable<Image> GridImages() => glass.Child is Panel grid ? grid.Children.OfType<Image>() : [];
     // Physical screen pixels of the glass tile, without the name label.
     internal PixelRect? GlassBounds()
     {

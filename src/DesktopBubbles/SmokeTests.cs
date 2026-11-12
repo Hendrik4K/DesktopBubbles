@@ -376,6 +376,22 @@ internal static class SmokeTests
         app.Shortcuts.Swap(app.State, sorting.Group, originalOrder[0], originalOrder[^1]); app.Changed();
         app.ShowSettings(); settings = System.Windows.Application.Current.Windows.OfType<SettingsWindow>().Single();
         await SettleWindows();
+        if (app.Bubbles[0].GlassBounds() is { } tileGlass)
+        {
+            // The open/close motion starts and lands every icon on the miniature's own drawing.
+            var gridLayout = app.Bubbles[0].GridLayout(tileGlass); int gridIndex = 0, measured = 0; double worst = 0;
+            foreach (var image in app.Bubbles[0].GridImages())
+            {
+                int index = gridIndex++;
+                if (image.Source is null || image.ActualWidth <= 0) continue;
+                double aspect = image.Source.Width / image.Source.Height;
+                var a = image.PointToScreen(new Point()); var b = image.PointToScreen(new Point(image.ActualWidth, image.ActualHeight));
+                var drawn = FolderMotion.Fit(new PixelRect(a.X, a.Y, b.X - a.X, b.Y - a.Y), aspect);
+                var cell = FolderMotion.MiniatureCell(tileGlass, gridLayout, index, aspect);
+                worst = Math.Max(worst, new[] { drawn.X - cell.X, drawn.Y - cell.Y, drawn.Width - cell.Width, drawn.Height - cell.Height }.Max(Math.Abs)); measured++;
+            }
+            Check("Fliegende Symbole starten und landen exakt auf den Symbolen der Miniatur", measured > 0 && worst < 1, $"Abweichung={worst:0.00} px bei {measured} Symbolen");
+        }
         Check("Mini-Bubble nach Schließen wieder sichtbar", !app.Bubbles[0].Expanded && ((UIElement)app.Bubbles[0].Content).Opacity == 1);
         app.Open(app.Bubbles[0]); await Task.Delay(200); settings.Activate(); await Task.Delay(250); await SettleMotion();
         Check("Fokuswechsel schließt Flyout", !app.HasFlyout);

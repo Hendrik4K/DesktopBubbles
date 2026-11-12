@@ -64,12 +64,16 @@ internal sealed class FolderMotion
     private Func<double, bool>? step;
     private bool pending;
 
+    // Physical pixels of the miniature's icon grid: padding, glass border and per-image margin.
+    internal readonly record struct MiniatureLayout(double Pad, double Border, double Inset);
+    private readonly MiniatureLayout layout;
+
     private sealed record Track(FrameworkElement Real, Image Ghost, PixelRect Mini, PixelRect Final, bool InMiniature, double Delay);
 
-    public FolderMotion(Window folder, Border surface, IReadOnlyList<Button> buttons, PixelRect from, double fromRadius, double toRadius, Action hideSurface, Action showSurface,
+    public FolderMotion(Window folder, Border surface, IReadOnlyList<Button> buttons, PixelRect from, MiniatureLayout layout, double fromRadius, double toRadius, Action hideSurface, Action showSurface,
         Func<PixelRect, double, double, Brush?>? live = null, Brush? miniature = null, Brush? miniatureRim = null)
     {
-        this.live = live; this.miniature = miniature; this.miniatureRim = miniatureRim;
+        this.live = live; this.miniature = miniature; this.miniatureRim = miniatureRim; this.layout = layout;
         this.folder = folder; this.surface = surface; this.buttons = buttons; this.from = from; this.fromRadius = fromRadius; this.toRadius = toRadius;
         this.hideSurface = hideSurface; this.showSurface = showSurface;
         to = Native.Bounds(folder);
@@ -84,16 +88,18 @@ internal sealed class FolderMotion
             + Math.Max(IconMove.SettleTime, Math.Max(IconWidth.SettleTime, IconHeight.SettleTime)));
         Start(t =>
         {
-            double grow = Math.Min(GlassX.Value(t), GlassY.Value(t));
-            Glass(Lerp(from, to, GlassX.Value(t), GlassY.Value(t)), Radius(grow), grow);
+            // The last frame sits exactly at rest, so the static folder takes over pixel for pixel.
+            bool last = t >= end;
+            double gx = last ? 1 : GlassX.Value(t), gy = last ? 1 : GlassY.Value(t), grow = Math.Min(gx, gy);
+            Glass(Lerp(from, to, gx, gy), Radius(grow), grow);
             foreach (var track in tracks)
             {
-                double local = t - track.Delay;
+                double local = last ? double.MaxValue : t - track.Delay;
                 var start = track.InMiniature ? track.Mini : Center(from);
-                overlay!.Ghost(track.Ghost, Travel(start, track.Final, IconMove.Value(local), IconWidth.Value(local), IconHeight.Value(local)),
+                overlay!.Ghost(track.Ghost, last ? track.Final : Travel(start, track.Final, IconMove.Value(local), IconWidth.Value(local), IconHeight.Value(local)),
                     track.InMiniature ? 1 : Math.Clamp(local / ExtraFade, 0, 1));
             }
-            if (t < end) return false;
+            if (!last) return false;
             Land(); return true;
         }, ready: hideAnchor); // The overlay already shows the miniature, so it can step aside.
     }
@@ -105,16 +111,18 @@ internal sealed class FolderMotion
         double end = Math.Max(Math.Max(CloseX.SettleTime, CloseY.SettleTime), CloseIcon.SettleTime);
         Start(t =>
         {
-            double px = 1 - CloseX.Value(t), py = 1 - CloseY.Value(t);
+            // The last frame lands exactly on the miniature before it is revealed underneath.
+            bool last = t >= end;
+            double px = last ? 0 : 1 - CloseX.Value(t), py = last ? 0 : 1 - CloseY.Value(t);
             // Shrinks all the way onto the miniature; no fading on the way.
             Glass(Lerp(from, to, px, py), Radius(Math.Min(px, py)), Math.Min(px, py));
-            double q = 1 - CloseIcon.Value(t);
+            double q = last ? 0 : 1 - CloseIcon.Value(t);
             foreach (var track in tracks)
             {
                 var target = track.InMiniature ? track.Mini : Center(from);
                 overlay!.Ghost(track.Ghost, Travel(target, track.Final, q, q, q), track.InMiniature ? 1 : Math.Clamp(1 - t / ExtraFade, 0, 1));
             }
-            if (t < end) return false;
+            if (!last) return false;
             // The overlay now covers the miniature exactly: reveal it underneath, then retire.
             reveal(); overlay!.Retire(); overlay = null; done(); return true;
         }, ready: null);
@@ -134,7 +142,6 @@ internal sealed class FolderMotion
     {
         var glass = Snapshot();
         double scale = Native.GetDpiForWindow(Native.Handle(folder)) / 96d;
-        double pad = from.Width * 10 / 76, cell = (from.Width - 2 * pad) / 3, inset = from.Width / 76;
         var center = Center(from);
         var list = new List<Track>();
         for (int i = 0; i < buttons.Count; i++)
@@ -142,8 +149,10 @@ internal sealed class FolderMotion
             if (buttons[i].Content is not Image image || image.Source is null || image.ActualWidth <= 0) continue;
             Point origin;
             try { origin = image.TranslatePoint(new Point(), surface); } catch (InvalidOperationException) { continue; }
-            var final = new PixelRect(to.X + origin.X * scale, to.Y + origin.Y * scale, image.ActualWidth * scale, image.ActualHeight * scale);
-            var mini = new PixelRect(from.X + pad + i % 3 * cell + inset, from.Y + pad + i / 3 * cell + inset, cell - 2 * inset, cell - 2 * inset);
+            // Both ends use the artwork's own aspect inside its box, exactly as Stretch.Uniform draws it.
+            double aspect = image.Source.Width / Math.Max(1e-6, image.Source.Height);
+            var final = Fit(new PixelRect(to.X + origin.X * scale, to.Y + origin.Y * scale, image.ActualWidth * scale, image.ActualHeight * scale), aspect);
+            var mini = MiniatureCell(from, layout, i, aspect);
             list.Add(new Track(image, new Image { Source = image.Source, Stretch = Stretch.Fill }, mini, final, i < 9, 0));
         }
         // Closest icons leave first, so the grid unfolds outward from the miniature.
@@ -224,14 +233,31 @@ internal sealed class FolderMotion
         return new(cx - w / 2, cy - h / 2, w, h);
     }
 
+    // Where the miniature draws icon i: a 3×3 UniformGrid inside padding and border, 1 DIP margin per image.
+    internal static PixelRect MiniatureCell(PixelRect glass, MiniatureLayout layout, int index, double aspect)
+    {
+        double cell = (glass.Width - 2 * (layout.Pad + layout.Border)) / 3;
+        double left = glass.X + layout.Pad + layout.Border, top = glass.Y + layout.Pad + layout.Border;
+        return Fit(new PixelRect(left + index % 3 * cell + layout.Inset, top + index / 3 * cell + layout.Inset, cell - 2 * layout.Inset, cell - 2 * layout.Inset), aspect);
+    }
+
+    internal static PixelRect Fit(PixelRect box, double aspect)
+    {
+        if (!double.IsFinite(aspect) || aspect <= 0) return box;
+        double w = box.Width, h = box.Height;
+        if (w / Math.Max(1e-6, h) > aspect) w = h * aspect; else h = w / aspect;
+        return new(box.X + (box.Width - w) / 2, box.Y + (box.Height - h) / 2, w, h);
+    }
+
     // Icons past the ninth have no cell in the miniature; they grow out of its centre.
     private static PixelRect Center(PixelRect r) => new(r.X + r.Width / 2, r.Y + r.Height / 2, 0, 0);
 
     private static PixelRect Union(PixelRect a, PixelRect b)
     {
         const int room = 56; // Space for the springs' overshoot.
-        double left = Math.Min(a.X, b.X) - room, top = Math.Min(a.Y, b.Y) - room;
-        return new(left, top, Math.Max(a.X + a.Width, b.X + b.Width) + room - left, Math.Max(a.Y + a.Height, b.Y + b.Height) + room - top);
+        // Whole pixels: the overlay window sits on the device grid, so every offset inside it stays exact.
+        double left = Math.Floor(Math.Min(a.X, b.X)) - room, top = Math.Floor(Math.Min(a.Y, b.Y)) - room;
+        return new(left, top, Math.Ceiling(Math.Max(a.X + a.Width, b.X + b.Width)) + room - left, Math.Ceiling(Math.Max(a.Y + a.Height, b.Y + b.Height)) + room - top);
     }
 
     private sealed class GlassOverlay : Window
@@ -294,8 +320,9 @@ internal sealed class FolderMotion
             Place(blob, rect);
             blob.Background = material ?? snapshot; blob.CornerRadius = corner;
             Place(mini, rect); mini.CornerRadius = corner; mini.Opacity = miniature;
-            // Material on material would double up mid-way; the folder layer fades in as the miniature fades out.
-            blob.Opacity = miniature <= 0 ? 1 : Math.Clamp(1.25 - miniature, 0, 1);
+            // The folder layer is fully gone where the miniature's look is complete (both ends of the
+            // motion match the real miniature) and fully there before the miniature has faded away.
+            blob.Opacity = Math.Clamp((1 - miniature) * 1.6, 0, 1);
         }
 
         public void Ghost(Image icon, PixelRect rect, double opacity) { Place(icon, rect); icon.Opacity = opacity; }

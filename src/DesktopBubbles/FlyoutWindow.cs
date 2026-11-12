@@ -118,7 +118,7 @@ internal sealed class FlyoutWindow : Window
         double scale = Native.GetDpiForWindow(Native.Handle(this)) / 96d;
         double fromRadius = settings.BubbleCornerRadius * glass.Width / Math.Max(1, settings.MiniatureSize);
         double toRadius = AppearanceGeometry.Radius(settings.CornerRoundness, ActualWidth, ActualHeight) * scale;
-        return new FolderMotion(this, surface, buttons.Values.ToList(), glass, fromRadius, toRadius,
+        return new FolderMotion(this, surface, buttons.Values.ToList(), glass, anchor.GridLayout(glass), fromRadius, toRadius,
             hideSurface: () => { surface.Background = Brushes.Transparent; surface.BorderBrush = Brushes.Transparent; },
             showSurface: () => { surface.Opacity = 1; surface.Background = SurfaceBrush(); surface.BorderBrush = FrameBrush(); },
             live: liquidSample is not null ? LiveGlass : null,
@@ -172,7 +172,8 @@ internal sealed class FlyoutWindow : Window
         var settings = app.State.Settings;
         double scale = Native.GetDpiForWindow(Native.Handle(this)) / 96d;
         var lens = LiquidGlass.Render(backdrop, rect.X - backdrop.X, rect.Y - backdrop.Y, (int)Math.Round(rect.Width), (int)Math.Round(rect.Height),
-            Ui.LiquidOptions(settings, Group, radius, scale), rect.Width * rect.Height > 60_000 ? .5 : 1);
+            // Near either end the frame must match the static glass exactly, so it renders in full.
+            Ui.LiquidOptions(settings, Group, radius, scale), rect.Width * rect.Height > 60_000 && p is > .03 and < .97 ? .5 : 1);
         double opacity = settings.Opacity + (FolderAppearance.Opacity(settings) - settings.Opacity) * p;
         return LiquidGlass.Material(lens, opacity, Ui.Dark);
     }
