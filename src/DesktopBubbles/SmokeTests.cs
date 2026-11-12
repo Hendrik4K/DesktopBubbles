@@ -611,7 +611,7 @@ internal static class SmokeTests
         for (int i = 0; i < 80; i++)
         {
             var windows = System.Windows.Application.Current.Windows.Cast<Window>();
-            if (!windows.Any(w => w is FlyoutWindow { Animating: true } || w.GetType().Name == "GlassOverlay")) return;
+            if (!windows.Any(w => w is FlyoutWindow { Animating: true } or FlyoutWindow { Prepared: false, IsVisible: true } || w.GetType().Name == "GlassOverlay")) return;
             await Task.Delay(50);
         }
     }

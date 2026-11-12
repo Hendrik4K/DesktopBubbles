@@ -34,6 +34,8 @@ internal sealed class FlyoutWindow : Window
     internal bool Animating => motion?.Running == true;
     // An animated folder hides its miniature itself, once the travelling glass has replaced it.
     internal bool HidesAnchor => Animate;
+    // Populated, placed, background sampled and the opening motion started.
+    internal bool Prepared { get; private set; }
     private readonly Dictionary<Guid, Button> buttons = [];
     public FlyoutWindow(App app, BubbleWindow anchor)
     {
@@ -110,6 +112,7 @@ internal sealed class FlyoutWindow : Window
             if (!closed && !folding && Animate && CreateMotion() is { } next) { motion = next; next.Open(hideAnchor: () => anchor.SetExpanded(true)); }
             else { surface.Opacity = 1; if (!closed) anchor.SetExpanded(true); }
             buttons.Values.FirstOrDefault()?.Focus();
+            Prepared = true;
         };
     }
     private FolderMotion? CreateMotion()
