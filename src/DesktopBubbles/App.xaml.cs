@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -42,10 +42,11 @@ public partial class App : System.Windows.Application
     private Guid lastGroup;
     internal bool HasFlyout => flyout is not null;
 
+    // Hooked from the combo styles in App.xaml: every drop-down list glides open and closed.
+    private void ComboLoaded(object sender, RoutedEventArgs e) { if (sender is System.Windows.Controls.ComboBox box) SettingsMotion.SmoothDropDown(box); }
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        SettingsMotion.SmoothDropDowns();
         try
         {
             // Used only by the automated .lnk/ShellExecute integration test.

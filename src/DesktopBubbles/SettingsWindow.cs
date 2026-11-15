@@ -259,10 +259,9 @@ internal sealed class SettingsWindow : Window
     }
     private Button? selectedRow;
     private Border? colorPill, modePill;
-    private FrameworkElement? appColorRow;
-    private ScrollViewer? pageScroller;
     private FrameworkElement? pageBody; // Everything below the heading and the switch.
     internal FrameworkElement? PageBody => pageBody;
+    internal FrameworkElement PagePane => pane;
     private Grid? detailLayer; // Holds the page and the color picker that replaces it.
     // 1:1 widens the window to the right and down until the real-size folder fits whole; 1:3 glides
     // it back to where it was. Sized from the folder's footprint, so the window can start moving
@@ -327,7 +326,7 @@ internal sealed class SettingsWindow : Window
         {
             var before = animate ? SettingsMotion.Snapshot(pane) : null;
             ShowGroup(group);
-            if (before is not null) Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => SettingsMotion.PageTransition(pane, before));
+            if (before is not null && pane.Content is UIElement page) SettingsMotion.PageTransition(pane, new Point(), before, page);
             return;
         }
         incoming = group; GlidePillTo(group, PreviewOut + PreviewIn);
@@ -374,15 +373,17 @@ internal sealed class SettingsWindow : Window
     internal void SelectScope(AppearanceScope scope)
     {
         CancelColorEdit();
-        // Pages dissolve through a soft blur: between "Aussehen" and "Einstellungen" the whole page,
-        // between Miniatur and Ordner only the part below the sliding switch.
+        // Pages hand over in two beats: between "Aussehen" and "Einstellungen" the whole page,
+        // between Miniatur and Ordner only the part below the sliding switch (which slides meanwhile).
         bool animate = scope != Scope && SettingsMotion.Enabled(app) && IsLoaded;
         bool pageChange = (scope == AppearanceScope.App) != (Scope == AppearanceScope.App);
-        var before = !animate ? null : pageChange ? SettingsMotion.Snapshot(pane) : pageBody is null ? null : SettingsMotion.Snapshot(pageBody);
+        FrameworkElement? leaving = pageChange ? pane : pageBody;
+        var before = animate && leaving is not null ? SettingsMotion.Snapshot(leaving) : null;
+        var at = before is not null && leaving is not null && !pageChange ? leaving.TranslatePoint(new Point(), pane) : new Point();
         // 1:1 is a quick look: leaving the folder tab returns to 1:3 and gives the room back.
         if (Scope == AppearanceScope.Window && scope != AppearanceScope.Window && previewScale == 1) { previewScale = 1d / 3; GiveBackRoom("preview"); }
         Scope = scope; RefreshPage();
-        if (animate) SettingsMotion.PageTransition(pageChange ? pane : pageBody ?? pane, before);
+        if (animate && (pageChange ? pane.Content as UIElement : pageBody) is { } arriving) SettingsMotion.PageTransition(pane, at, before, arriving);
         if (scope == AppearanceScope.Window) FitFolderTab();
     }
     internal void RefreshPage()
@@ -421,8 +422,8 @@ internal sealed class SettingsWindow : Window
             lastTabScope = Scope;
         }
         var content = new DockPanel { LastChildFill = true }; layout.Children.Add(content); pageBody = content;
-        var root = new StackPanel(); var settings = app.State.Settings; var appDetails = new StackPanel();
-        appColorRow = null; modePill = null;
+        var root = new StackPanel(); var settings = app.State.Settings;
+        modePill = null;
         swatch = null; colorPill = null; scaleSwitching = false; ColorButton = null; GlassSelector = null; folderCanvas = null; folderStage = null; folderViewport = null; previewDimensions = null; PreviewScaleButton = null; LinkColorsCheckBox = null;
         FrostedFoldersButton = null; TransparencySlider = null;
         modeSwatch = null; ModeColorButton = null; modeAction = null; modeApplyButton = null; themeSelector = null;
@@ -457,9 +458,9 @@ internal sealed class SettingsWindow : Window
                 preview.Width = preview.Height = 108; preview.Padding = new Thickness(12); preview.BorderThickness = new Thickness(1); preview.VerticalAlignment = VerticalAlignment.Top;
                 Grid.SetColumn(preview, 2); colorRow.Children.Add(preview);
             }
-            // Settings page: "Allgemein" comes first, the colour row follows it inside the scrolling page.
-            if (Scope == AppearanceScope.App) { AddGeneralList(root); colorRow.Margin = new Thickness(0, 22, 0, 6); root.Children.Add(colorRow); appColorRow = colorRow; }
-            else { DockPanel.SetDock(colorRow, Dock.Top); content.Children.Add(colorRow); }
+            // On every page the colour row comes first; on the settings page "Allgemein" follows it.
+            DockPanel.SetDock(colorRow, Dock.Top); content.Children.Add(colorRow);
+            if (Scope == AppearanceScope.App) AddGeneralList(root);
             if (Scope == AppearanceScope.App)
             {
                 colorRow.ColumnDefinitions[0].Width = new GridLength(154);
@@ -491,14 +492,11 @@ internal sealed class SettingsWindow : Window
                 Grid.SetColumn(options, 1); colorRow.Children.Add(options);
             }
         }
-        // On the settings page the transparency and the tools sit below the colour row; a colour
-        // picker takes their place there.
-        Panel sliders = Scope == AppearanceScope.App ? appDetails : root;
         bool frosted = Scope == AppearanceScope.Window && FolderAppearance.Frosted(settings);
         double opacity = Scope switch { AppearanceScope.App => settings.AppOpacity, AppearanceScope.Window => FolderAppearance.Opacity(settings), _ => settings.Opacity };
         if (!frosted)
         {
-            TransparencySlider = AddSlider(sliders, "Transparenz", 5, Scope == AppearanceScope.App ? 80 : 100,
+            TransparencySlider = AddSlider(root, "Transparenz", 5, Scope == AppearanceScope.App ? 80 : 100,
                 (1 - opacity) * 100, value =>
                 {
                     double next = 1 - value / 100;
@@ -561,7 +559,7 @@ internal sealed class SettingsWindow : Window
             RoundingSlider = AddSlider(root, "Eckenrundung", 0, 50, settings.CornerRoundness, value => { settings.CornerRoundness = value; app.ApplyAppearance(); }, value => $"{value:0} %");
             RoundingSlider.ToolTip = "Gemeinsame Rundung als Anteil der kürzeren Kante. Miniatur und Ordner bleiben proportional gleich gerundet.";
         }
-        if (Scope == AppearanceScope.App) AddTools(appDetails);
+        if (Scope == AppearanceScope.App) AddTools(root);
         ScrollViewer? pageScroll = null;
         if (Scope == AppearanceScope.Window && folderViewport is not null)
         {
@@ -575,18 +573,10 @@ internal sealed class SettingsWindow : Window
             pageScroll = new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
             Divider.Track(pageScroll); SettingsMotion.EdgeFade(pageScroll, 18); SettingsMotion.SmoothWheel(pageScroll); standardDetails = pageScroll;
         }
-        pageScroller = pageScroll;
         if (folderViewport is not null) { SettingsMotion.AutoHideScrollBar(folderViewport); SettingsMotion.SmoothWheel(folderViewport); }
         colorOverlay = new ContentControl { Visibility = Visibility.Collapsed, HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Top };
         Panel.SetZIndex(colorOverlay, 1);
-        detailLayer = new Grid();
-        if (Scope == AppearanceScope.App)
-        {
-            // Inside the scrolling page, under the colour row: transparency and tools, or the picker.
-            detailLayer.Children.Add(appDetails); detailLayer.Children.Add(colorOverlay); root.Children.Add(detailLayer);
-            standardDetails = appDetails; content.Children.Add(pageScroll!);
-        }
-        else { detailLayer.Children.Add(standardDetails); detailLayer.Children.Add(colorOverlay); content.Children.Add(detailLayer); }
+        detailLayer = new Grid(); detailLayer.Children.Add(standardDetails); detailLayer.Children.Add(colorOverlay); content.Children.Add(detailLayer);
         pane.Content = layout; RenderPreview(); RefreshMaterial();
         if (IsLoaded) Ui.Backdrop(this, settings);
     }
@@ -629,12 +619,8 @@ internal sealed class SettingsWindow : Window
         RefreshColorDraft(); Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, () => Picker?.Wheel.Focus());
         Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
         {
-            if (Picker is null) return;
-            // Settings page: the page glides so that the colour row and the picker below it are in view.
-            if (Scope == AppearanceScope.App && pageScroller is { } page && appColorRow is { } row)
-            { SettingsMotion.GlideScroll(page, page.VerticalOffset + row.TranslatePoint(new Point(), page).Y - 6); return; }
-            // Elsewhere the window grows just enough to show the whole picker; closing gives the room back.
-            if (colorOverlay?.Content is ScrollViewer viewer && viewer.ExtentHeight - viewer.ViewportHeight > .5)
+            // The window grows just enough to show the whole picker; closing gives the room back.
+            if (Picker is not null && colorOverlay?.Content is ScrollViewer viewer && viewer.ExtentHeight - viewer.ViewportHeight > .5)
                 MakeRoom("picker", 0, viewer.ExtentHeight - viewer.ViewportHeight + 4);
         });
     }
@@ -738,11 +724,11 @@ internal sealed class SettingsWindow : Window
         return border;
     }
     private async Task SetIcon(Image image, string target) => image.Source = await app.Icons.Get(target);
-    // "Allgemein" opens the settings page: starting with Windows first, the auto close second to last
-    // and the shared bubble colours last, right above the colour row.
+    // "Allgemein", right below the colour row: starting with Windows first, the auto close second to
+    // last and the shared bubble colours last, right above the transparency.
     private void AddGeneralList(StackPanel root)
     {
-        var label = Ui.Text("Allgemein", 17, weight: FontWeights.SemiBold); label.Margin = new Thickness(0, 2, 0, 4); root.Children.Add(label);
+        var label = Ui.Text("Allgemein", 17, weight: FontWeights.SemiBold); label.Margin = new Thickness(0, 6, 0, 4); root.Children.Add(label);
         CheckBox Check(string text, bool value, Action<bool> set)
         {
             var box = new CheckBox { Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap }, IsChecked = value };

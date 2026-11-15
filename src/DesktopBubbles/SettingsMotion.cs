@@ -142,42 +142,72 @@ internal static class SettingsMotion
         zone.Unloaded += (_, _) => { if (running) { CompositionTarget.Rendering -= Frame; running = false; } };
     }
 
-    // Every drop-down list opens to its real height on a classic curve: starts gently, speeds up,
-    // brakes softly. Hooked once per combo box, app-wide.
-    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ComboBox, object> smoothed = new();
-    internal static void SmoothDropDowns() => EventManager.RegisterClassHandler(typeof(ComboBox), FrameworkElement.LoadedEvent, new RoutedEventHandler((sender, args) =>
+    // Every drop-down list glides open to its real height and glides closed again, on a classic
+    // curve (starts gently, speeds up, brakes softly). The popup is opened and closed from here
+    // (not bound to IsDropDownOpen), so it can stay on screen while it folds up. While it is still
+    // opening, clicks on the box are dropped: the opening always plays out. Hooked from the combo
+    // styles (an EventSetter: WPF only raises Loaded on elements with their own handler). The box
+    // reports "closed" only once its popup has closed, so the open state itself is watched, and only
+    // while the box is on screen, so no box is kept alive by the watch.
+    private sealed class DropWatch { public EventHandler? Changed; public bool Watching; }
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ComboBox, DropWatch> smoothed = new();
+    private static readonly System.ComponentModel.DependencyPropertyDescriptor openState = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(ComboBox.IsDropDownOpenProperty, typeof(ComboBox));
+    internal static void SmoothDropDown(ComboBox box)
     {
-        if (sender is not ComboBox box || smoothed.TryGetValue(box, out _)) return;
-        smoothed.Add(box, new object());
-        box.DropDownOpened += (_, _) =>
+        if (!smoothed.TryGetValue(box, out var watch)) watch = Hook(box);
+        if (watch?.Changed is { } changed && !watch.Watching) { openState.AddValueChanged(box, changed); watch.Watching = true; }
+    }
+    private static DropWatch? Hook(ComboBox box)
+    {
+        box.ApplyTemplate();
+        if (box.Template?.FindName("PART_Popup", box) is not Popup popup) return null;
+        var watch = new DropWatch(); smoothed.Add(box, watch);
+        // A template without the named list keeps the plain behaviour: the popup simply follows.
+        if (box.Template.FindName("Drop", box) is not Border drop) { popup.SetBinding(Popup.IsOpenProperty, new System.Windows.Data.Binding(nameof(ComboBox.IsDropDownOpen)) { Source = box }); return watch; }
+        box.Unloaded += (_, _) => { if (watch.Watching && watch.Changed is { } changed) { openState.RemoveValueChanged(box, changed); watch.Watching = false; } };
+        var reveal = new ScaleTransform(1, 0);
+        var mask = new RectangleGeometry(new Rect(0, 0, 100000, 1)) { Transform = reveal };
+        bool opening = false;
+        int generation = 0;
+        static bool Animate() => System.Windows.Application.Current is App app && Enabled(app);
+        void Glide(double to, double ms, Action done)
         {
-            // The list is laid out at its full height right away (items and all); a mask that is
-            // closed before the first frame then opens downwards over it. Nothing below moves.
-            if (box.Template?.FindName("Drop", box) is not Border drop) return;
-            bool animate = System.Windows.Application.Current is App app && Enabled(app);
-            if (!animate) { drop.Clip = null; return; }
-            var reveal = new ScaleTransform(1, 0);
-            drop.Clip = new RectangleGeometry(new Rect(0, 0, 100000, 1)) { Transform = reveal };
-            box.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
+            var motion = new DoubleAnimation(to, TimeSpan.FromMilliseconds(ms)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
+            motion.Completed += (_, _) => done();
+            reveal.BeginAnimation(ScaleTransform.ScaleYProperty, motion);
+        }
+        box.PreviewMouseLeftButtonDown += (_, e) => { if (opening) e.Handled = true; };
+        void Open()
+        {
+            int run = ++generation;
+            drop.IsHitTestVisible = true;
+            if (!Animate()) { drop.Clip = null; popup.IsOpen = true; return; }
+            // Closed before the first frame (or still folding up: it continues from where it is).
+            if (!popup.IsOpen) { reveal.BeginAnimation(ScaleTransform.ScaleYProperty, null); reveal.ScaleY = 0; }
+            drop.Clip = mask; popup.IsOpen = true; opening = true;
+            bool started = false;
+            void Start()
             {
-                double height = drop.ActualHeight;
-                if (height <= 0) { drop.Clip = null; return; }
-                var open = new DoubleAnimation(0, height + 2, TimeSpan.FromMilliseconds(380)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
-                open.Completed += (_, _) => { if (drop.Clip is RectangleGeometry mask && mask.Transform == reveal) drop.Clip = null; };
-                reveal.BeginAnimation(ScaleTransform.ScaleYProperty, open);
-            });
-        };
-    }));
-
-    // The old picture fades out over the new one, which fades in: a soft cross-dissolve.
-    internal static void Crossfade(FrameworkElement element, BitmapSource? before)
-    {
-        if (before is null || AdornerLayer.GetAdornerLayer(element) is not { } layer) return;
-        var ghost = new Ghost(element, before); layer.Add(ghost);
-        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(260)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
-        fade.Completed += (_, _) => layer.Remove(ghost);
-        ghost.BeginAnimation(UIElement.OpacityProperty, fade);
-        element.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+                if (started || run != generation || drop.ActualHeight <= 0) return;
+                started = true; drop.SizeChanged -= Sized;
+                Glide(drop.ActualHeight + 2, 380, () => { if (run != generation) return; opening = false; if (box.IsDropDownOpen) drop.Clip = null; });
+            }
+            void Sized(object? s, SizeChangedEventArgs e) => Start();
+            drop.SizeChanged += Sized;
+            box.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, Start);
+        }
+        void Close()
+        {
+            int run = ++generation; opening = false;
+            if (!popup.IsOpen) return;
+            if (!Animate()) { popup.IsOpen = false; return; }
+            drop.IsHitTestVisible = false;
+            if (drop.Clip != mask) { reveal.BeginAnimation(ScaleTransform.ScaleYProperty, null); reveal.ScaleY = drop.ActualHeight + 2; drop.Clip = mask; }
+            Glide(0, 280, () => { if (run == generation && !box.IsDropDownOpen) popup.IsOpen = false; });
+        }
+        watch.Changed = (_, _) => { if (box.IsDropDownOpen) Open(); else Close(); };
+        if (box.IsDropDownOpen) popup.IsOpen = true; // Opened before it was hooked.
+        return watch;
     }
     internal static BitmapSource? Snapshot(FrameworkElement element)
     {
@@ -194,12 +224,12 @@ internal static class SettingsMotion
     private sealed class Ghost : Adorner
     {
         private readonly BitmapSource picture;
+        private readonly Point at;
         // Never spills past the element it covers, also while a window shrinks underneath it.
-        public Ghost(UIElement adorned, BitmapSource picture) : base(adorned) { this.picture = picture; ClipToBounds = true; IsHitTestVisible = false; }
+        public Ghost(UIElement adorned, BitmapSource picture, Point at = default) : base(adorned) { this.picture = picture; this.at = at; ClipToBounds = true; IsHitTestVisible = false; }
         // Drawn at the size it was taken, so a taller or shorter new page does not stretch it.
-        protected override void OnRender(DrawingContext drawing) => drawing.DrawImage(picture, new Rect(0, 0, picture.Width, picture.Height));
+        protected override void OnRender(DrawingContext drawing) => drawing.DrawImage(picture, new Rect(at.X, at.Y, picture.Width, picture.Height));
     }
-
     // A pill as tall and round as its circle: the circle at one end, the segment button beside it.
     internal static Border Pill(UIElement circle, Button segment, bool circleRight = false)
     {
@@ -252,34 +282,40 @@ internal static class SettingsMotion
     }
 
     // Page change in two beats, like the bubble hand-over: the old page fades out completely, only
-    // then the new one fades in. Never both half-visible at once, no blur.
+    // then the new one fades in. The old page's picture is pinned on "stage", an element already on
+    // screen, exactly where the old page was ("at"), and the new page is held invisible from the
+    // start. The clock only starts with the first frame after the new page has been built, so a
+    // heavy build (liquid glass, folder icons) neither shows an empty frame nor eats the fade.
     internal const double PageOut = .22, PageIn = .3;
-    internal static void PageTransition(FrameworkElement host, BitmapSource? before, bool retried = false)
+    internal static void PageTransition(FrameworkElement stage, Point at, BitmapSource? before, UIElement arriving)
     {
-        if (AdornerLayer.GetAdornerLayer(host) is not { } layer)
+        arriving.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 0, TimeSpan.Zero));
+        var layer = before is null ? null : AdornerLayer.GetAdornerLayer(stage);
+        Ghost? ghost = null;
+        if (layer is not null) { ghost = new Ghost(stage, before!, at); layer.Add(ghost); }
+        bool begun = false;
+        void Begin()
         {
-            // A page built a moment ago is not in the window's tree yet: keep it hidden and start
-            // the hand-over once it has been laid out (otherwise it would just pop in).
-            if (retried) return;
-            host.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 0, TimeSpan.Zero));
-            host.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => PageTransition(host, before, retried: true));
-            return;
+            if (begun) return;
+            begun = true; CompositionTarget.Rendering -= First;
+            double wait = ghost is null ? 0 : PageOut;
+            var appear = new DoubleAnimationUsingKeyFrames();
+            appear.KeyFrames.Add(new DiscreteDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+            appear.KeyFrames.Add(new DiscreteDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(wait))));
+            appear.KeyFrames.Add(new EasingDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(wait + PageIn)), new CubicEase { EasingMode = EasingMode.EaseOut }));
+            appear.Completed += (_, _) => arriving.BeginAnimation(UIElement.OpacityProperty, null);
+            arriving.BeginAnimation(UIElement.OpacityProperty, appear);
+            if (ghost is null) return;
+            var vanish = new DoubleAnimation(1, 0, TimeSpan.FromSeconds(PageOut)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
+            vanish.Completed += (_, _) => layer!.Remove(ghost);
+            ghost.BeginAnimation(UIElement.OpacityProperty, vanish);
         }
-        double wait = before is null ? 0 : PageOut;
-        var appear = new DoubleAnimationUsingKeyFrames();
-        appear.KeyFrames.Add(new DiscreteDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
-        appear.KeyFrames.Add(new DiscreteDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(wait))));
-        appear.KeyFrames.Add(new EasingDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(wait + PageIn)), new CubicEase { EasingMode = EasingMode.EaseOut }));
-        appear.Completed += (_, _) => host.BeginAnimation(UIElement.OpacityProperty, null);
-        host.BeginAnimation(UIElement.OpacityProperty, appear);
-        if (before is null) return;
-        var ghost = new Ghost(host, before);
-        layer.Add(ghost);
-        var vanish = new DoubleAnimation(1, 0, TimeSpan.FromSeconds(PageOut)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
-        vanish.Completed += (_, _) => layer.Remove(ghost);
-        ghost.BeginAnimation(UIElement.OpacityProperty, vanish);
+        void First(object? sender, EventArgs e) => Begin();
+        CompositionTarget.Rendering += First;
+        // Should no frame come (hidden window), the hand-over still completes.
+        var fallback = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+        fallback.Tick += (_, _) => { fallback.Stop(); Begin(); }; fallback.Start();
     }
-
     // The same two beats with live elements instead of a picture: "leaving" fades out first, then
     // "arriving" fades in. Both stay visible (and readable for code) throughout; whoever is left
     // over is only hidden once it has faded out completely.
@@ -315,21 +351,6 @@ internal static class SettingsMotion
             if (!running) { running = true; last = clock.Elapsed.TotalSeconds; CompositionTarget.Rendering += Frame; }
         };
         viewer.Unloaded += (_, _) => { if (running) { CompositionTarget.Rendering -= Frame; running = false; } };
-    }
-
-    // Scrolls to an offset on a soft curve, e.g. to bring the colour row up when a picker opens.
-    internal static void GlideScroll(ScrollViewer viewer, double offset, double seconds = .45)
-    {
-        double from = viewer.VerticalOffset, to = Math.Clamp(offset, 0, viewer.ScrollableHeight);
-        if (Math.Abs(to - from) < 1) return;
-        var clock = System.Diagnostics.Stopwatch.StartNew();
-        void Frame(object? sender, EventArgs e)
-        {
-            double t = Math.Min(1, clock.Elapsed.TotalSeconds / seconds), p = t * t * t * (t * (t * 6 - 15) + 10);
-            viewer.ScrollToVerticalOffset(from + (to - from) * p);
-            if (t >= 1) CompositionTarget.Rendering -= Frame;
-        }
-        CompositionTarget.Rendering += Frame;
     }
 
     // No hover background: the content swells a little instead.

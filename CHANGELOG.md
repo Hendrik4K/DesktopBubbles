@@ -42,6 +42,9 @@
 - 1:3 ↔ 1:1 in drei ruhigen Schritten: altes Bild ganz ausblenden, Fenster gleitet, neues Bild einblenden.
 - Einstellungen: Allgemein steht zuerst (Mit Windows starten oben, Bubble automatisch schließen vorletzt, Bubble-Farben für alle zuletzt), darunter App-Farbe und Farbmodus, dann Transparenz. Farbmodus ist eine Pille wie App-Farbe: Kreis links, die Auswahl klappt darunter in Pillenbreite aus.
 - Trennstrich endet auf Höhe der Unterkante von Neu; die gestrichelte Linie um Neu wandert langsam im Kreis.
+- Miniatur ↔ Ordner blendet sichtbar aus und ein: das Bild der alten Seite wird sofort angeheftet, die Uhr startet erst mit dem ersten gezeichneten Bild nach dem Seitenaufbau (vorher lief die Blende beim langsamen Aufbau ins Leere).
+- Ausklappmenüs (Glas, Farbmodus) fahren weich auf und wieder ein; Klicks während des Aufklappens werden verworfen. Vorher wurde die Animation nie angehängt, weil WPF Loaded nur bei Elementen mit eigenem Handler auslöst.
+- Einstellungen: App-Farbe und Farbmodus wieder zuerst, dann Allgemein, dann Transparenz und Werkzeuge.
 
 ## 1.8.2 · 15.11.2026
 

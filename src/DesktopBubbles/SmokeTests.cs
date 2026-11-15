@@ -158,7 +158,7 @@ internal static class SmokeTests
         var modeCombo = Descendants(settings).OfType<System.Windows.Controls.ComboBox>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Farbmodus der Anwendung");
         Check("Modusfarbe sitzt als runder Kreis links neben dem Farbmodus", settings.ModeColorButton!.TranslatePoint(new Point(settings.ModeColorButton.ActualWidth, 0), modeCombo).X <= 0);
         var generalBoxes = Descendants(settings).OfType<System.Windows.Controls.CheckBox>().ToList();
-        Check("Einstellungen: Allgemein zuerst, Windows-Start oben, Bubble-Farben zuletzt, darunter App-Farbe", generalBoxes.First().Content is System.Windows.Controls.TextBlock { Text: "Mit Windows starten" } && ReferenceEquals(generalBoxes.Last(), settings.LinkColorsCheckBox) && settings.ColorButton!.TranslatePoint(new Point(), settings).Y > settings.LinkColorsCheckBox!.TranslatePoint(new Point(), settings).Y && settings.TransparencySlider!.TranslatePoint(new Point(), settings).Y > settings.ColorButton.TranslatePoint(new Point(), settings).Y);
+        Check("Einstellungen: erst App-Farbe und Farbmodus, dann Allgemein (Windows-Start oben, Bubble-Farben zuletzt), dann Transparenz", generalBoxes.First().Content is System.Windows.Controls.TextBlock { Text: "Mit Windows starten" } && ReferenceEquals(generalBoxes.Last(), settings.LinkColorsCheckBox) && settings.ColorButton!.TranslatePoint(new Point(), settings).Y < generalBoxes.First().TranslatePoint(new Point(), settings).Y && settings.TransparencySlider!.TranslatePoint(new Point(), settings).Y > settings.LinkColorsCheckBox!.TranslatePoint(new Point(), settings).Y);
         Check("Einsammeln neu angelegter Verknüpfungen ist standardmäßig an", settings.CollectDuplicatesCheckBox?.IsChecked == true);
         // Auto close sits second to last, right above the shared bubble colors; its seconds on the right.
         var linkOrigin = settings.LinkColorsCheckBox!.TranslatePoint(new Point(), settings); var autoOrigin = settings.AutoCloseCheckBox!.TranslatePoint(new Point(), settings);
@@ -247,12 +247,18 @@ internal static class SmokeTests
         Descendants(settings).OfType<System.Windows.Controls.Button>().Single(b => b.Content is string text && text == "Farben zurücksetzen").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
         settings.SelectScope(AppearanceScope.Bubbles); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         Check("Miniatur enthält genau eine Glaswahl zwischen Farbe und Vorschau", settings.GlassSelector is not null && Descendants(settings).OfType<System.Windows.Controls.ComboBox>().Count() == 1);
-        settings.GlassSelector!.IsDropDownOpen = true; await Task.Delay(700); var glassDrop = (System.Windows.Controls.Border)settings.GlassSelector.Template.FindName("Drop", settings.GlassSelector);
-        Check("Glas-Menü klappt mit allen Einträgen sichtbar aus", glassDrop.IsVisible && glassDrop.ActualHeight > 3 * 30 && glassDrop.Clip is null, $"Höhe={glassDrop.ActualHeight:0}");
-        settings.GlassSelector.IsDropDownOpen = false; await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        settings.GlassSelector!.IsDropDownOpen = true; await Task.Delay(90); var glassDrop = (System.Windows.Controls.Border)settings.GlassSelector.Template.FindName("Drop", settings.GlassSelector);
+        var glassPopup = (System.Windows.Controls.Primitives.Popup)settings.GlassSelector.Template.FindName("PART_Popup", settings.GlassSelector);
+        bool unfolding = !SettingsMotion.Enabled(app) || glassPopup.IsOpen && glassDrop.Clip is not null; await Task.Delay(700);
+        Check("Glas-Menü fährt weich auf und zeigt danach alle Einträge", unfolding && glassDrop.IsVisible && glassDrop.ActualHeight > 3 * 30 && glassDrop.Clip is null, $"Höhe={glassDrop.ActualHeight:0}");
+        settings.GlassSelector.IsDropDownOpen = false; await Task.Delay(90); bool folding = !SettingsMotion.Enabled(app) || glassPopup.IsOpen; await Task.Delay(600);
+        Check("Glas-Menü fährt weich wieder ein und schließt danach", folding && !glassPopup.IsOpen);
         settings.GlassSelector!.SelectedIndex = 1; settings.RoundingSlider!.Value = 18;
         Check("Gemeinsame Rundung skaliert Miniatur und Ordner proportional", Math.Abs(app.State.Settings.BubbleCornerRadius - 76 * .18) < .001 && app.State.Settings.CornerRoundness == 18);
-        settings.SelectScope(AppearanceScope.Window); await Task.Delay(60); double midOpacity = settings.PageBody!.Opacity; await Task.Delay(700);
+        settings.SelectScope(AppearanceScope.Window); await Task.Delay(60); double midOpacity = settings.PageBody!.Opacity;
+        var oldPage = System.Windows.Documents.AdornerLayer.GetAdornerLayer(settings.PagePane)?.GetAdorners(settings.PagePane)?.FirstOrDefault();
+        Check("Miniatur zu Ordner zeigt zuerst das Bild der alten Seite, das dann ausblendet", !SettingsMotion.Enabled(app) || oldPage is { Opacity: > .2 } && oldPage.RenderSize.Width > 100 && oldPage.RenderSize.Height > 100, $"Bild={oldPage?.Opacity:0.00}, Größe={oldPage?.RenderSize}");
+        await Task.Delay(700);
         Check("Miniatur zu Ordner blendet erst aus und dann die neue Seite ein", !SettingsMotion.Enabled(app) || midOpacity < .05 && settings.PageBody!.Opacity == 1, $"mitten={midOpacity:0.00}, danach={settings.PageBody!.Opacity:0.00}");
         settings.TransparencySlider!.Value = 37;
         Check("Ordnertransparenz gilt gemeinsam und unabhängig von App und Miniatur", Math.Abs(app.State.Settings.WindowOpacity - .63) < .001 && app.State.Groups.All(g => g.WindowOpacity is null) && app.State.Settings.Opacity == .35 && app.State.Settings.AppOpacity == originalAppOpacity && settings.GlassSelector is null && settings.RoundingSlider is null);

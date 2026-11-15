@@ -70,7 +70,7 @@
         </ControlTemplate.Triggers>
       </ControlTemplate></Setter.Value></Setter>
     </Style>
-    <Style TargetType="ComboBox">
+    <Style TargetType="ComboBox"><EventSetter Event="Loaded" Handler="ComboLoaded"/>
       <Setter Property="FocusVisualStyle" Value="{x:Null}"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="Background" Value="{DynamicResource ControlFill}"/><Setter Property="BorderBrush" Value="{DynamicResource Line}"/><Setter Property="MinWidth" Value="180"/>
       <!-- One piece: when open, the field's lower corners square off and the list grows out of it
            downwards (same width, no gap). Label and field text stay exactly where they are. -->
@@ -86,7 +86,7 @@
             </ControlTemplate></ToggleButton.Template>
           </ToggleButton>
           <ContentPresenter Margin="12,8,30,8" VerticalAlignment="Center" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" IsHitTestVisible="False"/>
-          <Popup x:Name="PART_Popup" Placement="Bottom" VerticalOffset="-1" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+          <Popup x:Name="PART_Popup" Placement="Bottom" VerticalOffset="-1" AllowsTransparency="True" Focusable="False" PopupAnimation="None">
             <Border x:Name="Drop" Width="{Binding ActualWidth, ElementName=ComboRoot}" Background="{DynamicResource ControlFill}" BorderBrush="{DynamicResource Line}" BorderThickness="1,0,1,1" CornerRadius="0,0,12,12" Padding="4,2,4,6" ClipToBounds="True"><ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer></Border>
           </Popup>
         </Grid>
@@ -122,7 +122,7 @@
     </Style>
     <!-- Farbmodus: the right-hand segment of a pill. Its list opens below the whole pill (placed and
          sized from code), with the same text-swell hover as the other pill segments. -->
-    <Style x:Key="PillCombo" TargetType="ComboBox">
+    <Style x:Key="PillCombo" TargetType="ComboBox"><EventSetter Event="Loaded" Handler="ComboLoaded"/>
       <Setter Property="FocusVisualStyle" Value="{x:Null}"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="Cursor" Value="Hand"/><Setter Property="MinWidth" Value="0"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBox">
         <Grid x:Name="ComboRoot" Background="Transparent">
@@ -135,7 +135,7 @@
               <ContentPresenter Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" VerticalAlignment="Center"/>
             </Grid>
           </DockPanel>
-          <Popup x:Name="PART_Popup" Placement="Bottom" VerticalOffset="6" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+          <Popup x:Name="PART_Popup" Placement="Bottom" VerticalOffset="6" AllowsTransparency="True" Focusable="False" PopupAnimation="None">
             <Border x:Name="Drop" Background="{DynamicResource ControlFill}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="14" Padding="4,4,4,6"><ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer></Border>
           </Popup>
         </Grid>
