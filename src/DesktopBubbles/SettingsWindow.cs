@@ -91,7 +91,14 @@ internal sealed class SettingsWindow : Window
         bool keep = stored.SettingsWindowVersion == AppVersion && stored.SettingsWindowWidth is > 0 && stored.SettingsWindowHeight is > 0;
         Width = Math.Clamp(keep ? stored.SettingsWindowWidth!.Value : 660, MinWidth, MaxWidth);
         Height = Math.Clamp(keep ? stored.SettingsWindowHeight!.Value : 760, MinHeight, MaxHeight);
-        WindowStartupLocation = WindowStartupLocation.CenterScreen; Ui.Chrome(this, true);
+        // Reopens where it was closed, as long as that spot is still on a screen.
+        double screenLeft = SystemParameters.VirtualScreenLeft, screenTop = SystemParameters.VirtualScreenTop;
+        if (stored.SettingsWindowLeft is double left && stored.SettingsWindowTop is double top && double.IsFinite(left) && double.IsFinite(top)
+            && left > screenLeft - Width + 120 && left < screenLeft + SystemParameters.VirtualScreenWidth - 120
+            && top >= screenTop - 8 && top < screenTop + SystemParameters.VirtualScreenHeight - 80)
+        { WindowStartupLocation = WindowStartupLocation.Manual; Left = left; Top = top; }
+        else WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        Ui.Chrome(this, true);
         var layout = new Grid(); layout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(44) });
         layout.RowDefinitions.Add(new RowDefinition()); layout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(86) });
         surface = new Border { CornerRadius = new CornerRadius(Ui.AppRadius), BorderBrush = Ui.GlassRim(), BorderThickness = new Thickness(1), Child = layout }; Content = surface;
@@ -141,6 +148,9 @@ internal sealed class SettingsWindow : Window
             PixelRect? basis = restBounds ?? (glide.Running ? glide.Target : null);
             settings.SettingsWindowWidth = basis is { } wide ? wide.Width / scale : ActualWidth;
             settings.SettingsWindowHeight = basis is { } tall ? tall.Height / scale : ActualHeight;
+            var now = Native.Bounds(this);
+            settings.SettingsWindowLeft = Left + (basis is { } at ? (at.X - now.X) / scale : 0);
+            settings.SettingsWindowTop = Top + (basis is { } up ? (up.Y - now.Y) / scale : 0);
             settings.SettingsWindowVersion = AppVersion;
             glide.Stop(); restBounds = grownBounds = null; roomFor = null;
         };
@@ -152,15 +162,17 @@ internal sealed class SettingsWindow : Window
     private readonly WindowGlide glide;
     private PixelRect? restBounds, grownBounds;
     private string? roomFor;
-    private void MakeRoom(string reason, double wider, double taller)
+    private void MakeRoom(string reason, double wider, double taller, bool growOnly = false)
     {
         if (!IsVisible || WindowState != WindowState.Normal) return;
         double scale = Native.GetDpiForWindow(Native.Handle(this)) / 96d;
         // While still gliding back from an earlier expansion, its destination is the size to return to.
         var now = Native.Bounds(this); var rest = restBounds ?? (glide.Running ? glide.Target : now);
         var work = Native.WorkArea(now.X + now.Width / 2, now.Y + now.Height / 2);
-        double width = Math.Min(work.Width, Math.Max(rest.Width, Math.Ceiling(now.Width + wider * scale)));
-        double height = Math.Min(work.Height, Math.Max(rest.Height, Math.Ceiling(now.Height + taller * scale)));
+        // growOnly (another folder at 1:1): never smaller than it is right now.
+        double minWidth = growOnly ? Math.Max(rest.Width, now.Width) : rest.Width, minHeight = growOnly ? Math.Max(rest.Height, now.Height) : rest.Height;
+        double width = Math.Min(work.Width, Math.Max(minWidth, Math.Ceiling(now.Width + wider * scale)));
+        double height = Math.Min(work.Height, Math.Max(minHeight, Math.Ceiling(now.Height + taller * scale)));
         if (Math.Abs(width - rest.Width) < 1 && Math.Abs(height - rest.Height) < 1) { GiveBackRoom(reason); return; }
         var target = new PixelRect(Math.Clamp(now.X, work.X, Math.Max(work.X, work.Right - width)), Math.Clamp(now.Y, work.Y, Math.Max(work.Y, work.Bottom - height)), width, height);
         restBounds ??= rest; grownBounds = target; roomFor = reason;
@@ -241,31 +253,38 @@ internal sealed class SettingsWindow : Window
     // 1:1 widens the window to the right and down until the real-size folder fits whole; 1:3 glides
     // it back to where it was. Sized from the folder's footprint, so the window can start moving
     // before the new preview is even laid out.
-    private void FitPreview()
+    private void FitPreview(bool growOnly = false)
     {
         Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
         {
             if (folderViewport is null) return;
             if (previewScale != 1) { GiveBackRoom("preview"); return; }
             var (width, height) = StageSize(1);
-            MakeRoom("preview", width - folderViewport.ActualWidth + 2, height - folderViewport.ActualHeight + 2);
+            MakeRoom("preview", width - folderViewport.ActualWidth + 2, height - folderViewport.ActualHeight + 2, growOnly);
         });
     }
     // The stage around the preview: its size plus the 8 px frame and the 8 px gap above it.
     private (double Width, double Height) StageSize(double scale) => (PreviewFootprint.Width * scale + 8, PreviewFootprint.Height * scale + 16);
     // 1:3 ↔ 1:1: the old picture fades out completely, the new one is laid on fully transparent and
     // fades in, centred, while the window glides to its new size at the same time.
+    // A switch always runs to its end: clicks meanwhile (a fast double click) are dropped.
+    private bool scaleSwitching;
     private void SwitchPreviewScale()
     {
+        if (scaleSwitching) return;
         previewScale = previewScale == 1 ? 1d / 3 : 1;
-        if (PreviewScaleButton is not null) SettingsMotion.SwapContent(PreviewScaleButton, previewScale == 1 ? "1:1" : "1:3");
         FitPreview();
         if (!SettingsMotion.Enabled(app) || !IsLoaded) { UpdateFolderPreview(); return; }
+        scaleSwitching = true;
+        if (PreviewScaleButton is not null) SettingsMotion.FlipContent(PreviewScaleButton, previewScale == 1 ? "1:1" : "1:3", clockwise: previewScale == 1);
         var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(190)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
         fadeOut.Completed += (_, _) =>
         {
             UpdateFolderPreview();
-            preview.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+            // Free again once the picture is in and the window has arrived.
+            fadeIn.Completed += async (_, _) => { while (glide.Running) await Task.Delay(30); scaleSwitching = false; };
+            preview.BeginAnimation(OpacityProperty, fadeIn);
         };
         preview.BeginAnimation(OpacityProperty, fadeOut);
     }
@@ -281,18 +300,52 @@ internal sealed class SettingsWindow : Window
         double height = Math.Min(work.Height, Math.Ceiling(now.Height + taller * scale));
         glide.To(new PixelRect(now.X, Math.Clamp(now.Y, work.Y, Math.Max(work.Y, work.Bottom - height)), now.Width, height), .52, SettingsMotion.Enabled(app));
     });
+    // Switching bubbles: the old preview fades out completely, only then the new one fades in; never
+    // both at once. The selection pill travels over the whole hand-over. Coming from the settings,
+    // the whole page changes like a page.
+    private BubbleGroup? incoming;
+    private const double PreviewOut = .22, PreviewIn = .3;
     private void SelectGroup(BubbleGroup group)
     {
+        if (incoming is not null) { incoming = group; GlidePillTo(group, PreviewOut + PreviewIn); return; } // Mid hand-over: just retarget.
+        if (group == selected && Scope != AppearanceScope.App) return;
         CancelColorEdit();
-        // The preview hands over to the new group like a page: the old one blurs away, the new one
-        // sharpens in. Coming from the settings, the whole page changes that way.
-        bool fromSettings = Scope == AppearanceScope.App, animate = group != selected && SettingsMotion.Enabled(app) && IsLoaded;
-        FrameworkElement? Host() => fromSettings ? pane : Scope == AppearanceScope.Window ? folderViewport : preview;
-        var before = animate && Host() is { } old ? SettingsMotion.Snapshot(old) : null;
-        selected = group; if (fromSettings) Scope = AppearanceScope.Bubbles;
+        bool fromSettings = Scope == AppearanceScope.App, animate = SettingsMotion.Enabled(app) && IsLoaded;
+        if (fromSettings || !animate)
+        {
+            var before = animate ? SettingsMotion.Snapshot(pane) : null;
+            ShowGroup(group);
+            if (before is not null) Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => SettingsMotion.PageTransition(pane, before));
+            return;
+        }
+        incoming = group; GlidePillTo(group, PreviewOut + PreviewIn);
+        var fadeOut = new DoubleAnimation(0, TimeSpan.FromSeconds(PreviewOut)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
+        fadeOut.Completed += (_, _) =>
+        {
+            var next = incoming; incoming = null;
+            if (next is null) return;
+            ShowGroup(next);
+            preview.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromSeconds(PreviewIn)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+        };
+        preview.BeginAnimation(OpacityProperty, fadeOut);
+    }
+    private void ShowGroup(BubbleGroup group)
+    {
+        selected = group; if (Scope == AppearanceScope.App) Scope = AppearanceScope.Bubbles;
         RefreshGroups(); RefreshPage();
-        if (before is not null) Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => { if (Host() is { } next) SettingsMotion.PageTransition(next, before); });
-        if (Scope == AppearanceScope.Window && previewScale == 1) FitPreview(); // Another folder size at 1:1.
+        // Another folder size: 1:1 makes more room if needed, 1:3 grows the window if the folder no
+        // longer fits; neither ever shrinks it here.
+        if (Scope == AppearanceScope.Window) { if (previewScale == 1) FitPreview(growOnly: true); else FitFolderTab(); }
+    }
+    // The pill starts towards the clicked row at once and takes the whole hand-over to get there.
+    private void GlidePillTo(BubbleGroup group, double seconds)
+    {
+        int index = app.State.Groups.IndexOf(group);
+        if (index < 0 || index >= groups.Children.Count || groups.Children[index] is not FrameworkElement row || !row.IsVisible) return;
+        double y = row.TranslatePoint(new Point(), groups).Y;
+        selectionPill.Height = row.ActualHeight; selectionPill.Visibility = Visibility.Visible;
+        pillShift.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(pillShift.Y, y, TimeSpan.FromSeconds(seconds)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } });
+        pillY = y;
     }
     // The pill glides from the previous group to the selected one; first placement is instant.
     private void PlacePill()
@@ -300,6 +353,7 @@ internal sealed class SettingsWindow : Window
         if (selectedRow is null || !selectedRow.IsVisible) { selectionPill.Visibility = Visibility.Hidden; return; }
         var y = selectedRow.TranslatePoint(new Point(), groups).Y;
         selectionPill.Height = selectedRow.ActualHeight; selectionPill.Visibility = Visibility.Visible;
+        if (pillY is { } there && Math.Abs(there - y) <= .5) return; // Already there or on its way (hand-over glide).
         if (pillY is { } from && Math.Abs(from - y) > .5 && SettingsMotion.Enabled(app)) SettingsMotion.Glide(pillShift, TranslateTransform.YProperty, from, y, new Spring(.4, .86));
         else { pillShift.BeginAnimation(TranslateTransform.YProperty, null); pillShift.Y = y; }
         pillY = y;
@@ -356,7 +410,7 @@ internal sealed class SettingsWindow : Window
         }
         var content = new DockPanel { LastChildFill = true }; layout.Children.Add(content); pageBody = content;
         var root = new StackPanel(); var settings = app.State.Settings;
-        swatch = null; colorPill = null; ColorButton = null; GlassSelector = null; folderCanvas = null; folderStage = null; folderViewport = null; previewDimensions = null; PreviewScaleButton = null; LinkColorsCheckBox = null;
+        swatch = null; colorPill = null; scaleSwitching = false; ColorButton = null; GlassSelector = null; folderCanvas = null; folderStage = null; folderViewport = null; previewDimensions = null; PreviewScaleButton = null; LinkColorsCheckBox = null;
         FrostedFoldersButton = null; TransparencySlider = null;
         modeSwatch = null; ModeColorButton = null; modeAction = null; modeApplyButton = null; themeSelector = null;
         if (preview.Parent is Panel previous) previous.Children.Remove(preview);
@@ -699,7 +753,7 @@ internal sealed class SettingsWindow : Window
         Action("Verknüpfungen auf Desktop zurücklegen", app.RestoreAllShortcuts, "Legt gesicherte Desktop-Verknüpfungen zusätzlich auf den Desktop. Die Einträge bleiben in ihren Gruppen. Hilfreich vor dem Entfernen der App.");
         Action("Programmordner öffnen", () => { try { Process.Start(new ProcessStartInfo(AppContext.BaseDirectory) { UseShellExecute = true }); } catch (Exception ex) { Ui.Error(ex); } }, "Öffnet den Ordner mit DesktopBubbles.exe.");
         Action("Datenordner öffnen", () => { try { Process.Start(new ProcessStartInfo(app.DataDirectory) { UseShellExecute = true }); } catch (Exception ex) { Ui.Error(ex); } }, "Öffnet den tatsächlich verwendeten Speicher für Gruppen, Einstellungen und interne Verknüpfungen: " + app.DataDirectory);
-        Action("Desktop-Bubbles neu verbinden", app.Rebuild, "Baut die Desktop-Fenster neu auf, zum Beispiel nach einem Explorer-Neustart. Inhalte und Positionen bleiben erhalten.");
+        Action("Desktop-Bubbles neu verbinden", app.Reconnect, "Baut die Desktop-Fenster neu auf, zum Beispiel nach einem Explorer-Neustart. Inhalte und Positionen bleiben erhalten.");
         Action("Diagnosebericht speichern", async () => { try { await Diagnostics.Measure(app); } catch (Exception ex) { Ui.Error(ex); } }, "Misst diesen Prozess zehn Sekunden lang und speichert einen lokalen Bericht. Es wird nichts hochgeladen.");
     }
 }

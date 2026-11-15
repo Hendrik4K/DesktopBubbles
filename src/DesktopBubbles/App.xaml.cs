@@ -197,6 +197,19 @@ public partial class App : System.Windows.Application
         }
         settings?.UpdateStatus();
     }
+    // "Neu verbinden": the miniatures fade out, are rebuilt and fade back in instead of blinking.
+    internal async void Reconnect()
+    {
+        if (!State.Settings.Animations || !SystemParameters.ClientAreaAnimation) { Rebuild(); return; }
+        CloseFlyout();
+        var ease = new System.Windows.Media.Animation.CubicEase { EasingMode = System.Windows.Media.Animation.EasingMode.EaseInOut };
+        foreach (var window in bubbles) window.BeginAnimation(UIElement.OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, TimeSpan.FromMilliseconds(240)) { EasingFunction = ease });
+        await Task.Delay(260);
+        if (exiting) return;
+        Rebuild();
+        foreach (var window in bubbles)
+            window.BeginAnimation(UIElement.OpacityProperty, new System.Windows.Media.Animation.DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(360)) { EasingFunction = ease, FillBehavior = System.Windows.Media.Animation.FillBehavior.Stop });
+    }
     internal void Changed(bool rebuild = false)
     {
         RequestSave();

@@ -31,6 +31,8 @@ public sealed class BubbleSettings
     public double? SettingsWindowWidth { get; set; }
     public double? SettingsWindowHeight { get; set; }
     public string? SettingsWindowVersion { get; set; }
+    public double? SettingsWindowLeft { get; set; } // Where it was closed; reopened there if still on a screen.
+    public double? SettingsWindowTop { get; set; }
     public double FrostedFolderOpacity { get; set; } = .55;
     public double AppCornerRadius { get; set; } = 8;
     public double BubbleCornerRadius { get; set; } = 20;

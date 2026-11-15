@@ -198,6 +198,25 @@ internal static class SettingsMotion
         presenter.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(260)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
     }
 
+    // The label turns around its vertical axis like a card: it narrows to an edge, the text changes
+    // and it opens again. Clockwise leans it one way on the way, counter-clockwise the other.
+    internal static void FlipContent(Button button, string text, bool clockwise)
+    {
+        if (!button.IsLoaded || button.Template?.FindName("Text", button) is not FrameworkElement face) { button.Content = text; return; }
+        var turn = new ScaleTransform(1, 1); var lean = new SkewTransform(0, 0);
+        face.RenderTransformOrigin = new Point(.5, .5); face.RenderTransform = new TransformGroup { Children = { lean, turn } };
+        double tilt = clockwise ? 14 : -14;
+        var close = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(140)) { EasingFunction = new SineEase { EasingMode = EasingMode.EaseIn } };
+        close.Completed += (_, _) =>
+        {
+            button.Content = text;
+            turn.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(180)) { EasingFunction = new SineEase { EasingMode = EasingMode.EaseOut } });
+            lean.BeginAnimation(SkewTransform.AngleYProperty, new DoubleAnimation(-tilt, 0, TimeSpan.FromMilliseconds(180)) { EasingFunction = new SineEase { EasingMode = EasingMode.EaseOut } });
+        };
+        turn.BeginAnimation(ScaleTransform.ScaleXProperty, close);
+        lean.BeginAnimation(SkewTransform.AngleYProperty, new DoubleAnimation(0, tilt, TimeSpan.FromMilliseconds(140)) { EasingFunction = new SineEase { EasingMode = EasingMode.EaseIn } });
+    }
+
     // Page change in two beats: the old page dissolves into a growing Gaussian blur first, then the
     // new one sharpens in. Nothing of the old page lingers over the new one.
     internal static void PageTransition(FrameworkElement host, BitmapSource? before)

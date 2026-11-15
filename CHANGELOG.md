@@ -25,6 +25,10 @@
 - 1:3 ↔ 1:1 blendet das alte Bild ganz aus und das neue mittig ein, während das Fenster gleichzeitig zur neuen Größe gleitet; von 1:1 direkt zur Miniatur gleitet es ebenfalls zurück.
 - Beim Wechsel in den Ordner-Tab wächst das Fenster nur, wenn die 1:3-Vorschau nicht ganz hineinpasst, und nur so weit wie nötig.
 - Scrollbalken-Morph als weiche S-Kurve, die der Scrollposition live folgt: Scrollen geht sofort, auch mitten im Morph.
+- Verwaltung öffnet sich wieder dort, wo sie geschlossen wurde (sofern die Stelle noch auf einem Bildschirm liegt).
+- Desktop-Bubbles neu verbinden blendet die Miniaturen weich aus und wieder ein statt kurz zu flackern.
+- Bubble-Wechsel in der Verwaltung: alte Vorschau blendet ganz aus, erst dann die neue ein; die Auswahl-Pille gleitet über die ganze Übergabe. Im Ordner-Tab wächst das Fenster für mehrzeilige Ordner, wird dabei aber nie kleiner.
+- 1:3/1:1 lässt einen laufenden Wechsel nie abbrechen (Doppelklick zählt einmal); die Zahl dreht sich um ihre senkrechte Achse, zu 1:1 rechts herum, zurück links herum.
 
 ## 1.8.2 · 15.11.2026
 

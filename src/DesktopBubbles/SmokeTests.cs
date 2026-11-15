@@ -244,7 +244,8 @@ internal static class SmokeTests
         double smaller = settings.AppearancePreview.Width; settings.SizeSlider!.Value = 432;
         Check("Größenregler verändert die Vorschau direkt im Maßstab 1 zu 3", settings.AppearancePreview.Width > smaller && Math.Abs(settings.AppearancePreview.Width * 3 - 432) < .001 && settings.PreviewFootprint.Width == 432);
         var expectedFootprint = settings.PreviewFootprint; var boundsBeforeLarge = Native.Bounds(settings);
-        settings.PreviewScaleButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(800);
+        settings.PreviewScaleButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(60);
+        settings.PreviewScaleButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(800); // Double click: the second one is dropped.
         var largeScroll = Descendants(settings).OfType<System.Windows.Controls.ScrollViewer>().Single(s => ReferenceEquals(s.Content, settings.AppearancePreview.Parent)); var boundsLarge = Native.Bounds(settings);
         var largeWork = Native.WorkArea(boundsLarge.X + boundsLarge.Width / 2, boundsLarge.Y + boundsLarge.Height / 2);
         Check("1:1 erweitert das Fenster nach rechts und unten, bis der Ordner ganz zu sehen ist", (largeScroll.ScrollableWidth <= 1 || boundsLarge.Width >= largeWork.Width - 1) && (largeScroll.ScrollableHeight <= 1 || boundsLarge.Height >= largeWork.Height - 1) && boundsLarge.X == boundsBeforeLarge.X, $"vorher={boundsBeforeLarge}, 1:1={boundsLarge}, Rest={largeScroll.ScrollableWidth:0}x{largeScroll.ScrollableHeight:0}");
@@ -308,6 +309,7 @@ internal static class SmokeTests
         app.State.Settings.Glass = .45; app.State.Groups[0].Color = "#FF0000"; app.ApplyAppearance();
         Check("Milchglas übernimmt weder Miniaturfarbe noch gemeinsamen Klar-Matt-Stil", ((LinearGradientBrush)Ui.WindowGlass(app.State.Settings, app.State.Groups[0])).GradientStops.Select(s => s.Color).SequenceEqual(frostStops));
         app.State.Settings.Glass = sharedGlass; app.State.Groups[0].Color = groupColor; app.ApplyAppearance();
+        settings.Left += 40; settings.Top += 24; await Dispatcher.Yield(DispatcherPriority.ApplicationIdle); double closedLeft = settings.Left, closedTop = settings.Top;
         settings.Close(); app.Open(app.Bubbles[0]); await Task.Delay(250); await SettleMotion();
         var frosted = app.CurrentFlyout!;
         Check("Milchglas verwendet eine einzige Alpha-Fläche ohne rechteckigen DWM-Glaslayer", frosted.Frosted && frosted.AllowsTransparency && ((long)Native.GetWindowLongPtr(Native.Handle(frosted), Native.GwlExStyle) & 0x80000) != 0 && Native.DwmGetWindowAttribute(Native.Handle(frosted), 38, out int frostBackdrop, 4) == 0 && frostBackdrop == 1);
@@ -350,6 +352,7 @@ internal static class SmokeTests
         Check("100 Prozent Transparenz entfernt Ordnerfläche und Rahmen bei sichtbaren Icons", PixelAlpha(app.CurrentFlyout!, 216, app.CurrentFlyout!.ActualHeight - 8) == 0 && PixelAlpha(app.CurrentFlyout!, 216, app.CurrentFlyout!.ActualHeight - 1) == 0 && Descendants(app.CurrentFlyout!).OfType<System.Windows.Controls.Image>().All(i => i.Opacity == 1 && i.Source is not null));
         app.State.Settings.Glass = .55; app.State.Settings.WindowOpacity = .63; app.ApplyAppearance();
         app.CloseFlyout(); app.ShowSettings(); settings = System.Windows.Application.Current.Windows.OfType<SettingsWindow>().Single();
+        Check("Verwaltung öffnet sich dort, wo sie geschlossen wurde", Math.Abs(settings.Left - closedLeft) < 1.5 && Math.Abs(settings.Top - closedTop) < 1.5, $"geschlossen={closedLeft:0},{closedTop:0}, geöffnet={settings.Left:0},{settings.Top:0}");
         settings.SelectScope(AppearanceScope.Bubbles); settings.TransparencySlider!.Value = 82;
         Check("Miniatur bietet gemeinsamen Rundungsregler", settings.RoundingSlider is not null && app.State.Settings.CornerRoundness == 18);
         Check("Miniaturtransparenz gilt für alle und lässt den Ordnerwert unverändert", Math.Abs(app.State.Settings.Opacity - .18) < .001 && app.State.Groups.All(g => g.Opacity is null) && Math.Abs(app.State.Settings.WindowOpacity - .63) < .001);
