@@ -162,14 +162,23 @@ public partial class App : System.Windows.Application
         string version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0]
             ?? assembly.GetName().Version?.ToString(3) ?? "unbekannt";
         tray = new Forms.NotifyIcon { Text = "DesktopBubbles · " + version, Icon = trayIcon, Visible = true };
-        var menu = new Forms.ContextMenuStrip();
-        menu.Items.Add(new Forms.ToolStripMenuItem("Version " + version) { Enabled = false });
-        menu.Items.Add(new Forms.ToolStripSeparator());
-        menu.Items.Add("Zum Repository", null, (_, _) => Dispatcher.Invoke(OpenRepository));
-        menu.Items.Add("Desktop-Verbindung erneuern", null, (_, _) => Dispatcher.Invoke(Rebuild));
-        menu.Items.Add("Beenden", null, (_, _) => Dispatcher.Invoke(Quit));
+        var menu = TrayMenu.Create();
+        var head = new VersionItem(version) { Font = menu.Font }; menu.Items.Add(head);
+        // The version line checks for updates and must keep the menu open while it does.
+        bool keepOpen = false;
+        menu.ItemClicked += (_, e) => keepOpen = e.ClickedItem == head;
+        menu.Closing += (_, e) => { if (keepOpen && e.CloseReason == Forms.ToolStripDropDownCloseReason.ItemClicked) e.Cancel = true; keepOpen = false; };
+        head.Click += async (_, _) => await head.Check(version);
+        menu.Opening += (_, _) => head.Reset();
+        menu.Items.Add(TrayMenu.Spacer());
+        menu.Items.Add(TrayMenu.Item("Einstellungen öffnen", (_, _) => Dispatcher.Invoke(ShowSettings)));
+        menu.Items.Add(TrayMenu.Item("Zum Repository", (_, _) => Dispatcher.Invoke(OpenRepository)));
+        menu.Items.Add(TrayMenu.Item("Desktop-Verbindung erneuern", (_, _) => Dispatcher.Invoke(Rebuild)));
+        menu.Items.Add(TrayMenu.Spacer());
+        menu.Items.Add(TrayMenu.Exit("Beenden", (_, _) => Dispatcher.Invoke(Quit)));
         tray.ContextMenuStrip = menu;
-        tray.DoubleClick += (_, _) => Dispatcher.Invoke(ShowSettings);
+        // A single left click opens the app; the right button keeps the menu.
+        tray.MouseClick += (_, e) => { if (e.Button == Forms.MouseButtons.Left) Dispatcher.Invoke(ShowSettings); };
     }
     private void OpenRepository()
     {
@@ -301,6 +310,8 @@ public partial class App : System.Windows.Application
     }
     internal void CloseFlyout() { var current = flyout; flyout = null; current?.Close(); }
     internal FlyoutWindow? CurrentFlyout => flyout;
+    // Saves the auto-close choice and re-arms an open folder; nothing else on screen changes.
+    internal void ApplyAutoClose() { StateStore.Validate(State); RequestSave(); flyout?.ArmAutoClose(); }
     internal bool Exiting => exiting;
     private ShortcutDrag? activeDrag;
     private DateTime dragQuietUntil;

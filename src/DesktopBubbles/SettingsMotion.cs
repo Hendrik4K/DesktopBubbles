@@ -1,0 +1,167 @@
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
+
+namespace DesktopBubbles;
+
+// Small motions for the management window: everything glides, fades or follows instead of jumping,
+// and hover states reverse from wherever they are when the mouse changes its mind.
+internal static class SettingsMotion
+{
+    internal static bool Enabled(App app) => app.State.Settings.Animations && SystemParameters.ClientAreaAnimation;
+
+    // Animates towards a value from wherever the property is now, so a reversal mid-way is smooth.
+    internal static void FadeTo(UIElement element, double opacity, double seconds)
+        => element.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(opacity, TimeSpan.FromSeconds(seconds)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+
+    internal static void Glide(TranslateTransform shift, DependencyProperty axis, double from, double to, Spring spring)
+    {
+        double duration = spring.SettleTime;
+        shift.BeginAnimation(axis, new DoubleAnimation(from, to, TimeSpan.FromSeconds(duration)) { EasingFunction = new SpringEasing(spring, duration) { EasingMode = EasingMode.EaseIn } });
+    }
+
+    // A rounded track with an accent pill that slides to the chosen segment. The segments stay
+    // plain buttons (same names and texts as before) for keyboard, automation and tests.
+    internal static Grid Segments(string[] labels, int selected, int previous, Action<int> choose, Func<int, string>? tooltip = null)
+    {
+        var track = new Grid { Height = 40 };
+        track.Children.Add(new Border { CornerRadius = new CornerRadius(14), Background = Ui.Resource("ControlFill"), BorderBrush = Ui.Resource("Line"), BorderThickness = new Thickness(1) });
+        var shift = new TranslateTransform();
+        var pill = new Border { CornerRadius = new CornerRadius(11), Background = Ui.Resource("Accent"), Margin = new Thickness(4), HorizontalAlignment = HorizontalAlignment.Left, RenderTransform = shift,
+            Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 8, ShadowDepth = 1, Opacity = .18, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance } };
+        track.Children.Add(pill);
+        // Dark labels everywhere; a white copy is cut out in the pill's exact shape and travels with
+        // it, so every letter is white precisely where the pill is, also mid-slide.
+        var row = new Grid(); track.Children.Add(row);
+        var lit = new Grid { IsHitTestVisible = false }; track.Children.Add(lit);
+        var window = new RectangleGeometry { RadiusX = 11, RadiusY = 11, Transform = shift }; lit.Clip = window;
+        for (int i = 0; i < labels.Length; i++)
+        {
+            row.ColumnDefinitions.Add(new ColumnDefinition()); lit.ColumnDefinitions.Add(new ColumnDefinition());
+            int index = i;
+            var segment = new Button { Style = (Style)System.Windows.Application.Current.FindResource("PlainButton"), Content = labels[i], HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center };
+            segment.SetResourceReference(Control.ForegroundProperty, "Ink");
+            if (tooltip is not null) segment.ToolTip = tooltip(i);
+            System.Windows.Automation.AutomationProperties.SetName(segment, labels[i]);
+            segment.Click += (_, _) => { if (index != selected) choose(index); };
+            Grid.SetColumn(segment, i); row.Children.Add(segment);
+            var white = new TextBlock { Text = labels[i], Foreground = Brushes.White, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(white, i); lit.Children.Add(white);
+        }
+        bool placed = false;
+        track.SizeChanged += (_, _) =>
+        {
+            double width = Math.Max(0, (track.ActualWidth - 8) / labels.Length); pill.Width = width;
+            window.Rect = new Rect(4, 4, width, Math.Max(0, track.ActualHeight - 8));
+            if (placed) { shift.BeginAnimation(TranslateTransform.XProperty, null); shift.X = selected * width; return; }
+            placed = true;
+            if (previous >= 0 && previous != selected) Glide(shift, TranslateTransform.XProperty, previous * width, selected * width, new Spring(.38, .86));
+            else shift.X = selected * width;
+        };
+        return track;
+    }
+
+    // Scroll bars only while the mouse is over the list they scroll.
+    internal static void AutoHideScrollBar(ScrollViewer viewer)
+    {
+        void Apply(double opacity, double seconds)
+        {
+            if (viewer.Template?.FindName("PART_VerticalScrollBar", viewer) is ScrollBar bar) FadeTo(bar, opacity, seconds);
+            if (viewer.Template?.FindName("PART_HorizontalScrollBar", viewer) is ScrollBar wide) FadeTo(wide, opacity, seconds);
+        }
+        viewer.Loaded += (_, _) => { viewer.ApplyTemplate(); Apply(viewer.IsMouseOver ? 1 : 0, 0); };
+        viewer.MouseEnter += (_, _) => Apply(1, .18);
+        viewer.MouseLeave += (_, _) => Apply(0, .35);
+    }
+
+    // Content slides out softly at the top and bottom edge instead of being cut off.
+    internal static void EdgeFade(ScrollViewer viewer, double fade = 26)
+    {
+        void Update()
+        {
+            double height = viewer.ActualHeight; if (height <= 0) return;
+            double edge = Math.Min(.35, fade / height);
+            bool above = viewer.VerticalOffset > .5, below = viewer.VerticalOffset < viewer.ScrollableHeight - .5;
+            var mask = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+            mask.GradientStops.Add(new GradientStop(above ? Colors.Transparent : Colors.Black, 0));
+            mask.GradientStops.Add(new GradientStop(Colors.Black, edge));
+            mask.GradientStops.Add(new GradientStop(Colors.Black, 1 - edge));
+            mask.GradientStops.Add(new GradientStop(below ? Colors.Transparent : Colors.Black, 1));
+            mask.Freeze(); viewer.OpacityMask = mask;
+        }
+        viewer.ScrollChanged += (_, _) => Update(); viewer.SizeChanged += (_, _) => Update();
+    }
+
+    // The whole row of a slider (from its title down to its value, up to the next title) is its
+    // grip. A click moves the thumb there smoothly; holding drags it, and it follows the mouse with
+    // a slight, soft delay. The final value snaps to whole steps.
+    internal static void SmoothZone(Panel zone, Slider slider)
+    {
+        slider.IsHitTestVisible = false; slider.IsSnapToTickEnabled = false;
+        double target = slider.Value; bool dragging = false, running = false;
+        var clock = System.Diagnostics.Stopwatch.StartNew(); double last = 0;
+        double ValueAt(Point point)
+        {
+            var x = zone.TranslatePoint(point, slider).X; double thumb = 18, usable = Math.Max(1, slider.ActualWidth - thumb);
+            return slider.Minimum + Math.Clamp((x - thumb / 2) / usable, 0, 1) * (slider.Maximum - slider.Minimum);
+        }
+        void Frame(object? sender, EventArgs e)
+        {
+            double now = clock.Elapsed.TotalSeconds, dt = Math.Min(.05, now - last); last = now;
+            double next = slider.Value + (target - slider.Value) * (1 - Math.Exp(-dt / .075));
+            if (!dragging && Math.Abs(target - next) < .02)
+            {
+                CompositionTarget.Rendering -= Frame; running = false;
+                slider.Value = Math.Round(target / slider.SmallChange) * slider.SmallChange; return;
+            }
+            slider.Value = next;
+        }
+        void Run() { if (running) return; running = true; last = clock.Elapsed.TotalSeconds; CompositionTarget.Rendering += Frame; }
+        zone.Background ??= Brushes.Transparent; zone.Cursor = Cursors.Hand;
+        zone.PreviewMouseLeftButtonDown += (_, e) =>
+        {
+            if (!slider.IsEnabled) return;
+            dragging = true; target = ValueAt(e.GetPosition(zone)); zone.CaptureMouse(); Run(); e.Handled = true;
+        };
+        zone.PreviewMouseMove += (_, e) => { if (dragging) target = ValueAt(e.GetPosition(zone)); };
+        zone.PreviewMouseLeftButtonUp += (_, _) => { if (!dragging) return; dragging = false; zone.ReleaseMouseCapture(); };
+        zone.LostMouseCapture += (_, _) => dragging = false;
+        zone.Unloaded += (_, _) => { if (running) { CompositionTarget.Rendering -= Frame; running = false; } };
+    }
+
+    // The old picture fades out over the new one, which fades in: a soft cross-dissolve.
+    internal static void Crossfade(FrameworkElement element, BitmapSource? before)
+    {
+        if (before is null || AdornerLayer.GetAdornerLayer(element) is not { } layer) return;
+        var ghost = new Ghost(element, before); layer.Add(ghost);
+        var fade = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(260)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+        fade.Completed += (_, _) => layer.Remove(ghost);
+        ghost.BeginAnimation(UIElement.OpacityProperty, fade);
+        element.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(300)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+    }
+    internal static BitmapSource? Snapshot(FrameworkElement element)
+    {
+        if (!element.IsVisible || element.ActualWidth < 1 || element.ActualHeight < 1) return null;
+        double scale = VisualTreeHelper.GetDpi(element).DpiScaleX;
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(element.ActualWidth * scale), (int)Math.Ceiling(element.ActualHeight * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
+        var visual = new DrawingVisual();
+        using (var context = visual.RenderOpen()) context.DrawRectangle(new VisualBrush(element), null, new Rect(0, 0, element.ActualWidth, element.ActualHeight));
+        bitmap.Render(visual); bitmap.Freeze(); return bitmap;
+    }
+    private sealed class Ghost(UIElement adorned, BitmapSource picture) : Adorner(adorned)
+    {
+        protected override void OnRender(DrawingContext drawing) => drawing.DrawImage(picture, new Rect(AdornedElement.RenderSize));
+    }
+
+    // The same closed-form spring as the folder motion, as a WPF easing curve.
+    internal sealed class SpringEasing(Spring spring, double duration) : EasingFunctionBase
+    {
+        protected override double EaseInCore(double t) => t >= 1 ? 1 : spring.Value(t * duration);
+        protected override Freezable CreateInstanceCore() => new SpringEasing(spring, duration);
+    }
+}

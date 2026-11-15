@@ -31,8 +31,9 @@ internal sealed class LiveMeasurementBar : Grid, IDisposable
     private readonly Stopwatch clock = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(1) };
     private CpuSeries series = new(Environment.ProcessorCount);
-    private readonly TextBlock cpu = Ui.Text("–", 12), ram = Ui.Text("–", 12), duration = Ui.Text("00:00", 12), spread = Ui.Text("Ressourcen-Tracking", 10, "Muted");
-    private readonly CpuTrace trace = new() { Width = 56, Height = 26, Margin = new Thickness(0, 4, 10, 0), VerticalAlignment = VerticalAlignment.Center };
+    // Values speak for themselves: the green dot and the curve show the state, no status line.
+    private readonly TextBlock cpu = Ui.Text("–", 15, weight: FontWeights.SemiBold), ram = Ui.Text("–", 15, weight: FontWeights.SemiBold), duration = Ui.Text("00:00", 15, weight: FontWeights.SemiBold), spread = Ui.Text("", 10, "Muted");
+    private readonly CpuTrace trace = new() { Width = 88, Height = 38, Margin = new Thickness(0, 2, 12, 0), VerticalAlignment = VerticalAlignment.Center };
     private readonly Button toggle;
     private readonly System.Windows.Shapes.Ellipse dot = new() { Width = 6, Height = 6, Margin = new Thickness(6, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center };
     private bool requested, disposed;
@@ -48,12 +49,12 @@ internal sealed class LiveMeasurementBar : Grid, IDisposable
         var center = new StackPanel { VerticalAlignment = VerticalAlignment.Center }; SetColumn(center, 1); Children.Add(center);
         var line = new StackPanel { Orientation = Orientation.Horizontal };
         line.Children.Add(Metric("CPU Ø", cpu)); line.Children.Add(Metric("RAM", ram));
-        duration.VerticalAlignment = VerticalAlignment.Center; line.Children.Add(duration); line.Children.Add(dot); center.Children.Add(line);
-        spread.Margin = new Thickness(0, 5, 0, 0); center.Children.Add(spread);
+        duration.VerticalAlignment = VerticalAlignment.Bottom; dot.VerticalAlignment = VerticalAlignment.Bottom; dot.Margin = new Thickness(6, 0, 0, 6);
+        line.Children.Add(duration); line.Children.Add(dot); center.Children.Add(line);
         ToolTip = "Manuell gestartetes Ressourcen-Tracking dieses Prozesses: zeitgewichteter CPU-Durchschnitt über alle logischen Prozessoren; RAM = aktueller Working Set. Schwankung in Prozentpunkten, keine Messgenauigkeit. Stoppen hält die letzten Werte fest; erneutes Starten beginnt eine neue Messung. Bei ausgeblendeter/minimierter Verwaltung wird nicht gemessen.";
         toggle = Ui.Button("Tracking starten", Toggle); toggle.FontSize = 11; toggle.Width = 122; toggle.Padding = new Thickness(8, 10, 8, 10); toggle.Margin = new Thickness(6, 0, 0, 0); toggle.VerticalAlignment = VerticalAlignment.Center;
         SetColumn(toggle, 2); Children.Add(toggle);
-        SizeChanged += (_, _) => trace.Visibility = ActualWidth >= 390 ? Visibility.Visible : Visibility.Collapsed;
+        SizeChanged += (_, _) => trace.Visibility = ActualWidth >= 360 ? Visibility.Visible : Visibility.Collapsed;
         timer.Tick += (_, _) => Sample();
         window.IsVisibleChanged += VisibilityChanged; window.StateChanged += StateChanged;
         Loaded += (_, _) => UpdateRunning();
@@ -62,7 +63,7 @@ internal sealed class LiveMeasurementBar : Grid, IDisposable
     }
     private static UIElement Metric(string label, TextBlock value)
     {
-        var stack = new StackPanel { Margin = new Thickness(0, 0, 12, 0) }; stack.Children.Add(Ui.Text(label, 10, "Muted")); value.Margin = new Thickness(0, 4, 0, 0); stack.Children.Add(value); return stack;
+        var stack = new StackPanel { Margin = new Thickness(0, 0, 14, 0) }; stack.Children.Add(Ui.Text(label, 11, "Muted")); value.Margin = new Thickness(0, 2, 0, 0); stack.Children.Add(value); return stack;
     }
     private void VisibilityChanged(object sender, DependencyPropertyChangedEventArgs e) => UpdateRunning();
     private void StateChanged(object? sender, EventArgs e) => UpdateRunning();

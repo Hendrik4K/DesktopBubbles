@@ -3,6 +3,12 @@
 ## Unveröffentlicht
 
 - **Von Updates neu angelegte Verknüpfungen werden eingesammelt:** Legt ein Programm-Update eine Desktop-Verknüpfung an, deren Programm (Ziel und Parameter, bzw. URL) schon in einer Bubble liegt, übernimmt DesktopBubbles sie automatisch. Die frische Verknüpfung ersetzt die Kopie in der Bubble; Name des Eintrags und gemerkter Desktop-Platz bleiben. Beim Start wird nachgeholt, was während der Pause angelegt wurde. Unberührt bleiben Verknüpfungen ohne passenden Eintrag, auf Wunsch zurückgelegte oder herausgezogene und alles im Kopiermodus. Abschaltbar unter „Von Updates neu angelegte Verknüpfungen einsammeln“.
+- **Tray:** Ein einfacher Linksklick öffnet DesktopBubbles. Das Rechtsklick-Menü trägt das App-Design: durchgehender heller Verlauf ohne graue Leiste, oben Bubble-Logo mit Version (Klick sucht nach einem neueren Release und bietet es an), „Einstellungen öffnen“, rotes „Beenden“ mit zitternden Buchstaben.
+- **Verwaltung, weicher und ruhiger:** Miniatur/Ordner als ein Schiebeschalter mit gleitendem Akzent. Gruppenliste mit weich ein- und ausblendendem Hover, gleitendem Auswahlbalken, weichen Rändern oben und unten und Scrollleisten nur unter der Maus; lange Gruppennamen werden verkleinert statt mitten im Wort umbrochen. Die Vorschau blendet beim Gruppenwechsel über.
+- Regler greifen auf der ganzen Zeile vom Titel bis zum Wert; der Punkt gleitet zum Klick und folgt beim Ziehen weich der Maus.
+- Keine blauen Fokusrahmen mehr; das Zahnrad wird nicht mehr abgeschnitten. Knöpfe hellen beim Darüberfahren weich auf, statt ihre Farbe zu ersetzen (weiße Schrift auf farbigen Knöpfen verschwand vorher).
+- Die Sekundenwahl für „Bubble automatisch schließen“ verschiebt die Seite nicht mehr. 1:1 öffnet das Fenster nach unten, bis die Vorschau ganz sichtbar ist, 1:3 klappt es zurück.
+- Ressourcen-Tracking ohne Statuszeile, mit größerem Verlauf und größeren Werten.
 - Duplikate auf dem öffentlichen Desktop werden per Tray-Hinweis gemeldet und lassen sich über Einstellungen → „Doppelte Verknüpfungen vom öffentlichen Desktop entfernen …“ nach Bestätigung mit Administratorrechten entfernen.
 
 ## 1.8.1 · 12.11.2026

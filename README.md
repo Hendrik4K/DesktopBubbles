@@ -12,6 +12,8 @@
 
 **[Windows-11-Installer herunterladen](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.8.1/DesktopBubbles-Setup-1.8.1.exe)** · [Portable ZIP](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.8.1/DesktopBubbles-win-x64-v1.8.1.zip) · [Release](https://github.com/Hendrik4K/DesktopBubbles/releases/latest) · [MIT-Lizenz](LICENSE) · [Fehler melden](https://github.com/Hendrik4K/DesktopBubbles/issues)
 
+<img src="docs/screenshots/desktopbubbles-liquid-glass-desktop.webp" width="100%" alt="DesktopBubbles mit Liquid Glass auf einem Windows-11-Desktop: zwei gläserne App-Ordner mit Gaming-Launchern und Adobe-Apps vor einem Berg-Hintergrund, daneben die Verwaltung mit Glasstil Liquid, Transparenz, Liquid-Stärke und Größe.">
+
 <table>
   <tr>
     <th>Vorher → Nachher</th>

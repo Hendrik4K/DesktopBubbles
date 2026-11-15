@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using DesktopBubbles.Core;
 
 namespace DesktopBubbles;
@@ -16,6 +17,9 @@ internal sealed class SettingsWindow : Window
     private readonly App app;
     private readonly Border surface, preview = new() { Name = "AppearancePreview" };
     private readonly StackPanel groups = new();
+    private readonly TranslateTransform pillShift = new();
+    private readonly Border selectionPill;
+    private double? pillY;
     private readonly ContentControl pane = new();
     private readonly Button settingsButton;
     private readonly Dictionary<Guid, Border> thumbnails = [];
@@ -41,6 +45,7 @@ internal sealed class SettingsWindow : Window
     internal Border AppearancePreview => preview;
     internal PixelRect PreviewFootprint => AppearanceGeometry.Folder(app.State.Settings, selected?.Items.Count ?? 0);
     private BubbleGroup? selected;
+    private AppearanceScope lastTabScope = AppearanceScope.Bubbles;
     internal AppearanceScope Scope { get; private set; } = AppearanceScope.Bubbles;
     internal Slider? TransparencySlider { get; private set; }
     internal Slider? SizeSlider { get; private set; }
@@ -54,6 +59,8 @@ internal sealed class SettingsWindow : Window
     public SettingsWindow(App app)
     {
         this.app = app; Title = "DesktopBubbles";
+        selectionPill = new Border { CornerRadius = new CornerRadius(12), VerticalAlignment = VerticalAlignment.Top, RenderTransform = pillShift, Visibility = Visibility.Hidden, IsHitTestVisible = false };
+        selectionPill.SetResourceReference(Border.BackgroundProperty, "HoverFill");
         Width = 660; Height = 576; MinWidth = 600; MinHeight = 510;
         MaxWidth = SystemParameters.WorkArea.Width; MaxHeight = SystemParameters.WorkArea.Height;
         WindowStartupLocation = WindowStartupLocation.CenterScreen; Ui.Chrome(this, true);
@@ -68,7 +75,11 @@ internal sealed class SettingsWindow : Window
         layout.Children.Add(titlebar);
         var body = new Grid(); Grid.SetRow(body, 1); body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(176) }); body.ColumnDefinitions.Add(new ColumnDefinition()); layout.Children.Add(body);
         var rail = new Border { BorderBrush = Ui.Resource("Line"), BorderThickness = new Thickness(0, 0, 1, 0), Padding = new Thickness(12, 14, 10, 14) };
-        rail.Child = new ScrollViewer { Content = groups, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled }; body.Children.Add(rail);
+        // Selection pill beneath the rows; it glides to the last clicked group and stays there.
+        var railContent = new Grid(); railContent.Children.Add(selectionPill); railContent.Children.Add(groups);
+        var railScroll = new ScrollViewer { Content = railContent, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        SettingsMotion.AutoHideScrollBar(railScroll); SettingsMotion.EdgeFade(railScroll);
+        rail.Child = railScroll; body.Children.Add(rail);
         pane.Margin = new Thickness(28, 18, 26, 14); Grid.SetColumn(pane, 1); body.Children.Add(pane);
         var bottom = new Grid(); Grid.SetRow(bottom, 2); bottom.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(176) }); bottom.ColumnDefinitions.Add(new ColumnDefinition()); bottom.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(52) });
         var bottomLine = new Border { BorderBrush = Ui.Resource("Line"), BorderThickness = new Thickness(0, 1, 0, 0), Child = bottom }; Grid.SetRow(bottomLine, 2); layout.Children.Add(bottomLine);
@@ -115,17 +126,25 @@ internal sealed class SettingsWindow : Window
     {
         bool changedSelection = selected is null || !app.State.Groups.Contains(selected);
         if (changedSelection) selected = app.State.Groups.FirstOrDefault();
-        groups.Children.Clear(); thumbnails.Clear();
+        groups.Children.Clear(); thumbnails.Clear(); selectedRow = null;
         foreach (var group in app.State.Groups)
         {
             var row = new Grid();
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(66) }); row.ColumnDefinitions.Add(new ColumnDefinition());
             var thumb = Preview(group, 56); thumbnails[group.Id] = thumb; thumb.HorizontalAlignment = HorizontalAlignment.Left; row.Children.Add(thumb);
-            var label = Ui.Text(group.Name, 12, weight: FontWeights.Medium); label.VerticalAlignment = VerticalAlignment.Center; Grid.SetColumn(label, 1); row.Children.Add(label);
-            var button = Ui.Button("", () => { CancelColorEdit(); selected = group; if (Scope == AppearanceScope.App) Scope = AppearanceScope.Bubbles; RefreshGroups(); RefreshPage(); });
-            button.Content = row; button.HorizontalContentAlignment = HorizontalAlignment.Stretch; button.Margin = new Thickness(0, 0, 0, 9); button.Padding = new Thickness(8, 10, 8, 10);
-            if (group == selected) button.SetResourceReference(Button.BackgroundProperty, "HoverFill"); else button.Background = Brushes.Transparent;
-            button.BorderThickness = new Thickness(0); button.ToolTip = group.Name + " · Rechtsklick für Aktionen";
+            // Long single words shrink to fit instead of breaking mid-word ("Benchmark s").
+            var label = Ui.Text(group.Name, 12, weight: FontWeights.Medium); label.TextWrapping = TextWrapping.NoWrap;
+            var fit = new Viewbox { Child = label, StretchDirection = StretchDirection.DownOnly, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
+            Grid.SetColumn(fit, 1); row.Children.Add(fit);
+            // Hover sheen: fades in and out and turns around mid-way when the mouse changes its mind.
+            var sheen = new Border { CornerRadius = new CornerRadius(12), Opacity = 0, Margin = new Thickness(-8, -10, -8, -10), IsHitTestVisible = false };
+            sheen.SetResourceReference(Border.BackgroundProperty, "HoverFill"); Grid.SetColumnSpan(sheen, 2); row.Children.Insert(0, sheen);
+            var button = new Button { Style = (Style)FindResource("PlainButton"), Content = row, HorizontalContentAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 0, 0, 9), Padding = new Thickness(8, 10, 8, 10) };
+            button.Click += (_, _) => SelectGroup(group);
+            button.MouseEnter += (_, _) => SettingsMotion.FadeTo(sheen, group == selected ? 0 : .55, .18);
+            button.MouseLeave += (_, _) => SettingsMotion.FadeTo(sheen, 0, .3);
+            if (group == selected) selectedRow = button;
+            button.ToolTip = group.Name + " · Rechtsklick für Aktionen";
             button.ContextMenu = GroupActionsMenu.Create(app, group); button.AllowDrop = true;
             button.DragOver += (_, e) => { e.Effects = app.DropEffect(e.Data, group); e.Handled = true; };
             button.Drop += (_, e) => { app.ReceiveDrop(group, e.Data, true); e.Handled = true; };
@@ -133,6 +152,54 @@ internal sealed class SettingsWindow : Window
         }
         if (app.State.Groups.Count == 0) { var empty = Ui.Text("Noch keine Bubbles", 12, "Muted"); empty.Margin = new Thickness(8, 10, 8, 0); groups.Children.Add(empty); }
         RenderPreview(); if (changedSelection && IsLoaded) RefreshPage(); UpdateStatus();
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, PlacePill);
+    }
+    private Button? selectedRow;
+    private double? heightBeforePreview;
+    // 1:1 opens the window downwards until the real-size preview fits; 1:3 folds it back.
+    private void FitPreview()
+    {
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
+        {
+            if (folderViewport is null || folderStage is null) return;
+            double target;
+            if (previewScale == 1)
+            {
+                folderStage.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                double missing = folderStage.DesiredSize.Height - folderViewport.ViewportHeight;
+                if (missing <= 1) return;
+                heightBeforePreview ??= ActualHeight;
+                target = Math.Min(MaxHeight, ActualHeight + missing + 6);
+            }
+            else { if (heightBeforePreview is not { } before) return; target = before; heightBeforePreview = null; }
+            var work = SystemParameters.WorkArea;
+            double top = Math.Max(work.Top, Math.Min(Top, work.Bottom - target));
+            if (!SettingsMotion.Enabled(app)) { Top = top; Height = target; return; }
+            var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+            var grow = new DoubleAnimation(ActualHeight, target, TimeSpan.FromMilliseconds(340)) { EasingFunction = ease, FillBehavior = FillBehavior.Stop };
+            var move = new DoubleAnimation(Top, top, TimeSpan.FromMilliseconds(340)) { EasingFunction = ease, FillBehavior = FillBehavior.Stop };
+            grow.Completed += (_, _) => Height = target; move.Completed += (_, _) => Top = top;
+            BeginAnimation(HeightProperty, grow); BeginAnimation(TopProperty, move);
+        });
+    }
+    private void SelectGroup(BubbleGroup group)
+    {
+        CancelColorEdit();
+        var before = group == selected ? null : SettingsMotion.Snapshot(preview);
+        selected = group; if (Scope == AppearanceScope.App) Scope = AppearanceScope.Bubbles;
+        RefreshGroups(); RefreshPage();
+        // The right-hand preview hands over to the new group with a soft cross-dissolve.
+        if (before is not null && SettingsMotion.Enabled(app)) Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => SettingsMotion.Crossfade(preview, before));
+    }
+    // The pill glides from the previous group to the selected one; first placement is instant.
+    private void PlacePill()
+    {
+        if (selectedRow is null || !selectedRow.IsVisible) { selectionPill.Visibility = Visibility.Hidden; return; }
+        var y = selectedRow.TranslatePoint(new Point(), groups).Y;
+        selectionPill.Height = selectedRow.ActualHeight; selectionPill.Visibility = Visibility.Visible;
+        if (pillY is { } from && Math.Abs(from - y) > .5 && SettingsMotion.Enabled(app)) SettingsMotion.Glide(pillShift, TranslateTransform.YProperty, from, y, new Spring(.4, .86));
+        else { pillShift.BeginAnimation(TranslateTransform.YProperty, null); pillShift.Y = y; }
+        pillY = y;
     }
     private static string ScopeLabel(AppearanceScope scope) => scope == AppearanceScope.Bubbles ? "Miniatur" : scope == AppearanceScope.Window ? "Ordner" : "Einstellungen";
     internal void SelectScope(AppearanceScope scope) { CancelColorEdit(); Scope = scope; RefreshPage(); }
@@ -155,19 +222,14 @@ internal sealed class SettingsWindow : Window
         settingsButton.Foreground = Scope == AppearanceScope.App ? Brushes.White : Ui.Resource("Ink");
         if (Scope != AppearanceScope.App)
         {
-            var tabs = new Grid { HorizontalAlignment = HorizontalAlignment.Stretch, Margin = new Thickness(0, 16, 0, 18) };
-            tabs.ColumnDefinitions.Add(new ColumnDefinition());
-            tabs.ColumnDefinitions.Add(new ColumnDefinition());
-            foreach (var scope in new[] { AppearanceScope.Bubbles, AppearanceScope.Window })
-            {
-                var button = Ui.Button(ScopeLabel(scope), () => SelectScope(scope));
-                button.Margin = new Thickness(0); button.Padding = new Thickness(10, 8, 10, 8);
-                button.ToolTip = scope switch { AppearanceScope.App => "Anwendung und allgemeine Einstellungen", AppearanceScope.Bubbles => "Mini-Bubbles auf dem Desktop", _ => "Geöffnetes App-Raster" };
-                System.Windows.Automation.AutomationProperties.SetName(button, scope == AppearanceScope.App ? "Einstellungen" : ScopeLabel(scope));
-                if (Scope == scope) { button.Background = Ui.Resource("Accent"); button.Foreground = Brushes.White; }
-                Grid.SetColumn(button, scope == AppearanceScope.Bubbles ? 0 : 1); tabs.Children.Add(button);
-            }
+            // One rounded track; the accent pill slides from the last view to this one.
+            var scopes = new[] { AppearanceScope.Bubbles, AppearanceScope.Window };
+            int previousTab = Array.IndexOf(scopes, lastTabScope);
+            var tabs = SettingsMotion.Segments(scopes.Select(ScopeLabel).ToArray(), Array.IndexOf(scopes, Scope), SettingsMotion.Enabled(app) ? previousTab : -1,
+                index => SelectScope(scopes[index]), index => scopes[index] == AppearanceScope.Bubbles ? "Mini-Bubbles auf dem Desktop" : "Geöffnetes App-Raster");
+            tabs.Margin = new Thickness(0, 16, 0, 18);
             header.Children.Add(tabs);
+            lastTabScope = Scope;
         }
         var content = new DockPanel { LastChildFill = true }; layout.Children.Add(content);
         var root = new StackPanel(); var settings = app.State.Settings;
@@ -257,7 +319,7 @@ internal sealed class SettingsWindow : Window
                 value => { settings.TileSize = (value - 48) / columns; app.ApplyAppearance(); }, value => $"{value:0} px");
             SizeSlider.ToolTip = "Breite bei 100 % Windows-Skalierung. Symbole und Kontur wachsen mit. Gilt für alle Ordner.";
             var previewBar = new DockPanel { Margin = new Thickness(0, 12, 0, 0) };
-            PreviewScaleButton = Ui.Button(previewScale == 1 ? "1:1" : "1:3", () => { previewScale = previewScale == 1 ? 1d / 3 : 1; UpdateFolderPreview(); });
+            PreviewScaleButton = Ui.Button(previewScale == 1 ? "1:1" : "1:3", () => { previewScale = previewScale == 1 ? 1d / 3 : 1; UpdateFolderPreview(); FitPreview(); });
             PreviewScaleButton.ToolTip = "Zwischen verkleinerter Vorschau und Originalgröße wechseln. 1:1 entspricht der aktuellen Windows-Skalierung.";
             PreviewScaleButton.Padding = new Thickness(12, 5, 12, 5); PreviewScaleButton.Margin = new Thickness(0);
             var previewActions = new StackPanel { Orientation = Orientation.Horizontal };
@@ -298,7 +360,12 @@ internal sealed class SettingsWindow : Window
             folderLayout.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto }); folderLayout.RowDefinitions.Add(new RowDefinition());
             folderLayout.Children.Add(root); Grid.SetRow(folderViewport, 1); folderLayout.Children.Add(folderViewport); standardDetails = folderLayout;
         }
-        else standardDetails = new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+        else
+        {
+            var pageScroll = new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+            SettingsMotion.AutoHideScrollBar(pageScroll); SettingsMotion.EdgeFade(pageScroll, 18); standardDetails = pageScroll;
+        }
+        if (folderViewport is not null) SettingsMotion.AutoHideScrollBar(folderViewport);
         var detailLayer = new Grid(); detailLayer.Children.Add(standardDetails);
         colorOverlay = new ContentControl { Visibility = Visibility.Collapsed, HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Top };
         Panel.SetZIndex(colorOverlay, 1); detailLayer.Children.Add(colorOverlay); content.Children.Add(detailLayer);
@@ -307,12 +374,15 @@ internal sealed class SettingsWindow : Window
     }
     private static Slider AddSlider(Panel root, string label, double minimum, double maximum, double value, Action<double> changed, Func<double, string> format)
     {
-        var title = Ui.Text(label, 13, weight: FontWeights.SemiBold); title.Margin = new Thickness(0, 8, 0, 5); root.Children.Add(title);
+        // Title and slider row share one grip area, from the title down to the value.
+        var zone = new StackPanel { Background = Brushes.Transparent };
+        var title = Ui.Text(label, 13, weight: FontWeights.SemiBold); title.Margin = new Thickness(0, 8, 0, 5); zone.Children.Add(title);
         var row = new DockPanel(); var number = Ui.Text(format(value), 12); number.Width = 58; number.TextAlignment = TextAlignment.Right; number.VerticalAlignment = VerticalAlignment.Center;
         DockPanel.SetDock(number, Dock.Right); row.Children.Add(number);
         var slider = new Slider { Minimum = minimum, Maximum = maximum, Value = value, TickFrequency = 1, IsSnapToTickEnabled = true, SmallChange = 1, LargeChange = 10 };
         System.Windows.Automation.AutomationProperties.SetName(slider, label);
-        slider.ValueChanged += (_, _) => { number.Text = format(slider.Value); changed(slider.Value); }; row.Children.Add(slider); root.Children.Add(row); return slider;
+        slider.ValueChanged += (_, _) => { number.Text = format(slider.Value); changed(slider.Value); }; row.Children.Add(slider); zone.Children.Add(row);
+        SettingsMotion.SmoothZone(zone, slider); root.Children.Add(zone); return slider;
     }
     private string CurrentColor() => Scope == AppearanceScope.App ? app.State.Settings.AppColor : AppearancePreferences.Color(app.State.Settings, selected);
     internal void OpenPicker(bool modeColor = false)
@@ -441,13 +511,14 @@ internal sealed class SettingsWindow : Window
         var s = app.State.Settings;
         AutoCloseCheckBox = new CheckBox { Content = new TextBlock { Text = "Bubble automatisch schließen", TextWrapping = TextWrapping.Wrap }, IsChecked = s.AutoCloseFolders, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
         AutoCloseCheckBox.ToolTip = "Schließt einen geöffneten Ordner, wenn die Maus so lange nicht auf ihm war. Mit der Maus darauf läuft keine Zeit ab.";
-        var seconds = Ui.Text("", 13); seconds.MinWidth = 44; seconds.TextAlignment = TextAlignment.Center; seconds.VerticalAlignment = VerticalAlignment.Center;
+        var seconds = Ui.Text("", 13); seconds.Width = 52; seconds.TextWrapping = TextWrapping.NoWrap; seconds.TextAlignment = TextAlignment.Center; seconds.VerticalAlignment = VerticalAlignment.Center;
         var stepper = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         Button less = null!, more = null!;
         Button Step(string glyph, string name, int delta)
         {
-            var button = Ui.IconButton(glyph, name, () => { s.AutoCloseSeconds = Math.Clamp(s.AutoCloseSeconds + delta, 1, 120); ShowSeconds(); app.ApplyAppearance(); });
-            button.Padding = new Thickness(7); return button;
+            var button = Ui.IconButton(glyph, name, () => { s.AutoCloseSeconds = Math.Clamp(s.AutoCloseSeconds + delta, 1, 120); ShowSeconds(); app.ApplyAutoClose(); });
+            // No focus: a focused control is scrolled into view, which made the whole page jump.
+            button.Padding = new Thickness(7); button.Focusable = false; return button;
         }
         less = Step("", "Eine Sekunde weniger", -1); more = Step("", "Eine Sekunde mehr", 1);
         void ShowSeconds()
@@ -456,7 +527,7 @@ internal sealed class SettingsWindow : Window
             seconds.Opacity = stepper.Opacity = s.AutoCloseFolders ? 1 : .45;
             System.Windows.Automation.AutomationProperties.SetName(seconds, $"Ordner schließen nach {s.AutoCloseSeconds} Sekunden");
         }
-        AutoCloseCheckBox.Click += (_, _) => { s.AutoCloseFolders = AutoCloseCheckBox.IsChecked == true; ShowSeconds(); app.ApplyAppearance(); };
+        AutoCloseCheckBox.Click += (_, _) => { s.AutoCloseFolders = AutoCloseCheckBox.IsChecked == true; ShowSeconds(); app.ApplyAutoClose(); };
         stepper.Children.Add(less); stepper.Children.Add(seconds); stepper.Children.Add(more); ShowSeconds();
         AutoCloseSeconds = seconds;
         closing.Children.Add(AutoCloseCheckBox); Grid.SetColumn(stepper, 1); closing.Children.Add(stepper); root.Children.Add(closing);

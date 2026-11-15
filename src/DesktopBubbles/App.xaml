@@ -9,16 +9,33 @@
       <Setter Property="BorderBrush" Value="{DynamicResource Line}"/><Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="14,9"/><Setter Property="Cursor" Value="Hand"/><Setter Property="Margin" Value="0,0,8,0"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+      <!-- Hover lays a soft sheen over the button's own colour (never replaces it, so white text on
+           accent buttons stays readable); it fades in and out and reverses mid-way. No focus frame. -->
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
-        <Border x:Name="Frame" CornerRadius="10" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Padding="{TemplateBinding Padding}">
-          <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
-        </Border>
+        <Grid x:Name="Root">
+          <Border x:Name="Frame" CornerRadius="10" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"/>
+          <Border x:Name="Sheen" CornerRadius="10" Background="{DynamicResource HoverFill}" Opacity="0" Margin="{TemplateBinding BorderThickness}"/>
+          <Border BorderThickness="{TemplateBinding BorderThickness}" BorderBrush="Transparent" Padding="{TemplateBinding Padding}">
+            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+          </Border>
+        </Grid>
         <ControlTemplate.Triggers>
-          <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Frame" Property="Background" Value="{DynamicResource HoverFill}"/></Trigger>
-          <Trigger Property="IsPressed" Value="True"><Setter TargetName="Frame" Property="Opacity" Value="0.65"/></Trigger>
-          <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="#FF38A9CE"/><Setter TargetName="Frame" Property="BorderThickness" Value="2"/></Trigger>
-          <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Frame" Property="Opacity" Value="0.4"/></Trigger>
+          <Trigger Property="IsMouseOver" Value="True">
+            <Trigger.EnterActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="Sheen" Storyboard.TargetProperty="Opacity" To="0.5" Duration="0:0:0.16"/></Storyboard></BeginStoryboard></Trigger.EnterActions>
+            <Trigger.ExitActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="Sheen" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.24"/></Storyboard></BeginStoryboard></Trigger.ExitActions>
+          </Trigger>
+          <Trigger Property="IsPressed" Value="True"><Setter TargetName="Root" Property="Opacity" Value="0.75"/></Trigger>
+          <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Root" Property="Opacity" Value="0.4"/></Trigger>
         </ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <!-- A bare click target: the caller draws hover and selection itself (segments, group rows). -->
+    <Style x:Key="PlainButton" TargetType="Button">
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Cursor" Value="Hand"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="Padding" Value="0"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+        <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/></Border>
       </ControlTemplate></Setter.Value></Setter>
     </Style>
     <Style x:Key="ResetColorsButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
@@ -30,14 +47,13 @@
         <ControlTemplate.Triggers>
           <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Frame" Property="Opacity" Value="0.85"/></Trigger>
           <Trigger Property="IsPressed" Value="True"><Setter TargetName="Frame" Property="Opacity" Value="0.65"/></Trigger>
-          <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Frame" Property="BorderBrush" Value="{DynamicResource Ink}"/><Setter TargetName="Frame" Property="BorderThickness" Value="2"/></Trigger>
           <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Frame" Property="Opacity" Value="0.4"/></Trigger>
         </ControlTemplate.Triggers>
       </ControlTemplate></Setter.Value></Setter>
       <Style.Triggers><DataTrigger Binding="{Binding Source={x:Static SystemParameters.HighContrast}}" Value="True"><Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.ControlBrushKey}}"/><Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/><Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.ControlTextBrushKey}}"/></DataTrigger></Style.Triggers>
     </Style>
     <Style TargetType="TextBox"><Setter Property="Padding" Value="10,8"/><Setter Property="Background" Value="{DynamicResource ControlFill}"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="BorderBrush" Value="{DynamicResource Line}"/><Setter Property="CaretBrush" Value="{DynamicResource Ink}"/></Style>
-    <Style TargetType="CheckBox"><Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="Margin" Value="0,9,0,9"/></Style>
+    <Style TargetType="CheckBox"><Setter Property="FocusVisualStyle" Value="{x:Null}"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="Margin" Value="0,9,0,9"/></Style>
     <Style TargetType="ScrollBar">
       <Setter Property="Width" Value="10"/><Setter Property="Background" Value="Transparent"/><Setter Property="IsTabStop" Value="False"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ScrollBar">
@@ -55,7 +71,7 @@
       </ControlTemplate></Setter.Value></Setter>
     </Style>
     <Style TargetType="ComboBox">
-      <Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="Background" Value="{DynamicResource ControlFill}"/><Setter Property="BorderBrush" Value="{DynamicResource Line}"/><Setter Property="MinWidth" Value="180"/>
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="Background" Value="{DynamicResource ControlFill}"/><Setter Property="BorderBrush" Value="{DynamicResource Line}"/><Setter Property="MinWidth" Value="180"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBox">
         <Grid x:Name="ComboRoot">
           <ToggleButton Focusable="False" IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
@@ -70,7 +86,7 @@
     </Style>
     <Style TargetType="ComboBoxItem"><Setter Property="Padding" Value="10,8"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/></Style>
     <Style TargetType="ContextMenu"><Setter Property="Background" Value="{DynamicResource Surface}"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/></Style>
-    <Style x:Key="SaturationSlider" TargetType="Slider">
+    <Style x:Key="SaturationSlider" TargetType="Slider"><Setter Property="FocusVisualStyle" Value="{x:Null}"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Slider">
         <Grid Background="Transparent">
           <Border Width="14" CornerRadius="7" Background="{TemplateBinding Background}"/>
@@ -83,7 +99,7 @@
       </ControlTemplate></Setter.Value></Setter>
     </Style>
     <Style TargetType="Slider">
-      <Setter Property="Height" Value="24"/><Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+      <Setter Property="Height" Value="24"/><Setter Property="FocusVisualStyle" Value="{x:Null}"/><Setter Property="Foreground" Value="{DynamicResource Accent}"/>
       <Setter Property="Background" Value="{DynamicResource Line}"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Slider">
         <Grid VerticalAlignment="Center">
@@ -96,7 +112,7 @@
         </Grid>
       </ControlTemplate></Setter.Value></Setter>
     </Style>
-    <Style x:Key="AppIcon" TargetType="Button">
+    <Style x:Key="AppIcon" TargetType="Button"><Setter Property="FocusVisualStyle" Value="{x:Null}"/>
       <Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Margin" Value="0"/><Setter Property="Padding" Value="12"/><Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="IconFrame" CornerRadius="16" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="IconFrame" Property="Background" Value="#20FFFFFF"/></Trigger><Trigger Property="IsPressed" Value="True"><Setter TargetName="IconFrame" Property="Opacity" Value="0.65"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
     </Style>

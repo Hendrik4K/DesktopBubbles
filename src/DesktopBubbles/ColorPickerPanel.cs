@@ -15,7 +15,7 @@ internal sealed class ColorWheel : FrameworkElement
     public event Action? Edited;
     public ColorWheel()
     {
-        Width = Height = 208; Focusable = true; Cursor = Cursors.Cross;
+        Width = Height = 208; Focusable = true; FocusVisualStyle = null; Cursor = Cursors.Cross;
         System.Windows.Automation.AutomationProperties.SetName(this, "Farbkreis");
         System.Windows.Automation.AutomationProperties.SetHelpText(this, "Links/Rechts: Farbton. Oben/Unten: Sättigung. Alternativ HEX-Eingabe.");
         MouseLeftButtonDown += (_, e) => { Focus(); CaptureMouse(); Select(e.GetPosition(this)); e.Handled = true; };

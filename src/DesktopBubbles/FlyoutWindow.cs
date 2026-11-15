@@ -134,7 +134,7 @@ internal sealed class FlyoutWindow : Window
             ArmAutoClose();
         };
     }
-    private void ArmAutoClose()
+    internal void ArmAutoClose()
     {
         autoClose.Stop();
         var settings = app.State.Settings;
