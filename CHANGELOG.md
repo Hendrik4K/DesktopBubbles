@@ -46,6 +46,7 @@
 - Ausklappmenüs (Glas, Farbmodus) fahren weich auf und wieder ein; Klicks während des Aufklappens werden verworfen. Vorher wurde die Animation nie angehängt, weil WPF Loaded nur bei Elementen mit eigenem Handler auslöst.
 - Einstellungen: App-Farbe und Farbmodus wieder zuerst, dann Allgemein, dann Transparenz und Werkzeuge.
 - **Deutsch und Englisch:** Zwei runde Flaggen rechts neben „Einstellungen“ schalten die ganze App ohne Neustart um: Verwaltung (mit Seitenblende), Tray-Menü, Bubble-Tooltips und -Menüs, Ordner-Menüs, Farbwähler, Dialoge und Fehlermeldungen. Die Wahl wird gespeichert; ohne Wahl gilt die Windows-Anzeigesprache.
+- Seitenblenden ohne Ruck nach unten: Das Bild der alten Seite lag um ihren Abstand zur Überschrift zu tief, sodass beim Start der Blende alles kurz nach unten sprang (Miniatur ↔ Ordner, ebenso beim Zahnrad). Es wird jetzt so aufgenommen, wie es auf dem Bildschirm steht, und genau auf die Seite zugeschnitten; ein Pixeltest vergleicht es mit dem echten Fenster.
 
 ## 1.8.2 · 15.11.2026
 

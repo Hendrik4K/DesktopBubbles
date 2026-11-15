@@ -213,13 +213,17 @@ internal static class SettingsMotion
     {
         if (!element.IsVisible || element.ActualWidth < 1 || element.ActualHeight < 1) return null;
         double scale = VisualTreeHelper.GetDpi(element).DpiScaleX;
-        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(element.ActualWidth * scale), (int)Math.Ceiling(element.ActualHeight * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
-        var visual = new DrawingVisual();
-        // Exactly the element's own box, 1:1. By default a VisualBrush stretches whatever it draws to
-        // fill the rectangle, so a page whose content ended halfway down came out stretched tall.
-        var brush = new VisualBrush(element) { Stretch = Stretch.Fill, ViewboxUnits = BrushMappingMode.Absolute, Viewbox = new Rect(0, 0, element.ActualWidth, element.ActualHeight) };
-        using (var context = visual.RenderOpen()) context.DrawRectangle(brush, null, new Rect(0, 0, element.ActualWidth, element.ActualHeight));
-        bitmap.Render(visual); bitmap.Freeze(); return bitmap;
+        // Rendered as composed on screen. A rendered element lands at its offset inside its parent
+        // (below the heading, beside the list), so the bitmap is made large enough for that offset
+        // and then cut to exactly the element's own box: no shift and no stretch. (A VisualBrush
+        // either stretched the drawn content or carried the offset along, shifting the picture.)
+        int width = (int)Math.Ceiling(element.ActualWidth * scale), height = (int)Math.Ceiling(element.ActualHeight * scale);
+        var offset = VisualTreeHelper.GetOffset(element);
+        int left = Math.Max(0, (int)Math.Round(offset.X * scale)), top = Math.Max(0, (int)Math.Round(offset.Y * scale));
+        var whole = new RenderTargetBitmap(left + width, top + height, 96 * scale, 96 * scale, PixelFormats.Pbgra32);
+        whole.Render(element);
+        var picture = new CroppedBitmap(whole, new Int32Rect(left, top, width, height));
+        picture.Freeze(); return picture;
     }
     private sealed class Ghost : Adorner
     {

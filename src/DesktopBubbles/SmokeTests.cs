@@ -261,7 +261,13 @@ internal static class SmokeTests
         Check("Glas-Menü fährt weich wieder ein und schließt danach", folding && !glassPopup.IsOpen);
         settings.GlassSelector!.SelectedIndex = 1; settings.RoundingSlider!.Value = 18;
         Check("Gemeinsame Rundung skaliert Miniatur und Ordner proportional", Math.Abs(app.State.Settings.BubbleCornerRadius - 76 * .18) < .001 && app.State.Settings.CornerRoundness == 18);
+        // The picture used for the hand-over must sit exactly on the page it shows: compared pixel by
+        // pixel with the window itself, wherever the picture is opaque (text, sliders, buttons).
+        double bodyMismatch = SnapshotMismatch(settings, settings.PageBody!, out int bodyPixels), paneMismatch = SnapshotMismatch(settings, settings.PagePane, out int panePixels);
+        Check("Bild der alten Seite liegt pixelgenau auf der Seite (kein Versatz, keine Streckung)", bodyMismatch < 4 && paneMismatch < 4 && bodyPixels > 300 && panePixels > 300, $"Seite={bodyMismatch:0.0} ({bodyPixels} px), Fläche={paneMismatch:0.0} ({panePixels} px)");
+        SaveImage(settings, Path.Combine(app.DataDirectory, "handover-before.png"));
         settings.SelectScope(AppearanceScope.Window); await Task.Delay(60); double midOpacity = settings.PageBody!.Opacity;
+        SaveImage(settings, Path.Combine(app.DataDirectory, "handover-mid.png"));
         var oldPage = System.Windows.Documents.AdornerLayer.GetAdornerLayer(settings.PagePane)?.GetAdorners(settings.PagePane)?.FirstOrDefault();
         Check("Miniatur zu Ordner zeigt zuerst das Bild der alten Seite, das dann ausblendet", !SettingsMotion.Enabled(app) || oldPage is { Opacity: > .2 } && oldPage.RenderSize.Width > 100 && oldPage.RenderSize.Height > 100, $"Bild={oldPage?.Opacity:0.00}, Größe={oldPage?.RenderSize}");
         await Task.Delay(700);
@@ -771,6 +777,30 @@ internal static class SmokeTests
         ((System.Runtime.InteropServices.ComTypes.IDataObject)data).GetData(ref format, out var medium);
         try { var pointer = GlobalLock(medium.unionmember); try { var bytes = new byte[32]; Marshal.Copy(pointer, bytes, 0, bytes.Length); return System.Text.Encoding.UTF8.GetString(bytes); } finally { GlobalUnlock(medium.unionmember); } }
         finally { ReleaseStgMedium(ref medium); }
+    }
+    // Mean difference (0..255 per channel) between the hand-over picture of an element and the window
+    // as rendered, over the picture's opaque pixels; a shifted or stretched picture scores high.
+    private static double SnapshotMismatch(Window window, FrameworkElement element, out int compared)
+    {
+        window.UpdateLayout(); compared = 0;
+        if (SettingsMotion.Snapshot(element) is not { } picture) return 255;
+        double scale = VisualTreeHelper.GetDpi(window).DpiScaleX;
+        var whole = new RenderTargetBitmap((int)Math.Ceiling(window.ActualWidth * scale), (int)Math.Ceiling(window.ActualHeight * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
+        whole.Render(window);
+        int w = picture.PixelWidth, h = picture.PixelHeight, ww = whole.PixelWidth, wh = whole.PixelHeight;
+        var a = new byte[w * h * 4]; picture.CopyPixels(a, w * 4, 0);
+        var b = new byte[ww * wh * 4]; whole.CopyPixels(b, ww * 4, 0);
+        var origin = element.TranslatePoint(new Point(), window);
+        int ox = (int)Math.Round(origin.X * scale), oy = (int)Math.Round(origin.Y * scale);
+        long difference = 0;
+        for (int y = 0; y < h; y++) for (int x = 0; x < w; x++)
+        {
+            int i = (y * w + x) * 4; if (a[i + 3] != 255) continue;
+            int bx = ox + x, by = oy + y; if (bx < 0 || by < 0 || bx >= ww || by >= wh) continue;
+            int j = (by * ww + bx) * 4;
+            difference += Math.Abs(a[i] - b[j]) + Math.Abs(a[i + 1] - b[j + 1]) + Math.Abs(a[i + 2] - b[j + 2]); compared++;
+        }
+        return compared == 0 ? 255 : difference / (3d * compared);
     }
     private static void SaveImage(Window window, string path)
     {
