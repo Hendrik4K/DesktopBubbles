@@ -55,6 +55,29 @@ internal sealed class SettingsWindow : Window
     internal CheckBox? CollectDuplicatesCheckBox { get; private set; }
     internal TextBlock? AutoCloseSeconds { get; private set; }
     internal LiveMeasurementBar Measurement { get; }
+    internal DividerScroll Divider { get; } = new();
+    // The gear swells on hover; it turns 45° to the left and lights up while the settings are open.
+    private TextBlock gearIcon = null!;
+    private readonly ScaleTransform gearScale = new(1, 1);
+    private readonly RotateTransform gearTurn = new(0);
+    private readonly SolidColorBrush gearInk = new(Colors.Black);
+    private static readonly Color GearLit = Color.FromRgb(0xF2, 0xB1, 0x1B);
+    private void GearSwell(double factor)
+    {
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut }; var time = TimeSpan.FromSeconds(factor > 1 ? .18 : .26);
+        gearScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(factor, time) { EasingFunction = ease });
+        gearScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(factor, time) { EasingFunction = ease });
+    }
+    private void SetGear(bool open)
+    {
+        double angle = open ? -45 : 0; var ink = open ? GearLit : ((SolidColorBrush)Ui.Resource("Ink")).Color;
+        if (!IsLoaded || !SettingsMotion.Enabled(app))
+        { gearTurn.BeginAnimation(RotateTransform.AngleProperty, null); gearTurn.Angle = angle; gearInk.BeginAnimation(SolidColorBrush.ColorProperty, null); gearInk.Color = ink; return; }
+        if (Math.Abs(gearTurn.Angle - angle) < .1 && gearInk.Color == ink) return;
+        // Turns, overshoots a touch and settles into place like a detent.
+        gearTurn.BeginAnimation(RotateTransform.AngleProperty, new DoubleAnimation(angle, TimeSpan.FromMilliseconds(460)) { EasingFunction = new BackEase { Amplitude = .45, EasingMode = EasingMode.EaseOut } });
+        gearInk.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(ink, TimeSpan.FromMilliseconds(320)));
+    }
     internal ColorPickerPanel? Picker { get; private set; }
     public SettingsWindow(App app)
     {
@@ -79,19 +102,24 @@ internal sealed class SettingsWindow : Window
         brand.Children.Add(Logo()); brand.Children.Add(Ui.Text("DesktopBubbles", 14)); titlebar.Children.Add(brand);
         brand.MouseLeftButtonDown += (_, e) => { if (e.LeftButton == MouseButtonState.Pressed) try { DragMove(); } catch (InvalidOperationException) { } };
         layout.Children.Add(titlebar);
-        var body = new Grid(); Grid.SetRow(body, 1); body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(176) }); body.ColumnDefinitions.Add(new ColumnDefinition()); layout.Children.Add(body);
-        var rail = new Border { BorderBrush = Ui.Resource("Line"), BorderThickness = new Thickness(0, 0, 1, 0), Padding = new Thickness(12, 14, 10, 14) };
+        var body = new Grid(); Grid.SetRow(body, 1); Grid.SetRowSpan(body, 2); body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(176) }); body.ColumnDefinitions.Add(new ColumnDefinition()); layout.Children.Add(body);
+        // The list reaches down to just above "Neu" and fades out there instead of passing behind it.
+        var rail = new Border { Padding = new Thickness(12, 14, 10, 0), Margin = new Thickness(0, 0, 0, 72) };
         // Selection pill beneath the rows; it glides to the last clicked group and stays there.
         var railContent = new Grid(); railContent.Children.Add(selectionPill); railContent.Children.Add(groups);
         var railScroll = new ScrollViewer { Content = railContent, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-        SettingsMotion.AutoHideScrollBar(railScroll); SettingsMotion.EdgeFade(railScroll); SettingsMotion.SmoothWheel(railScroll);
+        Divider.Track(railScroll); SettingsMotion.EdgeFade(railScroll); SettingsMotion.SmoothWheel(railScroll);
         rail.Child = railScroll; body.Children.Add(rail);
-        pane.Margin = new Thickness(28, 18, 26, 14); Grid.SetColumn(pane, 1); body.Children.Add(pane);
+        pane.Margin = new Thickness(28, 18, 26, 100); Grid.SetColumn(pane, 1); body.Children.Add(pane);
         var bottom = new Grid(); Grid.SetRow(bottom, 2); bottom.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(176) }); bottom.ColumnDefinitions.Add(new ColumnDefinition()); bottom.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(52) });
-        var bottomLine = new Border { BorderBrush = Ui.Resource("Line"), BorderThickness = new Thickness(0, 1, 0, 0), Child = bottom }; Grid.SetRow(bottomLine, 2); layout.Children.Add(bottomLine);
+        layout.Children.Add(bottom);
+        Divider.Margin = new Thickness(176 - 7.5, 0, 0, 0); Grid.SetRow(Divider, 1); Grid.SetRowSpan(Divider, 2); Panel.SetZIndex(Divider, 2); layout.Children.Add(Divider);
         var create = Ui.Button("Neu", app.CreateGroup); create.Style = (Style)FindResource("DashedButton"); create.Margin = new Thickness(20, 18, 20, 18); create.ToolTip = "Neue Bubble"; bottom.Children.Add(create);
-        Measurement = new LiveMeasurementBar(this); Grid.SetColumn(Measurement, 1); bottom.Children.Add(Measurement);
+        Measurement = new LiveMeasurementBar(this, () => SettingsMotion.Enabled(app)); Grid.SetColumn(Measurement, 1); bottom.Children.Add(Measurement);
         settingsButton = Ui.IconButton("\uE713", "Einstellungen", () => SelectScope(Scope == AppearanceScope.App ? AppearanceScope.Bubbles : AppearanceScope.App));
+        settingsButton.Style = (Style)FindResource("PlainButton"); gearIcon = (TextBlock)settingsButton.Content; gearIcon.FontSize = 19; gearIcon.Foreground = gearInk;
+        gearIcon.RenderTransformOrigin = new Point(.5, .5); gearIcon.RenderTransform = new TransformGroup { Children = { gearScale, gearTurn } };
+        settingsButton.MouseEnter += (_, _) => GearSwell(1.2); settingsButton.MouseLeave += (_, _) => GearSwell(1);
         settingsButton.ToolTip = "Anwendung und allgemeine Einstellungen"; settingsButton.Width = settingsButton.Height = 36;
         settingsButton.VerticalAlignment = VerticalAlignment.Center; settingsButton.Margin = new Thickness(0, 0, 12, 0);
         Grid.SetColumn(settingsButton, 2); bottom.Children.Add(settingsButton);
@@ -124,7 +152,7 @@ internal sealed class SettingsWindow : Window
     internal void UpdateStatus() => Title = "DesktopBubbles · " + app.Host.Status;
     internal void RefreshMaterial()
     {
-        surface.Background = Ui.AppGlass(app.State.Settings); surface.BorderBrush = Ui.GlassRim();
+        surface.Background = Ui.AppGlass(app.State.Settings); surface.BorderBrush = Ui.GlassRim(); SetGear(Scope == AppearanceScope.App);
         Ui.RefreshRounding(this);
         preview.Background = Scope switch { AppearanceScope.App => Ui.AppGlass(app.State.Settings), AppearanceScope.Window => Ui.WindowGlass(app.State.Settings, selected), _ => Ui.Glass(app.State.Settings, selected) };
         double radius = AppearanceGeometry.Radius(app.State.Settings.CornerRoundness, preview.Width, preview.Height);
@@ -171,6 +199,7 @@ internal sealed class SettingsWindow : Window
     }
     private Button? selectedRow;
     private double? heightBeforePreview;
+    private FrameworkElement? pageBody; // Everything below the heading and the switch.
     private Grid? detailLayer; // Holds the page and the color picker that replaces it.
     // 1:1 opens the window downwards until the real-size preview fits; 1:3 folds it back.
     // Meanwhile the old preview dissolves into the new one.
@@ -224,19 +253,20 @@ internal sealed class SettingsWindow : Window
     internal void SelectScope(AppearanceScope scope)
     {
         CancelColorEdit();
-        // Between "Aussehen" and "Einstellungen" the pages dissolve through a soft blur;
-        // Miniatur ↔ Ordner keeps its sliding switch instead.
-        bool pageChange = (scope == AppearanceScope.App) != (Scope == AppearanceScope.App) && SettingsMotion.Enabled(app) && IsLoaded;
-        var before = pageChange ? SettingsMotion.Snapshot(pane) : null;
+        // Pages dissolve through a soft blur: between "Aussehen" and "Einstellungen" the whole page,
+        // between Miniatur and Ordner only the part below the sliding switch.
+        bool animate = scope != Scope && SettingsMotion.Enabled(app) && IsLoaded;
+        bool pageChange = (scope == AppearanceScope.App) != (Scope == AppearanceScope.App);
+        var before = !animate ? null : pageChange ? SettingsMotion.Snapshot(pane) : pageBody is null ? null : SettingsMotion.Snapshot(pageBody);
         Scope = scope; RefreshPage();
-        if (pageChange) SettingsMotion.PageTransition(pane, before);
+        if (animate) SettingsMotion.PageTransition(pageChange ? pane : pageBody ?? pane, before);
     }
     internal void RefreshPage()
     {
         CancelColorEdit();
         var layout = new DockPanel { LastChildFill = true };
         var header = new StackPanel(); DockPanel.SetDock(header, Dock.Top); layout.Children.Add(header);
-        var headingRow = new Grid();
+        var headingRow = new Grid { Height = 40 };
         var heading = Ui.Text(Scope == AppearanceScope.App ? "Einstellungen" : "Aussehen", 27, weight: FontWeights.SemiBold); heading.TextAlignment = TextAlignment.Center; heading.VerticalAlignment = VerticalAlignment.Center;
         // The back arrow sits right before the title: no background, it swells on hover, and its
         // generous padding makes a click near it count too.
@@ -245,16 +275,16 @@ internal sealed class SettingsWindow : Window
         {
             headingRow.Margin = new Thickness(0, 0, 0, 24);
             var arrow = Ui.Symbol("\uE72B", 20); arrow.SetResourceReference(TextBlock.ForegroundProperty, "Ink");
-            var back = new Button { Style = (Style)FindResource("PlainButton"), Content = arrow, Padding = new Thickness(14, 10, 12, 10), Margin = new Thickness(-26, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = "Zurück" };
+            var back = new Button { Style = (Style)FindResource("PlainButton"), Content = arrow, Padding = new Thickness(14, 10, 12, 10), Margin = new Thickness(-26, -12, 0, -12), VerticalAlignment = VerticalAlignment.Center, ToolTip = "Zurück" };
             back.Click += (_, _) => SelectScope(AppearanceScope.Bubbles);
             System.Windows.Automation.AutomationProperties.SetName(back, "Zurück zur Miniaturansicht");
             SettingsMotion.Swell(arrow);
             titleLine.Children.Add(back);
         }
         titleLine.Children.Add(heading); headingRow.Children.Add(titleLine); header.Children.Add(headingRow);
-        settingsButton.Background = Scope == AppearanceScope.App ? Ui.Resource("Accent") : Brushes.Transparent;
+        SetGear(Scope == AppearanceScope.App);
         if (Scope == AppearanceScope.App) lastTabScope = AppearanceScope.Bubbles;
-        settingsButton.Foreground = Scope == AppearanceScope.App ? Brushes.White : Ui.Resource("Ink");
+
         if (Scope != AppearanceScope.App)
         {
             // One rounded track; the accent pill slides from the last view to this one.
@@ -266,7 +296,7 @@ internal sealed class SettingsWindow : Window
             header.Children.Add(tabs);
             lastTabScope = Scope;
         }
-        var content = new DockPanel { LastChildFill = true }; layout.Children.Add(content);
+        var content = new DockPanel { LastChildFill = true }; layout.Children.Add(content); pageBody = content;
         var root = new StackPanel(); var settings = app.State.Settings;
         swatch = null; ColorButton = null; GlassSelector = null; folderCanvas = null; folderStage = null; folderViewport = null; previewDimensions = null; PreviewScaleButton = null; LinkColorsCheckBox = null;
         FrostedFoldersButton = null; TransparencySlider = null;
@@ -402,7 +432,7 @@ internal sealed class SettingsWindow : Window
         else
         {
             var pageScroll = new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
-            SettingsMotion.AutoHideScrollBar(pageScroll); SettingsMotion.EdgeFade(pageScroll, 18); SettingsMotion.SmoothWheel(pageScroll); standardDetails = pageScroll;
+            Divider.Track(pageScroll); SettingsMotion.EdgeFade(pageScroll, 18); SettingsMotion.SmoothWheel(pageScroll); standardDetails = pageScroll;
         }
         if (folderViewport is not null) { SettingsMotion.AutoHideScrollBar(folderViewport); SettingsMotion.SmoothWheel(folderViewport); }
         detailLayer = new Grid(); detailLayer.Children.Add(standardDetails);

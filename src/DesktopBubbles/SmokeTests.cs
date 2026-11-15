@@ -102,9 +102,9 @@ internal static class SmokeTests
         var settings = System.Windows.Application.Current.Windows.OfType<SettingsWindow>().Single();
         SaveImage(settings, Path.Combine(app.DataDirectory, "settings-light.png"));
         await Task.Delay(1200);
-        Check("Tracking startet beim Öffnen nicht automatisch", settings.Measurement.SampleCount == 0 && !settings.Measurement.IsSampling && !settings.Measurement.IsTracking && (string)settings.Measurement.TrackingButton.Content == "Tracking starten");
+        Check("Tracking startet beim Öffnen nicht automatisch", settings.Measurement.SampleCount == 0 && !settings.Measurement.IsSampling && !settings.Measurement.IsTracking && System.Windows.Automation.AutomationProperties.GetName(settings.Measurement.TrackingButton) == "Tracking starten" && !settings.Measurement.IsOpen);
         settings.Measurement.TrackingButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(1200);
-        Check("Tracking starten sammelt echte Prozessintervalle", settings.Measurement.SampleCount >= 1 && settings.Measurement.IsSampling && (string)settings.Measurement.TrackingButton.Content == "Tracking stoppen");
+        Check("Tracking starten sammelt echte Prozessintervalle", settings.Measurement.SampleCount >= 1 && settings.Measurement.IsSampling && System.Windows.Automation.AutomationProperties.GetName(settings.Measurement.TrackingButton) == "Tracking stoppen");
         settings.Measurement.Toggle(); int samples = settings.Measurement.SampleCount; await Task.Delay(1100);
         Check("Tracking stoppen hält Werte fest und beendet Timer", settings.Measurement.SampleCount == samples && !settings.Measurement.IsSampling && !settings.Measurement.IsTracking);
         settings.Measurement.Toggle();
@@ -197,9 +197,8 @@ internal static class SmokeTests
         Check("Einstellungen ohne Ordner-Vorschau oder Rundungsregler", settings.RoundingSlider is null && !Descendants(settings).OfType<System.Windows.Controls.Border>().Any(b => b.Name == "AppearancePreview"));
         var inspector = Descendants(settings).OfType<System.Windows.Controls.ScrollViewer>().First(s => s.ScrollableHeight > 0);
         inspector.ScrollToEnd(); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
-        var actualScrollBar = (System.Windows.Controls.Primitives.ScrollBar)inspector.Template.FindName("PART_VerticalScrollBar", inspector);
-        var pill = Descendants(actualScrollBar).OfType<System.Windows.Controls.Border>().Single(b => b.Name == "Pill");
-        Check("Schmale Scrollbar bleibt bis zu den Werkzeugen bedienbar", inspector.VerticalOffset > 0 && actualScrollBar.ActualWidth == 10 && pill.ActualWidth <= 4, $"Trefferbreite={actualScrollBar.ActualWidth}, sichtbarer Griff={pill.ActualWidth}");
+        var thumb = settings.Divider.Thumb; var thumbBottom = thumb.TranslatePoint(new Point(0, thumb.ActualHeight), inspector).Y;
+        Check("Scrollbar läuft auf dem Trennstrich bis zu den Werkzeugen", inspector.VerticalOffset > 0 && inspector.VerticalScrollBarVisibility == System.Windows.Controls.ScrollBarVisibility.Hidden && ReferenceEquals(settings.Divider.Active, inspector) && thumb.ActualWidth <= 4 && Math.Abs(thumbBottom - inspector.ViewportHeight) < 2, $"Griffende={thumbBottom:0.#}, Sichtbereich={inspector.ViewportHeight:0.#}");
         inspector.ScrollToHome(); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         SaveImage(settings, Path.Combine(app.DataDirectory, "app-settings.png"));
         app.State.Settings.AppOpacity = originalAppOpacity; app.ApplyAppearance();

@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Documents;
@@ -155,7 +155,8 @@ internal static class SettingsMotion
     }
     private sealed class Ghost(UIElement adorned, BitmapSource picture) : Adorner(adorned)
     {
-        protected override void OnRender(DrawingContext drawing) => drawing.DrawImage(picture, new Rect(AdornedElement.RenderSize));
+        // Drawn at the size it was taken, so a taller or shorter new page does not stretch it.
+        protected override void OnRender(DrawingContext drawing) => drawing.DrawImage(picture, new Rect(0, 0, picture.Width, picture.Height));
     }
 
     // A pill as tall and round as its circle: the circle at one end, the segment button beside it.
@@ -178,25 +179,35 @@ internal static class SettingsMotion
         presenter.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(260)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
     }
 
-    // Page change: the old page dissolves with a growing Gaussian blur while the new one sharpens in.
+    // Page change in two beats: the old page dissolves into a growing Gaussian blur first, then the
+    // new one sharpens in. Nothing of the old page lingers over the new one.
     internal static void PageTransition(FrameworkElement host, BitmapSource? before)
     {
         if (AdornerLayer.GetAdornerLayer(host) is not { } layer) return;
-        var blur = new System.Windows.Media.Effects.BlurEffect { Radius = 10, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance };
-        host.Effect = blur;
-        blur.BeginAnimation(System.Windows.Media.Effects.BlurEffect.RadiusProperty, new DoubleAnimation(10, 0, TimeSpan.FromMilliseconds(320)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
-        var appear = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
-        appear.Completed += (_, _) => { if (host.Effect == blur) host.Effect = null; };
+        const double outMs = 190, inMs = 300, blur = 12;
+        var sharpen = new System.Windows.Media.Effects.BlurEffect { Radius = blur, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance };
+        host.Effect = sharpen;
+        double wait = before is null ? 0 : outMs * .8;
+        var radius = new DoubleAnimationUsingKeyFrames();
+        radius.KeyFrames.Add(new DiscreteDoubleKeyFrame(blur, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+        radius.KeyFrames.Add(new DiscreteDoubleKeyFrame(blur, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(wait))));
+        radius.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(wait + inMs)), new CubicEase { EasingMode = EasingMode.EaseOut }));
+        sharpen.BeginAnimation(System.Windows.Media.Effects.BlurEffect.RadiusProperty, radius);
+        var appear = new DoubleAnimationUsingKeyFrames();
+        appear.KeyFrames.Add(new DiscreteDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+        appear.KeyFrames.Add(new DiscreteDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(wait))));
+        appear.KeyFrames.Add(new EasingDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(wait + inMs)), new CubicEase { EasingMode = EasingMode.EaseOut }));
+        appear.Completed += (_, _) => { if (host.Effect == sharpen) host.Effect = null; host.BeginAnimation(UIElement.OpacityProperty, null); };
         host.BeginAnimation(UIElement.OpacityProperty, appear);
         if (before is null) return;
-        var ghost = new Ghost(host, before) { Effect = new System.Windows.Media.Effects.BlurEffect { Radius = 0, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance } };
+        var smear = new System.Windows.Media.Effects.BlurEffect { Radius = 0, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance };
+        var ghost = new Ghost(host, before) { Effect = smear, IsHitTestVisible = false };
         layer.Add(ghost);
-        ((System.Windows.Media.Effects.BlurEffect)ghost.Effect).BeginAnimation(System.Windows.Media.Effects.BlurEffect.RadiusProperty, new DoubleAnimation(0, 10, TimeSpan.FromMilliseconds(220)));
-        var vanish = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(220)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
+        smear.BeginAnimation(System.Windows.Media.Effects.BlurEffect.RadiusProperty, new DoubleAnimation(0, blur, TimeSpan.FromMilliseconds(outMs)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } });
+        var vanish = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(outMs)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
         vanish.Completed += (_, _) => layer.Remove(ghost);
         ghost.BeginAnimation(UIElement.OpacityProperty, vanish);
     }
-
     // The mouse wheel glides: each notch adds to a target the offset eases towards.
     internal static void SmoothWheel(ScrollViewer viewer)
     {

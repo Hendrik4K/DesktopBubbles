@@ -8,6 +8,11 @@
 - „Neu“ gestrichelt auf grauem Grund; Seitenwechsel Aussehen ↔ Einstellungen mit Gaußschem Weichzeichner; Zurückpfeil direkt am Titel, schwillt beim Überfahren an.
 - Erstes Öffnen groß genug für die volle 1:3-Ordnervorschau; eigene Fenstergröße bleibt bis zur nächsten Version.
 - Weiches Mausrad-Scrollen, größere Beschriftungen für Farbe und Glas, sanftere Wellen in der Tray-Versionszeile.
+- Seitenwechsel (Aussehen ↔ Einstellungen und Miniatur ↔ Ordner) in zwei Takten: alte Seite verschwimmt ganz, dann wird die neue scharf; beide Titel stehen auf gleicher Höhe.
+- Trennstrich zwischen Bubble-Liste und Seite läuft bis unten durch und ist zugleich die Scrollbar beider Seiten; die Liste blendet über „Neu“ weich aus.
+- Verbrauchsmessung als Tacho mit Ausklapppfeil: Play/Stopp, geglättete Kurve über die letzten 20 Sekunden, die nach links wandert und weich ausblendet; der Tachozeiger folgt der CPU-Last.
+- Zahnrad wächst beim Überfahren, dreht beim Öffnen der Einstellungen 45° nach links und leuchtet gelb.
+
 ## 1.8.2 · 15.11.2026
 
 - **Von Updates neu angelegte Verknüpfungen werden eingesammelt:** Legt ein Programm-Update eine Desktop-Verknüpfung an, deren Programm (Ziel und Parameter, bzw. URL) schon in einer Bubble liegt, übernimmt DesktopBubbles sie automatisch. Die frische Verknüpfung ersetzt die Kopie in der Bubble; Name des Eintrags und gemerkter Desktop-Platz bleiben. Beim Start wird nachgeholt, was während der Pause angelegt wurde. Unberührt bleiben Verknüpfungen ohne passenden Eintrag, auf Wunsch zurückgelegte oder herausgezogene und alles im Kopiermodus. Abschaltbar unter „Von Updates neu angelegte Verknüpfungen einsammeln“.
