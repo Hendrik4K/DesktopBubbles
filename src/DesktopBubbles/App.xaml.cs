@@ -293,7 +293,8 @@ public partial class App : System.Windows.Application
     }
     internal void Toggle(BubbleWindow window)
     {
-        if (flyout?.Group.Id == window.Group.Id) { CloseFlyout(); return; }
+        // A click on the miniature while its folder is still opening changes nothing: the opening plays out.
+        if (flyout?.Group.Id == window.Group.Id) { if (!flyout.Opening) CloseFlyout(); return; }
         if (lastGroup == window.Group.Id && DateTime.UtcNow - lastClose < TimeSpan.FromMilliseconds(240)) return;
         Open(window);
     }
@@ -308,7 +309,7 @@ public partial class App : System.Windows.Application
         try { if (!current.HidesAnchor) window.SetExpanded(true); current.Show(); current.Activate(); }
         catch { window.SetExpanded(false); flyout = null; current.Close(); throw; }
     }
-    internal void CloseFlyout() { var current = flyout; flyout = null; current?.Close(); }
+    internal void CloseFlyout() { var current = flyout; flyout = null; current?.CloseNow(); }
     internal FlyoutWindow? CurrentFlyout => flyout;
     // Saves the auto-close choice and re-arms an open folder; nothing else on screen changes.
     internal void ApplyAutoClose() { StateStore.Validate(State); RequestSave(); flyout?.ArmAutoClose(); }

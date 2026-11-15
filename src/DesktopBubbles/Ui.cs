@@ -47,6 +47,17 @@ internal static class Ui
     { var item = new MenuItem { Header = text }; item.Click += (_, _) => action(); return item; }
     public static TextBlock Symbol(string glyph, double size = 16) => new()
     { Text = glyph, FontFamily = new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontSize = size, VerticalAlignment = VerticalAlignment.Center };
+    // The same glyph as a vector shape, sized to its ink: it turns, swells and thickens crisply
+    // (a stroke in its own colour makes it bolder) and is never clipped by a text line box.
+    public static System.Windows.Shapes.Path GlyphPath(string glyph, double size)
+    {
+        var typeface = new Typeface(new FontFamily("Segoe Fluent Icons, Segoe MDL2 Assets"), FontStyles.Normal, FontWeights.Normal, FontStretches.Normal);
+        var geometry = new FormattedText(glyph, System.Globalization.CultureInfo.InvariantCulture, FlowDirection.LeftToRight, typeface, size, Brushes.Black, 1).BuildGeometry(new Point());
+        var bounds = geometry.Bounds;
+        if (bounds.IsEmpty) return new System.Windows.Shapes.Path { Width = size, Height = size };
+        geometry.Transform = new TranslateTransform(-bounds.X, -bounds.Y); geometry.Freeze();
+        return new System.Windows.Shapes.Path { Data = geometry, Width = bounds.Width, Height = bounds.Height, Stretch = Stretch.None, StrokeLineJoin = PenLineJoin.Round, HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center };
+    }
     public static Button IconButton(string glyph, string name, Action action)
     {
         var button = Button("", action); button.Content = Symbol(glyph); button.ToolTip = name;

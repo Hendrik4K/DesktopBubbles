@@ -39,6 +39,14 @@ internal sealed class FlyoutWindow : Window
     internal bool HidesAnchor => Animate;
     // Populated, placed, background sampled and the opening motion started.
     internal bool Prepared { get; private set; }
+    // From the click until the folder has fully landed. The user cannot cut an opening short:
+    // a close asked for meanwhile waits and then folds the finished folder away.
+    internal bool Opening => !openSettled && !closed;
+    private bool openSettled, closeWhenOpen, leaveWhenOpen, forceClose, backgroundPress;
+    private Point pressedAt;
+    // Closing on behalf of the app (another folder, the settings): an opening is turned around
+    // right where it is instead of finishing first.
+    internal void CloseNow() { forceClose = true; Close(); }
     private readonly Dictionary<Guid, Button> buttons = [];
     public FlyoutWindow(App app, BubbleWindow anchor)
     {
@@ -54,6 +62,15 @@ internal sealed class FlyoutWindow : Window
         if (Frosted || Liquid || Animate) surface.Opacity = 0;
         var root = new StackPanel(); surface.Child = root; Content = surface;
         scroll = new ScrollViewer { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Content = grid };
+        // A click on the folder's own glass (not on an icon) folds it away once it has opened.
+        // Registered before sorting's own handler, so the click that ends sorting does not close.
+        PreviewMouseLeftButtonDown += (_, e) => { pressedAt = e.GetPosition(this); backgroundPress = !Opening && !folding && Reorder is { IsSorting: false } && OnGlass(e.OriginalSource); };
+        MouseLeftButtonUp += (_, e) =>
+        {
+            if (!backgroundPress) return;
+            backgroundPress = false;
+            if (OnGlass(e.OriginalSource) && (e.GetPosition(this) - pressedAt).Length < 6) Close();
+        };
         Reorder = new FolderReorder(this, scroll,
             (first, second, released) => WithDialog(() =>
             {
@@ -82,8 +99,15 @@ internal sealed class FlyoutWindow : Window
         Deactivated += (_, _) =>
         {
             if (Reorder.IsSorting) Reorder.Stop(); else Reorder.CancelPress();
-            Dispatcher.BeginInvoke(() => { if (!busy && !IsActive && !HasContextMenu() && IsVisible) Close(); });
+            Dispatcher.BeginInvoke(() =>
+            {
+                if (busy || IsActive || HasContextMenu() || !IsVisible) return;
+                // Mid-opening the motion plays out undisturbed; the folder folds away right after.
+                if (Opening) { leaveWhenOpen = true; return; }
+                Close();
+            });
         };
+        Activated += (_, _) => leaveWhenOpen = false;
         autoClose.Tick += (_, _) =>
         {
             autoClose.Stop();
@@ -127,12 +151,32 @@ internal sealed class FlyoutWindow : Window
                 finally { if (excluded) anchor.ExcludeFromCapture(false); }
                 surface.Background = SurfaceBrush(); surface.BorderBrush = FrameBrush();
             }
-            if (!closed && !folding && Animate && CreateMotion() is { } next) { motion = next; next.Open(hideAnchor: () => anchor.SetExpanded(true)); }
-            else { surface.Opacity = 1; if (!closed) anchor.SetExpanded(true); }
+            // Closed or turned away while still preparing: never show anything.
+            if (closed || folding) { Prepared = true; return; }
+            if (Animate && CreateMotion() is { } next) { motion = next; next.Open(hideAnchor: () => anchor.SetExpanded(true), landed: Settled); }
+            else { surface.Opacity = 1; anchor.SetExpanded(true); Settled(); }
             buttons.Values.FirstOrDefault()?.Focus();
             Prepared = true;
             ArmAutoClose();
         };
+    }
+    // The folder has landed: carry out a close that was asked for while it opened.
+    private void Settled()
+    {
+        if (openSettled) return;
+        openSettled = true;
+        if (closed || folding) return;
+        if (closeWhenOpen || leaveWhenOpen && !IsActive && !busy && !HasContextMenu())
+            Dispatcher.BeginInvoke(() => { if (!closed && !folding) Close(); });
+    }
+    private bool OnGlass(object source)
+    {
+        for (var node = source as DependencyObject; node is not null; node = node is Visual ? VisualTreeHelper.GetParent(node) : LogicalTreeHelper.GetParent(node))
+        {
+            if (node is ButtonBase or ScrollBar) return false;
+            if (node == this) return true;
+        }
+        return false;
     }
     internal void ArmAutoClose()
     {
@@ -165,8 +209,14 @@ internal sealed class FlyoutWindow : Window
         if (e.Cancel || folded || !IsLoaded || !Animate) { motion?.Stop(); return; }
         e.Cancel = true;
         if (folding) return;
+        // The user never cuts an opening short: the close waits until the folder has landed.
+        if (Opening && !forceClose) { closeWhenOpen = true; return; }
         folding = true; IsHitTestVisible = false;
         if (Reorder.IsSorting) Reorder.Stop(); else Reorder.CancelPress();
+        // Asked by the app mid-opening: fold back from wherever the glass is right now.
+        if (motion is { } running && running.TryReverse(reveal: () => anchor.SetExpanded(false), done: () => { folded = true; Close(); })) return;
+        // Still preparing, nothing on screen yet: leave without a motion.
+        if (!openSettled) { folded = true; Dispatcher.BeginInvoke(Close); return; }
         motion?.Stop();
         motion = CreateMotion();
         if (motion is null) { folded = true; Dispatcher.BeginInvoke(Close); return; }

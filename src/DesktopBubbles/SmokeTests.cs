@@ -114,8 +114,15 @@ internal static class SmokeTests
         settings.Measurement.Fold(false, instant: true);
         string originalColor = AppearancePreferences.Color(app.State.Settings, app.State.Groups[0]);
         app.RequestSave(); app.Flush();
-        settings.ColorButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(250);
+        // A short window, so the picker really has to make room.
+        settings.Height = 560; await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        var boundsBeforePicker = Native.Bounds(settings);
+        settings.ColorButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(800);
         var picker = settings.Picker!;
+        var pickerScroll = Descendants(settings).OfType<System.Windows.Controls.ScrollViewer>().Single(s => ReferenceEquals(s.Content, picker));
+        var pillFill = ((System.Windows.Controls.Border)((FrameworkElement)settings.ColorButton.Parent).Parent).Background as SolidColorBrush;
+        Check("Farbwähler bekommt Platz durch ein höheres Fenster", Native.Bounds(settings).Height > boundsBeforePicker.Height, $"vorher={boundsBeforePicker.Height}, jetzt={Native.Bounds(settings).Height}");
+        Check("Farbwähler: Fenster wächst, bis er ganz sichtbar ist, und die ganze Pille wird grün", pickerScroll.ScrollableHeight <= 1 && pillFill is { } green && Math.Abs(green.Color.R - 0x08) + Math.Abs(green.Color.G - 0x7F) + Math.Abs(green.Color.B - 0x4B) <= 3, $"Rest={pickerScroll.ScrollableHeight:0.#}, Pille={pillFill?.Color}");
         SaveImage(settings, Path.Combine(app.DataDirectory, "color-picker-light.png"));
         var hexCorner = picker.HexInput.TranslatePoint(new Point(picker.HexInput.ActualWidth, picker.HexInput.ActualHeight), settings);
         Check("Farbauswahl sitzt im Verwaltungsfenster und verdeckt die anderen Regler", Window.GetWindow(picker) == settings && !settings.TransparencySlider!.IsVisible && !settings.SizeSlider!.IsVisible && !settings.RoundingSlider!.IsVisible && (string)settings.ColorButton.Content == "Anwenden");
@@ -132,6 +139,9 @@ internal static class SmokeTests
         SaveImage(settings, Path.Combine(app.DataDirectory, "color-editor-draft.png"));
         settings.ColorButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
         Check("Eine freie Farbe gilt gemeinsam für Miniatur und Ordner", app.State.Groups[0].Color == "#12A3F0" && app.State.Groups[0].WindowColor == "#12A3F0");
+        await Task.Delay(700); var boundsAfterPicker = Native.Bounds(settings);
+        Check("Nach dem Farbwähler gleitet das Fenster auf Größe und Platz von vorher zurück", Math.Abs(boundsAfterPicker.X - boundsBeforePicker.X) <= 1 && Math.Abs(boundsAfterPicker.Y - boundsBeforePicker.Y) <= 1 && Math.Abs(boundsAfterPicker.Width - boundsBeforePicker.Width) <= 1 && Math.Abs(boundsAfterPicker.Height - boundsBeforePicker.Height) <= 1, $"vorher={boundsBeforePicker}, nachher={boundsAfterPicker}");
+        settings.Height = 760; await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         Check("Anwenden bringt das normale Layout ohne Regleränderung zurück", settings.Picker is null && settings.TransparencySlider!.IsVisible && settings.SizeSlider!.IsVisible && settings.RoundingSlider!.IsVisible && app.State.Settings.Opacity == .35 && app.State.Settings.MiniatureSize == 76 && (string)settings.ColorButton.Content == "Ändern");
         settings.OpenPickerForTest(); await Task.Delay(100); settings.Picker!.HexInput.Text = "#FF0000";
         var escape = new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice, PresentationSource.FromVisual(settings)!, 0, System.Windows.Input.Key.Escape) { RoutedEvent = System.Windows.Input.Keyboard.PreviewKeyDownEvent }; settings.RaiseEvent(escape);
@@ -139,6 +149,7 @@ internal static class SmokeTests
         app.State.Groups[0].Color = null; app.ApplyAppearance();
         Check("Verwaltung verwendet feste dezente Ecken statt eigenem Rundungsregler", app.State.Settings.AppCornerRadius == Ui.AppRadius && !settings.AllowsTransparency);
         var gear = Descendants(settings).OfType<System.Windows.Controls.Button>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Einstellungen");
+        Check("Zahnrad ist eine Form mit Luft und wird nirgends abgeschnitten", gear.Content is System.Windows.Shapes.Path gearShape && System.Windows.Controls.Primitives.LayoutInformation.GetLayoutClip(gearShape) is null && gearShape.ActualWidth * 1.2 <= gear.ActualWidth && gearShape.ActualHeight * 1.2 <= gear.ActualHeight);
         gear.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(100);
         Check("Zahnrad zeigt App-Darstellung und allgemeine Checkboxen", settings.Scope == AppearanceScope.App && Descendants(settings).OfType<System.Windows.Controls.CheckBox>().Count() == 7);
         Check("Einsammeln neu angelegter Verknüpfungen ist standardmäßig an", settings.CollectDuplicatesCheckBox?.IsChecked == true);
@@ -232,16 +243,21 @@ internal static class SmokeTests
         Check("Ordnertransparenz gilt gemeinsam und unabhängig von App und Miniatur", Math.Abs(app.State.Settings.WindowOpacity - .63) < .001 && app.State.Groups.All(g => g.WindowOpacity is null) && app.State.Settings.Opacity == .35 && app.State.Settings.AppOpacity == originalAppOpacity && settings.GlassSelector is null && settings.RoundingSlider is null);
         double smaller = settings.AppearancePreview.Width; settings.SizeSlider!.Value = 432;
         Check("Größenregler verändert die Vorschau direkt im Maßstab 1 zu 3", settings.AppearancePreview.Width > smaller && Math.Abs(settings.AppearancePreview.Width * 3 - 432) < .001 && settings.PreviewFootprint.Width == 432);
-        var expectedFootprint = settings.PreviewFootprint;
-        settings.PreviewScaleButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        var expectedFootprint = settings.PreviewFootprint; var boundsBeforeLarge = Native.Bounds(settings);
+        settings.PreviewScaleButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(800);
+        var largeScroll = Descendants(settings).OfType<System.Windows.Controls.ScrollViewer>().Single(s => ReferenceEquals(s.Content, settings.AppearancePreview.Parent)); var boundsLarge = Native.Bounds(settings);
+        var largeWork = Native.WorkArea(boundsLarge.X + boundsLarge.Width / 2, boundsLarge.Y + boundsLarge.Height / 2);
+        Check("1:1 erweitert das Fenster nach rechts und unten, bis der Ordner ganz zu sehen ist", (largeScroll.ScrollableWidth <= 1 || boundsLarge.Width >= largeWork.Width - 1) && (largeScroll.ScrollableHeight <= 1 || boundsLarge.Height >= largeWork.Height - 1) && boundsLarge.X == boundsBeforeLarge.X, $"vorher={boundsBeforeLarge}, 1:1={boundsLarge}, Rest={largeScroll.ScrollableWidth:0}x{largeScroll.ScrollableHeight:0}");
         Check("Originalvorschau hat echte Ordnermaße ohne Verkleinerung", Math.Abs(settings.AppearancePreview.Width - expectedFootprint.Width) < .001 && Math.Abs(settings.AppearancePreview.Height - expectedFootprint.Height) < .001);
         SaveImage(settings, Path.Combine(app.DataDirectory, "window-preview-actual-size.png"));
         var previewScroll = Descendants(settings).OfType<System.Windows.Controls.ScrollViewer>().Single(s => ReferenceEquals(s.Content, settings.AppearancePreview.Parent));
         previewScroll.ScrollToRightEnd(); previewScroll.ScrollToBottom(); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         Check("Originalvorschau lässt sich bis zu den verdeckten Rändern scrollen", (previewScroll.ScrollableWidth <= 0 || previewScroll.HorizontalOffset > 0) && (previewScroll.ScrollableHeight <= 0 || previewScroll.VerticalOffset > 0) && settings.PreviewFootprint == expectedFootprint, $"scrollbar {previewScroll.ScrollableWidth:0}x{previewScroll.ScrollableHeight:0}");
         previewScroll.ScrollToLeftEnd(); previewScroll.ScrollToTop();
-        settings.PreviewScaleButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        settings.PreviewScaleButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(800);
         Check("Vorschau lässt sich ohne Änderung der echten Ordnergröße zurück auf 1 zu 3 schalten", Math.Abs(settings.AppearancePreview.Width * 3 - expectedFootprint.Width) < .001 && settings.PreviewFootprint == expectedFootprint);
+        var boundsBackSmall = Native.Bounds(settings);
+        Check("Zurück auf 1:3 gleitet das Fenster genau an Platz und Größe von vorher", Math.Abs(boundsBackSmall.X - boundsBeforeLarge.X) <= 1 && Math.Abs(boundsBackSmall.Y - boundsBeforeLarge.Y) <= 1 && Math.Abs(boundsBackSmall.Width - boundsBeforeLarge.Width) <= 1 && Math.Abs(boundsBackSmall.Height - boundsBeforeLarge.Height) <= 1, $"vorher={boundsBeforeLarge}, zurück={boundsBackSmall}");
         SaveImage(settings, Path.Combine(app.DataDirectory, "window-settings.png"));
         settings.Close(); app.Open(app.Bubbles[0]); await Task.Delay(200); await SettleMotion();
         Check("Live-Vorschau entspricht der echten Rasterhöhe und -breite", Math.Abs(app.CurrentFlyout!.ActualWidth - expectedFootprint.Width) < 2 && Math.Abs(app.CurrentFlyout.ActualHeight - expectedFootprint.Height) < 2);
@@ -344,8 +360,19 @@ internal static class SmokeTests
             var hit = Native.WindowFromPoint(new Native.Point { X = (int)(bounds.X + bounds.Width / 2), Y = (int)(bounds.Y + 38) });
             Check("Desktop-Bubble nach Schließen der Verwaltung anklickbar", hit == Native.Handle(app.Bubbles[0]));
         }
-        app.Toggle(app.Bubbles[0]); await Task.Delay(600);
-        Check("Flyout öffnet", app.CurrentFlyout is { IsVisible: true });
+        // A folder that just finished folding ignores a click on its miniature for 240 ms (the click
+        // that closed it); start from a quiet desktop.
+        await SettleWindows(); await Task.Delay(300);
+        app.Toggle(app.Bubbles[0]); await Task.Delay(120);
+        // A second click on the miniature while the folder still opens must not fold it back.
+        var openingFolder = app.CurrentFlyout; bool clickedWhileOpening = openingFolder?.Opening == true;
+        if (clickedWhileOpening) app.Toggle(app.Bubbles[0]);
+        await Task.Delay(600);
+        Native.GetWindowThreadProcessId(Native.GetForegroundWindow(), out uint foregroundProcess);
+        string foregroundName; try { foregroundName = Process.GetProcessById((int)foregroundProcess).ProcessName; } catch (ArgumentException) { foregroundName = "?"; }
+        Check("Flyout öffnet", app.CurrentFlyout is { IsVisible: true }, $"Ordner={openingFolder is not null}, geklickt={clickedWhileOpening}, aktuell={app.CurrentFlyout is not null}, sichtbar={openingFolder?.IsVisible}, aktiv={openingFolder?.IsActive}, Vordergrund={foregroundName}");
+        Check("Klick während des Öffnens lässt die Animation ungestört zu Ende laufen", !clickedWhileOpening || ReferenceEquals(app.CurrentFlyout, openingFolder) && openingFolder is { IsVisible: true });
+        await SettleMotion();
         Check("Geöffnetes Raster enthält keinerlei sichtbaren Text", !Descendants(app.CurrentFlyout!).OfType<System.Windows.Controls.TextBlock>().Any());
         Check("Kacheln behalten zugängliche App-Namen", Descendants(app.CurrentFlyout!).OfType<System.Windows.Controls.Button>().All(b => !string.IsNullOrWhiteSpace(System.Windows.Automation.AutomationProperties.GetName(b))));
         Check("Mini-Bubble während geöffnetem Raster ausgeblendet", app.Bubbles[0].Expanded && !app.Bubbles[0].TileVisible);
@@ -401,6 +428,12 @@ internal static class SmokeTests
             Check("Fliegende Symbole starten und landen exakt auf den Symbolen der Miniatur", measured > 0 && worst < 1, $"Abweichung={worst:0.00} px bei {measured} Symbolen");
         }
         Check("Mini-Bubble nach Schließen wieder sichtbar", !app.Bubbles[0].Expanded && app.Bubbles[0].TileVisible && ((UIElement)app.Bubbles[0].Content).Opacity == 1);
+        app.Open(app.Bubbles[0]); await Task.Delay(200); await SettleMotion();
+        var glassFolder = app.CurrentFlyout!; var glass = (FrameworkElement)glassFolder.Content;
+        glass.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, System.Windows.Input.MouseButton.Left) { RoutedEvent = UIElement.PreviewMouseDownEvent });
+        glass.RaiseEvent(new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, Environment.TickCount, System.Windows.Input.MouseButton.Left) { RoutedEvent = UIElement.MouseUpEvent });
+        await SettleWindows();
+        Check("Klick auf eine leere Stelle im Ordner faltet ihn zu", !glassFolder.IsVisible && !app.HasFlyout);
         app.Open(app.Bubbles[0]); await Task.Delay(200); settings.Activate(); await Task.Delay(250); await SettleMotion();
         Check("Fokuswechsel schließt Flyout", !app.HasFlyout);
         app.CloseFlyout(); await SettleWindows();

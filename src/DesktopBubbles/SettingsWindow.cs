@@ -57,7 +57,6 @@ internal sealed class SettingsWindow : Window
     internal LiveMeasurementBar Measurement { get; }
     internal DividerScroll Divider { get; } = new();
     // The gear swells on hover; it turns 45° to the left and lights up while the settings are open.
-    private TextBlock gearIcon = null!;
     private readonly ScaleTransform gearScale = new(1, 1);
     private readonly RotateTransform gearTurn = new(0);
     private readonly SolidColorBrush gearInk = new(Colors.Black);
@@ -117,8 +116,11 @@ internal sealed class SettingsWindow : Window
         var create = Ui.Button("Neu", app.CreateGroup); create.Style = (Style)FindResource("DashedButton"); create.Margin = new Thickness(20, 18, 20, 18); create.ToolTip = "Neue Bubble"; bottom.Children.Add(create);
         Measurement = new LiveMeasurementBar(this, () => SettingsMotion.Enabled(app)); Grid.SetColumn(Measurement, 1); bottom.Children.Add(Measurement);
         settingsButton = Ui.IconButton("\uE713", "Einstellungen", () => SelectScope(Scope == AppearanceScope.App ? AppearanceScope.Bubbles : AppearanceScope.App));
-        settingsButton.Style = (Style)FindResource("PlainButton"); gearIcon = (TextBlock)settingsButton.Content; gearIcon.FontSize = 19; gearIcon.Foreground = gearInk;
-        gearIcon.RenderTransformOrigin = new Point(.5, .5); gearIcon.RenderTransform = new TransformGroup { Children = { gearScale, gearTurn } };
+        // Drawn as a shape with room around it: it turns and swells crisply and is never cut off.
+        var gear = Ui.GlyphPath("", 20); gear.Fill = gearInk;
+        gear.RenderTransformOrigin = new Point(.5, .5); gear.RenderTransform = new TransformGroup { Children = { gearScale, gearTurn } };
+        settingsButton.Style = (Style)FindResource("PlainButton"); settingsButton.Padding = new Thickness(0); settingsButton.Content = gear;
+        settingsButton.HorizontalContentAlignment = HorizontalAlignment.Center; settingsButton.VerticalContentAlignment = VerticalAlignment.Center;
         settingsButton.MouseEnter += (_, _) => GearSwell(1.2); settingsButton.MouseLeave += (_, _) => GearSwell(1);
         settingsButton.ToolTip = "Anwendung und allgemeine Einstellungen"; settingsButton.Width = settingsButton.Height = 36;
         settingsButton.VerticalAlignment = VerticalAlignment.Center; settingsButton.Margin = new Thickness(0, 0, 12, 0);
@@ -129,15 +131,50 @@ internal sealed class SettingsWindow : Window
             if (e.Key == Key.Escape) { if (Picker is not null) CancelColorEdit(); else Close(); e.Handled = true; }
             if (e.Key == Key.N && Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) { app.CreateGroup(); e.Handled = true; }
         };
-        Closed += (_, _) =>
+        glide = new WindowGlide(this);
+        Closing += (_, e) =>
         {
-            CancelColorEdit(); Measurement.Dispose();
-            // A 1:1 expansion is temporary; remember the size the user would come back to.
-            var settings = app.State.Settings;
-            settings.SettingsWindowWidth = ActualWidth; settings.SettingsWindowHeight = heightBeforePreview ?? ActualHeight; settings.SettingsWindowVersion = AppVersion;
-            app.RequestSave(); app.Flush();
+            if (e.Cancel) return;
+            // Room made for 1:1 or the colour picker is temporary; remember the size from before it
+            // (or the size a glide back is heading for).
+            var settings = app.State.Settings; double scale = VisualTreeHelper.GetDpi(this).DpiScaleX;
+            PixelRect? basis = restBounds ?? (glide.Running ? glide.Target : null);
+            settings.SettingsWindowWidth = basis is { } wide ? wide.Width / scale : ActualWidth;
+            settings.SettingsWindowHeight = basis is { } tall ? tall.Height / scale : ActualHeight;
+            settings.SettingsWindowVersion = AppVersion;
+            glide.Stop(); restBounds = grownBounds = null; roomFor = null;
         };
+        Closed += (_, _) => { CancelColorEdit(); Measurement.Dispose(); app.RequestSave(); app.Flush(); };
         RefreshGroups(); RefreshPage();
+    }
+    // Temporary room: the window grows to the right and down just enough to show something whole
+    // (moving only if the screen edge forces it), and later glides back to exactly where it was.
+    private readonly WindowGlide glide;
+    private PixelRect? restBounds, grownBounds;
+    private string? roomFor;
+    private void MakeRoom(string reason, double wider, double taller)
+    {
+        if (!IsVisible || WindowState != WindowState.Normal) return;
+        double scale = Native.GetDpiForWindow(Native.Handle(this)) / 96d;
+        // While still gliding back from an earlier expansion, its destination is the size to return to.
+        var now = Native.Bounds(this); var rest = restBounds ?? (glide.Running ? glide.Target : now);
+        var work = Native.WorkArea(now.X + now.Width / 2, now.Y + now.Height / 2);
+        double width = Math.Min(work.Width, Math.Max(rest.Width, Math.Ceiling(now.Width + wider * scale)));
+        double height = Math.Min(work.Height, Math.Max(rest.Height, Math.Ceiling(now.Height + taller * scale)));
+        if (Math.Abs(width - rest.Width) < 1 && Math.Abs(height - rest.Height) < 1) { GiveBackRoom(reason); return; }
+        var target = new PixelRect(Math.Clamp(now.X, work.X, Math.Max(work.X, work.Right - width)), Math.Clamp(now.Y, work.Y, Math.Max(work.Y, work.Bottom - height)), width, height);
+        restBounds ??= rest; grownBounds = target; roomFor = reason;
+        glide.To(target, .52, SettingsMotion.Enabled(app));
+    }
+    private void GiveBackRoom(string reason)
+    {
+        if (roomFor != reason || restBounds is not { } rest) return;
+        var grown = grownBounds; restBounds = grownBounds = null; roomFor = null;
+        if (!IsVisible || WindowState != WindowState.Normal) return;
+        // If the window was moved meanwhile, it keeps that move.
+        var now = glide.Running ? glide.Target : Native.Bounds(this);
+        double dx = grown is { } g ? now.X - g.X : 0, dy = grown is { } h ? now.Y - h.Y : 0;
+        glide.To(new PixelRect(rest.X + dx, rest.Y + dy, rest.Width, rest.Height), .52, SettingsMotion.Enabled(app));
     }
     private static string AppVersion => typeof(SettingsWindow).Assembly.GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
         .OfType<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion.Split('+')[0] ?? "";
@@ -152,7 +189,7 @@ internal sealed class SettingsWindow : Window
     internal void UpdateStatus() => Title = "DesktopBubbles · " + app.Host.Status;
     internal void RefreshMaterial()
     {
-        surface.Background = Ui.AppGlass(app.State.Settings); surface.BorderBrush = Ui.GlassRim(); SetGear(Scope == AppearanceScope.App);
+        surface.Background = Ui.AppGlass(app.State.Settings); surface.BorderBrush = Ui.GlassRim(); SetGear(Scope == AppearanceScope.App); Measurement.RefreshInk();
         Ui.RefreshRounding(this);
         preview.Background = Scope switch { AppearanceScope.App => Ui.AppGlass(app.State.Settings), AppearanceScope.Window => Ui.WindowGlass(app.State.Settings, selected), _ => Ui.Glass(app.State.Settings, selected) };
         double radius = AppearanceGeometry.Radius(app.State.Settings.CornerRoundness, preview.Width, preview.Height);
@@ -198,46 +235,34 @@ internal sealed class SettingsWindow : Window
         Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, PlacePill);
     }
     private Button? selectedRow;
-    private double? heightBeforePreview;
+    private Border? colorPill;
     private FrameworkElement? pageBody; // Everything below the heading and the switch.
     private Grid? detailLayer; // Holds the page and the color picker that replaces it.
-    // 1:1 opens the window downwards until the real-size preview fits; 1:3 folds it back.
-    // Meanwhile the old preview dissolves into the new one.
+    // 1:1 widens the window to the right and down until the real-size folder fits whole; 1:3 glides
+    // it back to where it was. Meanwhile the old preview blurs away and the new one sharpens in.
     private void FitPreview(System.Windows.Media.Imaging.BitmapSource? before = null)
     {
         Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
         {
             if (folderViewport is null || folderStage is null) return;
-            if (before is not null && SettingsMotion.Enabled(app)) SettingsMotion.Crossfade(folderViewport, before);
-            double target;
-            if (previewScale == 1)
-            {
-                folderStage.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-                double missing = folderStage.DesiredSize.Height - folderViewport.ViewportHeight;
-                if (missing <= 1) return;
-                heightBeforePreview ??= ActualHeight;
-                target = Math.Min(MaxHeight, ActualHeight + missing + 6);
-            }
-            else { if (heightBeforePreview is not { } before) return; target = before; heightBeforePreview = null; }
-            var work = SystemParameters.WorkArea;
-            double top = Math.Max(work.Top, Math.Min(Top, work.Bottom - target));
-            if (!SettingsMotion.Enabled(app)) { Top = top; Height = target; return; }
-            // Starts gently, gathers speed, then brakes softly.
-            var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
-            var grow = new DoubleAnimation(ActualHeight, target, TimeSpan.FromMilliseconds(560)) { EasingFunction = ease, FillBehavior = FillBehavior.Stop };
-            var move = new DoubleAnimation(Top, top, TimeSpan.FromMilliseconds(560)) { EasingFunction = ease, FillBehavior = FillBehavior.Stop };
-            grow.Completed += (_, _) => Height = target; move.Completed += (_, _) => Top = top;
-            BeginAnimation(HeightProperty, grow); BeginAnimation(TopProperty, move);
+            if (before is not null && SettingsMotion.Enabled(app)) SettingsMotion.PageTransition(folderViewport, before);
+            if (previewScale != 1) { GiveBackRoom("preview"); return; }
+            folderStage.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            MakeRoom("preview", folderStage.DesiredSize.Width - folderViewport.ActualWidth + 2, folderStage.DesiredSize.Height - folderViewport.ActualHeight + 2);
         });
     }
     private void SelectGroup(BubbleGroup group)
     {
         CancelColorEdit();
-        var before = group == selected ? null : SettingsMotion.Snapshot(preview);
-        selected = group; if (Scope == AppearanceScope.App) Scope = AppearanceScope.Bubbles;
+        // The preview hands over to the new group like a page: the old one blurs away, the new one
+        // sharpens in. Coming from the settings, the whole page changes that way.
+        bool fromSettings = Scope == AppearanceScope.App, animate = group != selected && SettingsMotion.Enabled(app) && IsLoaded;
+        FrameworkElement? Host() => fromSettings ? pane : Scope == AppearanceScope.Window ? folderViewport : preview;
+        var before = animate && Host() is { } old ? SettingsMotion.Snapshot(old) : null;
+        selected = group; if (fromSettings) Scope = AppearanceScope.Bubbles;
         RefreshGroups(); RefreshPage();
-        // The right-hand preview hands over to the new group with a soft cross-dissolve.
-        if (before is not null && SettingsMotion.Enabled(app)) Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => SettingsMotion.Crossfade(preview, before));
+        if (before is not null) Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => { if (Host() is { } next) SettingsMotion.PageTransition(next, before); });
+        if (Scope == AppearanceScope.Window && previewScale == 1) FitPreview(); // Another folder size at 1:1.
     }
     // The pill glides from the previous group to the selected one; first placement is instant.
     private void PlacePill()
@@ -258,6 +283,8 @@ internal sealed class SettingsWindow : Window
         bool animate = scope != Scope && SettingsMotion.Enabled(app) && IsLoaded;
         bool pageChange = (scope == AppearanceScope.App) != (Scope == AppearanceScope.App);
         var before = !animate ? null : pageChange ? SettingsMotion.Snapshot(pane) : pageBody is null ? null : SettingsMotion.Snapshot(pageBody);
+        // 1:1 is a quick look: leaving the folder tab returns to 1:3 and gives the room back.
+        if (Scope == AppearanceScope.Window && scope != AppearanceScope.Window && previewScale == 1) { previewScale = 1d / 3; GiveBackRoom("preview"); }
         Scope = scope; RefreshPage();
         if (animate) SettingsMotion.PageTransition(pageChange ? pane : pageBody ?? pane, before);
     }
@@ -298,7 +325,7 @@ internal sealed class SettingsWindow : Window
         }
         var content = new DockPanel { LastChildFill = true }; layout.Children.Add(content); pageBody = content;
         var root = new StackPanel(); var settings = app.State.Settings;
-        swatch = null; ColorButton = null; GlassSelector = null; folderCanvas = null; folderStage = null; folderViewport = null; previewDimensions = null; PreviewScaleButton = null; LinkColorsCheckBox = null;
+        swatch = null; colorPill = null; ColorButton = null; GlassSelector = null; folderCanvas = null; folderStage = null; folderViewport = null; previewDimensions = null; PreviewScaleButton = null; LinkColorsCheckBox = null;
         FrostedFoldersButton = null; TransparencySlider = null;
         modeSwatch = null; ModeColorButton = null; modeAction = null; modeApplyButton = null; themeSelector = null;
         if (preview.Parent is Panel previous) previous.Children.Remove(preview);
@@ -313,7 +340,7 @@ internal sealed class SettingsWindow : Window
             swatch = new Border { Width = 34, Height = 34, CornerRadius = new CornerRadius(17), BorderBrush = Brushes.White, BorderThickness = new Thickness(1), VerticalAlignment = VerticalAlignment.Center };
             ColorButton = new Button { Style = (Style)FindResource("PillSegment"), Content = "Ändern", Width = 98 };
             ColorButton.Click += (_, _) => { if (Picker is null) OpenPicker(); else ApplyColorEdit(); };
-            var colorPill = SettingsMotion.Pill(swatch, ColorButton); colorPill.Margin = new Thickness(0, 12, 0, 0);
+            colorPill = SettingsMotion.Pill(swatch, ColorButton); colorPill.Margin = new Thickness(0, 12, 0, 0);
             controls.Children.Add(colorPill); colorRow.Children.Add(controls);
             if (Scope == AppearanceScope.Bubbles)
             {
@@ -470,8 +497,17 @@ internal sealed class SettingsWindow : Window
             modeApplyButton = Ui.Button("Anwenden", ApplyColorEdit); modeApplyButton.Margin = new Thickness(0); modeApplyButton.Padding = new Thickness(10, 7, 10, 7);
             modeAction.Content = modeApplyButton; apply = modeApplyButton; ColorButton.IsEnabled = false;
         }
-        SettingsMotion.SwapContent(apply, "Anwenden"); apply.Background = Ui.Brush("#087F4B"); apply.Foreground = Brushes.White; apply.IsDefault = true;
+        SettingsMotion.SwapContent(apply, "Anwenden"); apply.Foreground = Brushes.White; apply.IsDefault = true;
+        // The whole pill turns green, also around the colour circle.
+        if (apply == ColorButton && colorPill is not null) SettingsMotion.TintPill(colorPill, Ui.Brush("#087F4B").Color, SettingsMotion.Enabled(app));
+        else apply.Background = Ui.Brush("#087F4B");
         RefreshColorDraft(); Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, () => Picker?.Wheel.Focus());
+        // The window grows just enough to show the whole picker; closing it gives the room back.
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
+        {
+            if (Picker is not null && colorOverlay?.Content is ScrollViewer viewer && viewer.ExtentHeight - viewer.ViewportHeight > .5)
+                MakeRoom("picker", 0, viewer.ExtentHeight - viewer.ViewportHeight + 4);
+        });
     }
     private void RefreshColorDraft()
     {
@@ -522,6 +558,8 @@ internal sealed class SettingsWindow : Window
             SettingsMotion.SwapContent(ColorButton, "Ändern"); ColorButton.Background = Brushes.Transparent; ColorButton.Foreground = Ui.Resource("Ink"); ColorButton.IsDefault = false; ColorButton.IsEnabled = true;
             if (IsVisible) ColorButton.Focus();
         }
+        if (colorPill is not null && colorPill.Background is not null && colorPill.Background != Ui.Resource("ControlFill")) SettingsMotion.TintPill(colorPill, null, IsVisible && SettingsMotion.Enabled(app));
+        GiveBackRoom("picker");
         RefreshMaterial();
     }
     internal void OpenPickerForTest() => OpenPicker();

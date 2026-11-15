@@ -14,6 +14,14 @@
 - Zahnrad wächst beim Überfahren, dreht beim Öffnen der Einstellungen 45° nach links und leuchtet gelb.
 - Ordner-Symbole schwellen beim Überfahren sanft an statt eines Hover-Hintergrunds; beim Sortieren bleibt das gegriffene Symbol vergrößert und nur das Tauschziel leuchtet weiß auf.
 - Messleiste: Werte und Play/Stopp klappen links vom Tacho aus, der Tacho wandert mit nach rechts; weicher Hover am Tacho; Zahlen mit fester Breite, nichts verrutscht mehr beim Ticken.
+- Zahnrad als Vektorform mit Luft: wird beim Drehen und Vergrößern nicht mehr abgeschnitten.
+- Randblende beim Scrollen wächst mit dem Abstand zum Ende: oben und unten kein Springen mehr auf volle Deckung.
+- Scrollbalken auf dem Trennstrich morpht beim Wechsel zwischen Bubble-Liste und Seite weich auf Länge und Platz des anderen Bereichs.
+- Farbwähler: die ganze Pille wird beim Anwenden grün (auch um den Farbkreis); das Fenster wächst so weit, dass der Farbwähler ganz zu sehen ist, und gleitet danach zurück.
+- 1:1-Vorschau erweitert das Fenster nach rechts und unten, bis der Ordner ganz sichtbar ist, und gleitet bei 1:3 genau an Platz und Größe von vorher zurück; Fenstergrößen ändern sich in einem Zug pro Bild statt ruckelnd.
+- Vorschauwechsel (1:3 ↔ 1:1, andere Bubble) mit derselben zweistufigen Weichzeichner-Blende wie der Seitenwechsel.
+- Messleiste: Tacho gleitet nach links weg, dann zieht der Pfeil die Messung auf; beim Einklappen umgekehrt. Tacho und Pfeil ohne Hover-Hintergrund, stattdessen weiß und kräftiger.
+- Ordner: Das Öffnen läuft ungestört zu Ende; ein Klick auf die Miniatur währenddessen wird ignoriert, ein Fokuswechsel schließt erst danach. Schließt die App den Ordner mitten im Öffnen, faltet er sich ohne Aufblitzen aus dem aktuellen Zustand zurück. Ein Klick auf eine leere Stelle im geöffneten Ordner klappt ihn zu.
 
 ## 1.8.2 · 15.11.2026
 

@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using DesktopBubbles.Core;
 
 namespace DesktopBubbles;
 
@@ -79,20 +80,23 @@ internal static class SettingsMotion
         viewer.MouseLeave += (_, _) => Apply(0, .35);
     }
 
-    // Content slides out softly at the top and bottom edge instead of being cut off.
+    // Content slides out softly at the top and bottom edge instead of being cut off. Each fade
+    // grows with the distance to its end, so arriving at the top or bottom eases the edge back to
+    // solid instead of snapping it.
     internal static void EdgeFade(ScrollViewer viewer, double fade = 26)
     {
+        GradientStop top = new(Colors.Black, 0), topInner = new(Colors.Black, 0), bottomInner = new(Colors.Black, 1), bottom = new(Colors.Black, 1);
+        var mask = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
+        mask.GradientStops.Add(top); mask.GradientStops.Add(topInner); mask.GradientStops.Add(bottomInner); mask.GradientStops.Add(bottom);
+        byte Alpha(double distance) { double k = Math.Clamp(distance / fade, 0, 1); k = k * k * (3 - 2 * k); return (byte)Math.Round(255 * (1 - k)); }
         void Update()
         {
             double height = viewer.ActualHeight; if (height <= 0) return;
             double edge = Math.Min(.35, fade / height);
-            bool above = viewer.VerticalOffset > .5, below = viewer.VerticalOffset < viewer.ScrollableHeight - .5;
-            var mask = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(0, 1) };
-            mask.GradientStops.Add(new GradientStop(above ? Colors.Transparent : Colors.Black, 0));
-            mask.GradientStops.Add(new GradientStop(Colors.Black, edge));
-            mask.GradientStops.Add(new GradientStop(Colors.Black, 1 - edge));
-            mask.GradientStops.Add(new GradientStop(below ? Colors.Transparent : Colors.Black, 1));
-            mask.Freeze(); viewer.OpacityMask = mask;
+            topInner.Offset = edge; bottomInner.Offset = 1 - edge;
+            top.Color = Color.FromArgb(Alpha(viewer.VerticalOffset), 0, 0, 0);
+            bottom.Color = Color.FromArgb(Alpha(viewer.ScrollableHeight - viewer.VerticalOffset), 0, 0, 0);
+            if (viewer.OpacityMask != mask) viewer.OpacityMask = mask;
         }
         viewer.ScrollChanged += (_, _) => Update(); viewer.SizeChanged += (_, _) => Update();
     }
@@ -153,8 +157,11 @@ internal static class SettingsMotion
         using (var context = visual.RenderOpen()) context.DrawRectangle(new VisualBrush(element), null, new Rect(0, 0, element.ActualWidth, element.ActualHeight));
         bitmap.Render(visual); bitmap.Freeze(); return bitmap;
     }
-    private sealed class Ghost(UIElement adorned, BitmapSource picture) : Adorner(adorned)
+    private sealed class Ghost : Adorner
     {
+        private readonly BitmapSource picture;
+        // Never spills past the element it covers, also while a window shrinks underneath it.
+        public Ghost(UIElement adorned, BitmapSource picture) : base(adorned) { this.picture = picture; ClipToBounds = true; IsHitTestVisible = false; }
         // Drawn at the size it was taken, so a taller or shorter new page does not stretch it.
         protected override void OnRender(DrawingContext drawing) => drawing.DrawImage(picture, new Rect(0, 0, picture.Width, picture.Height));
     }
@@ -168,6 +175,18 @@ internal static class SettingsMotion
         var pill = new Border { CornerRadius = new CornerRadius(18), BorderThickness = new Thickness(1), Padding = new Thickness(0), Height = 36, Child = row, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
         pill.SetResourceReference(Border.BackgroundProperty, "ControlFill"); pill.SetResourceReference(Border.BorderBrushProperty, "Line");
         return pill;
+    }
+
+    // Floods the whole pill (also around its circle) with a colour, or hands it back to the theme.
+    internal static void TintPill(Border pill, Color? color, bool animate)
+    {
+        var from = (pill.Background as SolidColorBrush)?.Color ?? Colors.Transparent;
+        var to = color ?? ((SolidColorBrush)Ui.Resource("ControlFill")).Color;
+        var fill = new SolidColorBrush(from); pill.Background = fill;
+        pill.BorderBrush = color is { } solid ? new SolidColorBrush(solid) : Ui.Resource("Line");
+        var flow = new ColorAnimation(to, TimeSpan.FromMilliseconds(animate ? 240 : 0));
+        if (color is null) flow.Completed += (_, _) => { if (pill.Background == fill) { pill.SetResourceReference(Border.BackgroundProperty, "ControlFill"); pill.SetResourceReference(Border.BorderBrushProperty, "Line"); } };
+        fill.BeginAnimation(SolidColorBrush.ColorProperty, flow);
     }
 
     // The label fades out, changes and fades back in; the button keeps its size.
@@ -248,5 +267,38 @@ internal static class SettingsMotion
     {
         protected override double EaseInCore(double t) => t >= 1 ? 1 : spring.Value(t * duration);
         protected override Freezable CreateInstanceCore() => new SpringEasing(spring, duration);
+    }
+}
+
+// Moves and resizes a window with one native call per frame, so all four edges travel together.
+// (Separate WPF animations of Top and Height make the edges tremble against each other.)
+// Starts gently, gathers speed and brakes softly.
+internal sealed class WindowGlide(Window window)
+{
+    private readonly System.Diagnostics.Stopwatch clock = new();
+    private PixelRect from, to;
+    private double seconds;
+    internal bool Running { get; private set; }
+    internal PixelRect Target => to;
+    internal void To(PixelRect target, double duration, bool animate)
+    {
+        from = Native.Bounds(window); to = target; seconds = duration;
+        if (!animate || duration <= 0) { Stop(); Apply(target); return; }
+        clock.Restart();
+        if (!Running) { Running = true; CompositionTarget.Rendering += Frame; }
+    }
+    internal void Stop() { if (!Running) return; Running = false; CompositionTarget.Rendering -= Frame; }
+    private void Frame(object? sender, EventArgs e)
+    {
+        double t = Math.Clamp(clock.Elapsed.TotalSeconds / seconds, 0, 1);
+        double p = t * t * t * (t * (t * 6 - 15) + 10); // Smootherstep: no jolt at either end.
+        Apply(new PixelRect(from.X + (to.X - from.X) * p, from.Y + (to.Y - from.Y) * p, from.Width + (to.Width - from.Width) * p, from.Height + (to.Height - from.Height) * p));
+        if (t >= 1) Stop();
+    }
+    // Edges are rounded, not sizes, so the far edges never wobble by a pixel.
+    private void Apply(PixelRect r)
+    {
+        int left = (int)Math.Round(r.X), top = (int)Math.Round(r.Y), right = (int)Math.Round(r.Right), bottom = (int)Math.Round(r.Bottom);
+        Native.SetWindowPos(Native.Handle(window), 0, left, top, right - left, bottom - top, Native.NoActivate | 4);
     }
 }

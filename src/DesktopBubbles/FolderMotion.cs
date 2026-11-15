@@ -84,10 +84,12 @@ internal sealed class FolderMotion
     public bool Running => pending || step is not null;
     // True while any open or close motion has an overlay on screen.
     internal static bool Active => GlassOverlay.Any;
+    private bool opening;
 
-    public void Open(Action hideAnchor)
+    public void Open(Action hideAnchor, Action? landed = null)
     {
         Prepare();
+        opening = true;
         double end = Math.Max(Math.Max(GlassX.SettleTime, GlassY.SettleTime), tracks.Select(x => x.Delay).DefaultIfEmpty(0).Max()
             + Math.Max(IconMove.SettleTime, Math.Max(IconWidth.SettleTime, IconHeight.SettleTime)));
         Start(t =>
@@ -104,8 +106,47 @@ internal sealed class FolderMotion
                     track.InMiniature ? 1 : Math.Clamp(local / ExtraFade, 0, 1));
             }
             if (!last) return false;
-            Land(); return true;
+            opening = false; Land(); landed?.Invoke(); return true;
         }, ready: hideAnchor); // The overlay already shows the miniature, so it can step aside.
+    }
+
+    // Turns an opening that is still under way back into the miniature, from exactly where glass
+    // and icons are on screen right now: same overlay, no jump to the open folder in between.
+    // False when there is no opening to turn around.
+    public bool TryReverse(Action reveal, Action done)
+    {
+        if (!opening) return false;
+        opening = false;
+        if (pending)
+        {
+            // Not on screen yet: retire the overlay quietly, the miniature never left.
+            pending = false; overlay?.Close(); overlay = null; reveal();
+            folder.Dispatcher.BeginInvoke(done); return true;
+        }
+        if (step is null) return false;
+        double t0 = clock.Elapsed.TotalSeconds, gx0 = GlassX.Value(t0), gy0 = GlassY.Value(t0);
+        var icons = tracks.Select(track =>
+        {
+            double local = t0 - track.Delay;
+            return (Move: IconMove.Value(local), Width: IconWidth.Value(local), Height: IconHeight.Value(local), Alpha: track.InMiniature ? 1 : Math.Clamp(local / ExtraFade, 0, 1));
+        }).ToArray();
+        double end = Math.Max(Math.Max(CloseX.SettleTime, CloseY.SettleTime), CloseIcon.SettleTime);
+        clock.Restart();
+        step = t =>
+        {
+            bool last = t >= end;
+            double px = last ? 0 : gx0 * (1 - CloseX.Value(t)), py = last ? 0 : gy0 * (1 - CloseY.Value(t));
+            Glass(Lerp(from, to, px, py), Radius(Math.Min(px, py)), Math.Min(px, py));
+            double q = last ? 0 : 1 - CloseIcon.Value(t);
+            for (int i = 0; i < tracks.Length; i++)
+            {
+                var track = tracks[i]; var state = icons[i]; var start = track.InMiniature ? track.Mini : Center(from);
+                overlay!.Ghost(track.Ghost, Travel(start, track.Final, state.Move * q, state.Width * q, state.Height * q), state.Alpha * (track.InMiniature ? 1 : Math.Clamp(1 - t / ExtraFade, 0, 1)));
+            }
+            if (!last) return false;
+            reveal(); overlay!.Reveal(false); overlay.Retire(); overlay = null; done(); return true;
+        };
+        return true;
     }
 
     public void Close(Action reveal, Action done)
@@ -134,6 +175,7 @@ internal sealed class FolderMotion
 
     public void Stop()
     {
+        opening = false;
         if (!Running) return;
         CompositionTarget.Rendering -= OnRendering; step = null; pending = false;
         showSurface();
