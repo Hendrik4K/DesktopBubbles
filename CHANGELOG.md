@@ -37,6 +37,11 @@
 - Miniatur ↔ Ordner blendet jetzt wirklich nacheinander aus und ein (die neue Seite sprang vorher sofort hinein, weil sie beim Start der Blende noch nicht im Fenster hing).
 - Farbwähler öffnen und schließen: die echten Regler blenden ganz aus, dann der Farbwähler ein (und zurück), ohne flackerndes Schnappschuss-Bild.
 - Das X im Farbwähler wird beim Überfahren weich rot, kräftiger und etwas größer.
+- Blenden zwischen Seiten verzerren nichts mehr: das Bild der alten Seite wurde gestreckt, wenn ihr Inhalt nicht bis unten reichte (auch das frühere Aufpoppen der Ordnervorschau).
+- Ausklappmenüs zeigen wieder alle Einträge; sie öffnen sich mit klassischer Kurve über einer mitlaufenden Maske, ohne dass darunter etwas verrutscht.
+- 1:3 ↔ 1:1 in drei ruhigen Schritten: altes Bild ganz ausblenden, Fenster gleitet, neues Bild einblenden.
+- Einstellungen: Allgemein steht zuerst (Mit Windows starten oben, Bubble automatisch schließen vorletzt, Bubble-Farben für alle zuletzt), darunter App-Farbe und Farbmodus, dann Transparenz. Farbmodus ist eine Pille wie App-Farbe: Kreis links, die Auswahl klappt darunter in Pillenbreite aus.
+- Trennstrich endet auf Höhe der Unterkante von Neu; die gestrichelte Linie um Neu wandert langsam im Kreis.
 
 ## 1.8.2 · 15.11.2026
 

@@ -149,14 +149,24 @@ internal static class SettingsMotion
     {
         if (sender is not ComboBox box || smoothed.TryGetValue(box, out _)) return;
         smoothed.Add(box, new object());
-        box.DropDownOpened += (_, _) => box.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
+        box.DropDownOpened += (_, _) =>
         {
-            if (box.Template?.FindName("Drop", box) is not Border drop || drop.Child is not UIElement list) return;
-            list.Measure(new Size(Math.Max(1, box.ActualWidth - drop.Padding.Left - drop.Padding.Right - 2), double.PositiveInfinity));
-            double full = list.DesiredSize.Height + drop.Padding.Top + drop.Padding.Bottom + drop.BorderThickness.Bottom;
+            // The list is laid out at its full height right away (items and all); a mask that is
+            // closed before the first frame then opens downwards over it. Nothing below moves.
+            if (box.Template?.FindName("Drop", box) is not Border drop) return;
             bool animate = System.Windows.Application.Current is App app && Enabled(app);
-            drop.BeginAnimation(FrameworkElement.MaxHeightProperty, new DoubleAnimation(0, full, TimeSpan.FromMilliseconds(animate ? 380 : 0)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } });
-        });
+            if (!animate) { drop.Clip = null; return; }
+            var reveal = new ScaleTransform(1, 0);
+            drop.Clip = new RectangleGeometry(new Rect(0, 0, 100000, 1)) { Transform = reveal };
+            box.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
+            {
+                double height = drop.ActualHeight;
+                if (height <= 0) { drop.Clip = null; return; }
+                var open = new DoubleAnimation(0, height + 2, TimeSpan.FromMilliseconds(380)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } };
+                open.Completed += (_, _) => { if (drop.Clip is RectangleGeometry mask && mask.Transform == reveal) drop.Clip = null; };
+                reveal.BeginAnimation(ScaleTransform.ScaleYProperty, open);
+            });
+        };
     }));
 
     // The old picture fades out over the new one, which fades in: a soft cross-dissolve.
@@ -175,7 +185,10 @@ internal static class SettingsMotion
         double scale = VisualTreeHelper.GetDpi(element).DpiScaleX;
         var bitmap = new RenderTargetBitmap((int)Math.Ceiling(element.ActualWidth * scale), (int)Math.Ceiling(element.ActualHeight * scale), 96 * scale, 96 * scale, PixelFormats.Pbgra32);
         var visual = new DrawingVisual();
-        using (var context = visual.RenderOpen()) context.DrawRectangle(new VisualBrush(element), null, new Rect(0, 0, element.ActualWidth, element.ActualHeight));
+        // Exactly the element's own box, 1:1. By default a VisualBrush stretches whatever it draws to
+        // fill the rectangle, so a page whose content ended halfway down came out stretched tall.
+        var brush = new VisualBrush(element) { Stretch = Stretch.Fill, ViewboxUnits = BrushMappingMode.Absolute, Viewbox = new Rect(0, 0, element.ActualWidth, element.ActualHeight) };
+        using (var context = visual.RenderOpen()) context.DrawRectangle(brush, null, new Rect(0, 0, element.ActualWidth, element.ActualHeight));
         bitmap.Render(visual); bitmap.Freeze(); return bitmap;
     }
     private sealed class Ghost : Adorner
@@ -302,6 +315,21 @@ internal static class SettingsMotion
             if (!running) { running = true; last = clock.Elapsed.TotalSeconds; CompositionTarget.Rendering += Frame; }
         };
         viewer.Unloaded += (_, _) => { if (running) { CompositionTarget.Rendering -= Frame; running = false; } };
+    }
+
+    // Scrolls to an offset on a soft curve, e.g. to bring the colour row up when a picker opens.
+    internal static void GlideScroll(ScrollViewer viewer, double offset, double seconds = .45)
+    {
+        double from = viewer.VerticalOffset, to = Math.Clamp(offset, 0, viewer.ScrollableHeight);
+        if (Math.Abs(to - from) < 1) return;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        void Frame(object? sender, EventArgs e)
+        {
+            double t = Math.Min(1, clock.Elapsed.TotalSeconds / seconds), p = t * t * t * (t * (t * 6 - 15) + 10);
+            viewer.ScrollToVerticalOffset(from + (to - from) * p);
+            if (t >= 1) CompositionTarget.Rendering -= Frame;
+        }
+        CompositionTarget.Rendering += Frame;
     }
 
     // No hover background: the content swells a little instead.

@@ -87,13 +87,12 @@
           </ToggleButton>
           <ContentPresenter Margin="12,8,30,8" VerticalAlignment="Center" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" IsHitTestVisible="False"/>
           <Popup x:Name="PART_Popup" Placement="Bottom" VerticalOffset="-1" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="None">
-            <Border x:Name="Drop" Width="{Binding ActualWidth, ElementName=ComboRoot}" MaxHeight="0" Background="{DynamicResource ControlFill}" BorderBrush="{DynamicResource Line}" BorderThickness="1,0,1,1" CornerRadius="0,0,12,12" Padding="4,2,4,6" ClipToBounds="True"><ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer></Border>
+            <Border x:Name="Drop" Width="{Binding ActualWidth, ElementName=ComboRoot}" Background="{DynamicResource ControlFill}" BorderBrush="{DynamicResource Line}" BorderThickness="1,0,1,1" CornerRadius="0,0,12,12" Padding="4,2,4,6" ClipToBounds="True"><ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer></Border>
           </Popup>
         </Grid>
         <ControlTemplate.Triggers>
           <Trigger Property="IsDropDownOpen" Value="True">
             <Setter TargetName="Field" Property="CornerRadius" Value="12,12,0,0"/>
-            <Trigger.ExitActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="Drop" Storyboard.TargetProperty="MaxHeight" To="0" Duration="0:0:0"/></Storyboard></BeginStoryboard></Trigger.ExitActions>
           </Trigger>
         </ControlTemplate.Triggers>
       </ControlTemplate></Setter.Value></Setter>
@@ -121,12 +120,50 @@
         </ControlTemplate.Triggers>
       </ControlTemplate></Setter.Value></Setter>
     </Style>
-    <!-- "Neu": dashed outline on a grey ground. -->
+    <!-- Farbmodus: the right-hand segment of a pill. Its list opens below the whole pill (placed and
+         sized from code), with the same text-swell hover as the other pill segments. -->
+    <Style x:Key="PillCombo" TargetType="ComboBox">
+      <Setter Property="FocusVisualStyle" Value="{x:Null}"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="Cursor" Value="Hand"/><Setter Property="MinWidth" Value="0"/>
+      <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBox">
+        <Grid x:Name="ComboRoot" Background="Transparent">
+          <ToggleButton Focusable="False" IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+            <ToggleButton.Template><ControlTemplate TargetType="ToggleButton"><Border Background="Transparent"/></ControlTemplate></ToggleButton.Template>
+          </ToggleButton>
+          <DockPanel Margin="12,0,14,0" IsHitTestVisible="False" VerticalAlignment="Center">
+            <TextBlock x:Name="Chevron" DockPanel.Dock="Right" Text="&#xE70D;" FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets" FontSize="10" VerticalAlignment="Center" Foreground="{DynamicResource Ink}" RenderTransformOrigin="0.5,0.5"><TextBlock.RenderTransform><RotateTransform/></TextBlock.RenderTransform></TextBlock>
+            <Grid HorizontalAlignment="Left" RenderTransformOrigin="0,0.5"><Grid.RenderTransform><ScaleTransform x:Name="Swell"/></Grid.RenderTransform>
+              <ContentPresenter Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" VerticalAlignment="Center"/>
+            </Grid>
+          </DockPanel>
+          <Popup x:Name="PART_Popup" Placement="Bottom" VerticalOffset="6" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+            <Border x:Name="Drop" Background="{DynamicResource ControlFill}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="14" Padding="4,4,4,6"><ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer></Border>
+          </Popup>
+        </Grid>
+        <ControlTemplate.Triggers>
+          <Trigger Property="IsDropDownOpen" Value="True">
+            <Trigger.EnterActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="Chevron" Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)" To="180" Duration="0:0:0.3"/></Storyboard></BeginStoryboard></Trigger.EnterActions>
+            <Trigger.ExitActions><BeginStoryboard><Storyboard><DoubleAnimation Storyboard.TargetName="Chevron" Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)" To="0" Duration="0:0:0.3"/></Storyboard></BeginStoryboard></Trigger.ExitActions>
+          </Trigger>
+          <Trigger Property="IsMouseOver" Value="True">
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Trigger.EnterActions><BeginStoryboard><Storyboard>
+              <DoubleAnimation Storyboard.TargetName="Swell" Storyboard.TargetProperty="ScaleX" To="1.1" Duration="0:0:0.18"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+              <DoubleAnimation Storyboard.TargetName="Swell" Storyboard.TargetProperty="ScaleY" To="1.1" Duration="0:0:0.18"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+            </Storyboard></BeginStoryboard></Trigger.EnterActions>
+            <Trigger.ExitActions><BeginStoryboard><Storyboard>
+              <DoubleAnimation Storyboard.TargetName="Swell" Storyboard.TargetProperty="ScaleX" To="1" Duration="0:0:0.26"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+              <DoubleAnimation Storyboard.TargetName="Swell" Storyboard.TargetProperty="ScaleY" To="1" Duration="0:0:0.26"><DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction></DoubleAnimation>
+            </Storyboard></BeginStoryboard></Trigger.ExitActions>
+          </Trigger>
+        </ControlTemplate.Triggers>
+      </ControlTemplate></Setter.Value></Setter>
+    </Style>
+    <!-- "Neu": dashed outline on a grey ground; the dashes slowly run around it (started in code). -->
     <Style x:Key="DashedButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
         <Grid x:Name="Root">
           <Border CornerRadius="12" Background="{DynamicResource Line}" Opacity="0.55"/>
-          <Rectangle RadiusX="12" RadiusY="12" Stroke="{DynamicResource Muted}" StrokeThickness="1.4" StrokeDashArray="4 3" Opacity="0.7"/>
+          <Rectangle x:Name="Dashes" RadiusX="12" RadiusY="12" Stroke="{DynamicResource Muted}" StrokeThickness="1.4" StrokeDashArray="4 3" Opacity="0.7"/>
           <Border x:Name="Sheen" CornerRadius="12" Background="{DynamicResource HoverFill}" Opacity="0"/>
           <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
         </Grid>

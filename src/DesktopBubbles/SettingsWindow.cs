@@ -120,8 +120,18 @@ internal sealed class SettingsWindow : Window
         pane.Margin = new Thickness(28, 18, 26, 100); Grid.SetColumn(pane, 1); body.Children.Add(pane);
         var bottom = new Grid(); Grid.SetRow(bottom, 2); bottom.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(176) }); bottom.ColumnDefinitions.Add(new ColumnDefinition()); bottom.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(52) });
         layout.Children.Add(bottom);
-        Divider.Margin = new Thickness(176 - 7.5, 0, 0, 0); Grid.SetRow(Divider, 1); Grid.SetRowSpan(Divider, 2); Panel.SetZIndex(Divider, 2); layout.Children.Add(Divider);
+        // The line ends level with the bottom of "Neu".
+        Divider.Margin = new Thickness(176 - 7.5, 0, 0, 18); Grid.SetRow(Divider, 1); Grid.SetRowSpan(Divider, 2); Panel.SetZIndex(Divider, 2); layout.Children.Add(Divider);
         var create = Ui.Button("Neu", app.CreateGroup); create.Style = (Style)FindResource("DashedButton"); create.Margin = new Thickness(20, 18, 20, 18); create.ToolTip = "Neue Bubble"; bottom.Children.Add(create);
+        // The dashes slowly run around "Neu". A light timer, not an endless animation: a forever
+        // animation keeps WPF's clock running, which delays layout to its ticks and can throttle every
+        // other animation in the window. It only runs while the window is on screen.
+        var drift = new System.Windows.Threading.DispatcherTimer(System.Windows.Threading.DispatcherPriority.Background) { Interval = TimeSpan.FromMilliseconds(50) };
+        var driftClock = Stopwatch.StartNew(); System.Windows.Shapes.Shape? dashes = null;
+        drift.Tick += (_, _) => { if (dashes is not null) dashes.StrokeDashOffset = -(driftClock.Elapsed.TotalSeconds / 1.6 * 7 % 7); };
+        void Drift() { bool run = dashes is not null && IsVisible && WindowState != WindowState.Minimized && SettingsMotion.Enabled(app); if (run) drift.Start(); else drift.Stop(); }
+        create.Loaded += (_, _) => { dashes = create.Template?.FindName("Dashes", create) as System.Windows.Shapes.Shape; Drift(); };
+        IsVisibleChanged += (_, _) => Drift(); StateChanged += (_, _) => Drift(); Closed += (_, _) => drift.Stop();
         Measurement = new LiveMeasurementBar(this, () => SettingsMotion.Enabled(app)); Grid.SetColumn(Measurement, 1); bottom.Children.Add(Measurement);
         settingsButton = Ui.IconButton("\uE713", "Einstellungen", () => SelectScope(Scope == AppearanceScope.App ? AppearanceScope.Bubbles : AppearanceScope.App));
         // Drawn as a shape with room around it: it turns and swells crisply and is never cut off.
@@ -248,44 +258,44 @@ internal sealed class SettingsWindow : Window
         Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, PlacePill);
     }
     private Button? selectedRow;
-    private Border? colorPill;
+    private Border? colorPill, modePill;
+    private FrameworkElement? appColorRow;
+    private ScrollViewer? pageScroller;
     private FrameworkElement? pageBody; // Everything below the heading and the switch.
     internal FrameworkElement? PageBody => pageBody;
     private Grid? detailLayer; // Holds the page and the color picker that replaces it.
     // 1:1 widens the window to the right and down until the real-size folder fits whole; 1:3 glides
     // it back to where it was. Sized from the folder's footprint, so the window can start moving
     // before the new preview is even laid out.
-    private void FitPreview(bool growOnly = false)
+    private void FitPreview(bool growOnly = false) => Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => FitPreviewNow(growOnly));
+    private void FitPreviewNow(bool growOnly = false)
     {
-        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
-        {
-            if (folderViewport is null) return;
-            if (previewScale != 1) { GiveBackRoom("preview"); return; }
-            var (width, height) = StageSize(1);
-            MakeRoom("preview", width - folderViewport.ActualWidth + 2, height - folderViewport.ActualHeight + 2, growOnly);
-        });
+        if (folderViewport is null) return;
+        if (previewScale != 1) { GiveBackRoom("preview"); return; }
+        var (width, height) = StageSize(1);
+        MakeRoom("preview", width - folderViewport.ActualWidth + 2, height - folderViewport.ActualHeight + 2, growOnly);
     }
     // The stage around the preview: its size plus the 8 px frame and the 8 px gap above it.
     private (double Width, double Height) StageSize(double scale) => (PreviewFootprint.Width * scale + 8, PreviewFootprint.Height * scale + 16);
-    // 1:3 ↔ 1:1: the old picture fades out completely, the new one is laid on fully transparent and
-    // fades in, centred, while the window glides to its new size at the same time.
+    // 1:3 ↔ 1:1 in three clean steps: the old picture fades out completely; with nothing on show the
+    // window glides to its new size; then the new picture, laid on fully transparent, fades in.
+    // Nothing visible moves or re-lays out while the window changes size.
     // A switch always runs to its end: clicks meanwhile (a fast double click) are dropped.
     private bool scaleSwitching;
     private void SwitchPreviewScale()
     {
         if (scaleSwitching) return;
         previewScale = previewScale == 1 ? 1d / 3 : 1;
-        FitPreview();
-        if (!SettingsMotion.Enabled(app) || !IsLoaded) { UpdateFolderPreview(); return; }
+        if (!SettingsMotion.Enabled(app) || !IsLoaded) { UpdateFolderPreview(); FitPreview(); return; }
         scaleSwitching = true;
         if (PreviewScaleButton is not null) SettingsMotion.FlipContent(PreviewScaleButton, previewScale == 1 ? "1:1" : "1:3", clockwise: previewScale == 1);
-        var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(190)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
-        fadeOut.Completed += (_, _) =>
+        var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(200)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
+        fadeOut.Completed += async (_, _) =>
         {
-            UpdateFolderPreview();
-            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
-            // Free again once the picture is in and the window has arrived.
-            fadeIn.Completed += async (_, _) => { while (glide.Running) await Task.Delay(30); scaleSwitching = false; };
+            UpdateFolderPreview(); FitPreviewNow();
+            while (glide.Running) await Task.Delay(15);
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(340)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+            fadeIn.Completed += (_, _) => scaleSwitching = false;
             preview.BeginAnimation(OpacityProperty, fadeIn);
         };
         preview.BeginAnimation(OpacityProperty, fadeOut);
@@ -411,7 +421,8 @@ internal sealed class SettingsWindow : Window
             lastTabScope = Scope;
         }
         var content = new DockPanel { LastChildFill = true }; layout.Children.Add(content); pageBody = content;
-        var root = new StackPanel(); var settings = app.State.Settings;
+        var root = new StackPanel(); var settings = app.State.Settings; var appDetails = new StackPanel();
+        appColorRow = null; modePill = null;
         swatch = null; colorPill = null; scaleSwitching = false; ColorButton = null; GlassSelector = null; folderCanvas = null; folderStage = null; folderViewport = null; previewDimensions = null; PreviewScaleButton = null; LinkColorsCheckBox = null;
         FrostedFoldersButton = null; TransparencySlider = null;
         modeSwatch = null; ModeColorButton = null; modeAction = null; modeApplyButton = null; themeSelector = null;
@@ -446,7 +457,9 @@ internal sealed class SettingsWindow : Window
                 preview.Width = preview.Height = 108; preview.Padding = new Thickness(12); preview.BorderThickness = new Thickness(1); preview.VerticalAlignment = VerticalAlignment.Top;
                 Grid.SetColumn(preview, 2); colorRow.Children.Add(preview);
             }
-            DockPanel.SetDock(colorRow, Dock.Top); content.Children.Add(colorRow);
+            // Settings page: "Allgemein" comes first, the colour row follows it inside the scrolling page.
+            if (Scope == AppearanceScope.App) { AddGeneralList(root); colorRow.Margin = new Thickness(0, 22, 0, 6); root.Children.Add(colorRow); appColorRow = colorRow; }
+            else { DockPanel.SetDock(colorRow, Dock.Top); content.Children.Add(colorRow); }
             if (Scope == AppearanceScope.App)
             {
                 colorRow.ColumnDefinitions[0].Width = new GridLength(154);
@@ -454,26 +467,38 @@ internal sealed class SettingsWindow : Window
                 var options = new StackPanel { Margin = new Thickness(8, 0, 0, 0) };
                 options.Children.Add(Ui.Text("Farbmodus", 15, weight: FontWeights.SemiBold));
                 var themes = new[] { "Hell", "Dunkel", "Windows-Standard" }; var values = new[] { "Light", "Dark", "System" };
-                var theme = new ComboBox { ItemsSource = themes, SelectedIndex = Array.IndexOf(values, settings.Theme), MinWidth = 0 };
+                var theme = new ComboBox { ItemsSource = themes, SelectedIndex = Array.IndexOf(values, settings.Theme), Style = (Style)FindResource("PillCombo"), Height = 34 };
                 System.Windows.Automation.AutomationProperties.SetName(theme, "Farbmodus der Anwendung");
                 theme.SelectionChanged += (_, _) => { if (theme.SelectedIndex >= 0) { settings.Theme = values[theme.SelectedIndex]; app.ApplySettings(settings); } }; themeSelector = theme;
-                var modeRow = new DockPanel { Margin = new Thickness(0, 12, 0, 0), LastChildFill = true };
-                // The mode colour sits on the left as a round swatch, like the app colour.
-                modeSwatch = new Border { Width = 34, Height = 34, CornerRadius = new CornerRadius(17), Background = Ui.Brush(ThemePalette.Color(settings, Ui.Dark)), BorderBrush = Ui.Resource("Line"), BorderThickness = new Thickness(1) };
+                // Like the app colour: the mode colour as a circle with a pill folded out to its right.
+                // The pill opens its list below itself, exactly as wide as the pill.
+                modeSwatch = new Border { Width = 34, Height = 34, CornerRadius = new CornerRadius(17), Background = Ui.Brush(ThemePalette.Color(settings, Ui.Dark)), BorderBrush = Brushes.White, BorderThickness = new Thickness(1) };
                 ModeColorButton = Ui.Button("", () => { if (!editingModeColor) { CancelColorEdit(); OpenPicker(modeColor: true); } }); ModeColorButton.Content = modeSwatch;
-                ModeColorButton.Style = (Style)FindResource("PlainButton"); ModeColorButton.Width = ModeColorButton.Height = 36; ModeColorButton.Padding = new Thickness(0); ModeColorButton.Margin = new Thickness(0, 0, 10, 0); SettingsMotion.Swell(modeSwatch, 1.1);
+                ModeColorButton.Style = (Style)FindResource("PlainButton"); ModeColorButton.Width = ModeColorButton.Height = 34; ModeColorButton.Padding = new Thickness(0); SettingsMotion.Swell(modeSwatch, 1.08);
                 ModeColorButton.ToolTip = (Ui.Dark ? "Dunkle" : "Helle") + " Modusfarbe ändern · Flächen und Steuerelemente";
                 System.Windows.Automation.AutomationProperties.SetName(ModeColorButton, "Modusfarbe ändern");
-                DockPanel.SetDock(ModeColorButton, Dock.Left); modeRow.Children.Add(ModeColorButton);
-                modeAction = new ContentControl { Content = theme, HorizontalContentAlignment = HorizontalAlignment.Stretch }; modeRow.Children.Add(modeAction); options.Children.Add(modeRow);
+                modeAction = new ContentControl { Content = theme, Width = 172, HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch };
+                var modeRow = new StackPanel { Orientation = Orientation.Horizontal }; modeRow.Children.Add(ModeColorButton); modeRow.Children.Add(modeAction);
+                var pill = new Border { CornerRadius = new CornerRadius(18), BorderThickness = new Thickness(1), Height = 36, Child = modeRow, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 12, 0, 0) };
+                pill.SetResourceReference(Border.BackgroundProperty, "ControlFill"); pill.SetResourceReference(Border.BorderBrushProperty, "Line");
+                modePill = pill;
+                theme.Loaded += (_, _) =>
+                {
+                    if (theme.Template?.FindName("PART_Popup", theme) is System.Windows.Controls.Primitives.Popup popup) popup.PlacementTarget = pill;
+                    if (theme.Template?.FindName("Drop", theme) is Border drop) drop.SetBinding(WidthProperty, new System.Windows.Data.Binding(nameof(ActualWidth)) { Source = pill });
+                };
+                options.Children.Add(pill);
                 Grid.SetColumn(options, 1); colorRow.Children.Add(options);
             }
         }
+        // On the settings page the transparency and the tools sit below the colour row; a colour
+        // picker takes their place there.
+        Panel sliders = Scope == AppearanceScope.App ? appDetails : root;
         bool frosted = Scope == AppearanceScope.Window && FolderAppearance.Frosted(settings);
         double opacity = Scope switch { AppearanceScope.App => settings.AppOpacity, AppearanceScope.Window => FolderAppearance.Opacity(settings), _ => settings.Opacity };
         if (!frosted)
         {
-            TransparencySlider = AddSlider(root, "Transparenz", 5, Scope == AppearanceScope.App ? 80 : 100,
+            TransparencySlider = AddSlider(sliders, "Transparenz", 5, Scope == AppearanceScope.App ? 80 : 100,
                 (1 - opacity) * 100, value =>
                 {
                     double next = 1 - value / 100;
@@ -536,7 +561,8 @@ internal sealed class SettingsWindow : Window
             RoundingSlider = AddSlider(root, "Eckenrundung", 0, 50, settings.CornerRoundness, value => { settings.CornerRoundness = value; app.ApplyAppearance(); }, value => $"{value:0} %");
             RoundingSlider.ToolTip = "Gemeinsame Rundung als Anteil der kürzeren Kante. Miniatur und Ordner bleiben proportional gleich gerundet.";
         }
-        if (Scope == AppearanceScope.App) AddGeneralSettings(root);
+        if (Scope == AppearanceScope.App) AddTools(appDetails);
+        ScrollViewer? pageScroll = null;
         if (Scope == AppearanceScope.Window && folderViewport is not null)
         {
             root.Children.Remove(folderViewport);
@@ -546,13 +572,21 @@ internal sealed class SettingsWindow : Window
         }
         else
         {
-            var pageScroll = new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
+            pageScroll = new ScrollViewer { Content = root, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
             Divider.Track(pageScroll); SettingsMotion.EdgeFade(pageScroll, 18); SettingsMotion.SmoothWheel(pageScroll); standardDetails = pageScroll;
         }
+        pageScroller = pageScroll;
         if (folderViewport is not null) { SettingsMotion.AutoHideScrollBar(folderViewport); SettingsMotion.SmoothWheel(folderViewport); }
-        detailLayer = new Grid(); detailLayer.Children.Add(standardDetails);
         colorOverlay = new ContentControl { Visibility = Visibility.Collapsed, HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Top };
-        Panel.SetZIndex(colorOverlay, 1); detailLayer.Children.Add(colorOverlay); content.Children.Add(detailLayer);
+        Panel.SetZIndex(colorOverlay, 1);
+        detailLayer = new Grid();
+        if (Scope == AppearanceScope.App)
+        {
+            // Inside the scrolling page, under the colour row: transparency and tools, or the picker.
+            detailLayer.Children.Add(appDetails); detailLayer.Children.Add(colorOverlay); root.Children.Add(detailLayer);
+            standardDetails = appDetails; content.Children.Add(pageScroll!);
+        }
+        else { detailLayer.Children.Add(standardDetails); detailLayer.Children.Add(colorOverlay); content.Children.Add(detailLayer); }
         pane.Content = layout; RenderPreview(); RefreshMaterial();
         if (IsLoaded) Ui.Backdrop(this, settings);
     }
@@ -583,18 +617,24 @@ internal sealed class SettingsWindow : Window
         var apply = ColorButton;
         if (modeColor && modeAction is not null)
         {
-            modeApplyButton = Ui.Button("Anwenden", ApplyColorEdit); modeApplyButton.Margin = new Thickness(0); modeApplyButton.Padding = new Thickness(10, 7, 10, 7);
+            // The mode pill's segment becomes "Anwenden", like the app colour's.
+            modeApplyButton = new Button { Style = (Style)FindResource("PillSegment"), Content = "Anwenden", Height = 34 }; modeApplyButton.Click += (_, _) => ApplyColorEdit();
             modeAction.Content = modeApplyButton; apply = modeApplyButton; ColorButton.IsEnabled = false;
         }
         SettingsMotion.SwapContent(apply, "Anwenden"); apply.Foreground = Brushes.White; apply.IsDefault = true;
         // The whole pill turns green, also around the colour circle.
-        if (apply == ColorButton && colorPill is not null) SettingsMotion.TintPill(colorPill, Ui.Brush("#087F4B").Color, SettingsMotion.Enabled(app));
+        var greenPill = apply == ColorButton ? colorPill : modePill;
+        if (greenPill is not null) SettingsMotion.TintPill(greenPill, Ui.Brush("#087F4B").Color, SettingsMotion.Enabled(app));
         else apply.Background = Ui.Brush("#087F4B");
         RefreshColorDraft(); Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, () => Picker?.Wheel.Focus());
-        // The window grows just enough to show the whole picker; closing it gives the room back.
         Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
         {
-            if (Picker is not null && colorOverlay?.Content is ScrollViewer viewer && viewer.ExtentHeight - viewer.ViewportHeight > .5)
+            if (Picker is null) return;
+            // Settings page: the page glides so that the colour row and the picker below it are in view.
+            if (Scope == AppearanceScope.App && pageScroller is { } page && appColorRow is { } row)
+            { SettingsMotion.GlideScroll(page, page.VerticalOffset + row.TranslatePoint(new Point(), page).Y - 6); return; }
+            // Elsewhere the window grows just enough to show the whole picker; closing gives the room back.
+            if (colorOverlay?.Content is ScrollViewer viewer && viewer.ExtentHeight - viewer.ViewportHeight > .5)
                 MakeRoom("picker", 0, viewer.ExtentHeight - viewer.ViewportHeight + 4);
         });
     }
@@ -651,7 +691,8 @@ internal sealed class SettingsWindow : Window
             SettingsMotion.SwapContent(ColorButton, "Ändern"); ColorButton.Background = Brushes.Transparent; ColorButton.Foreground = Ui.Resource("Ink"); ColorButton.IsDefault = false; ColorButton.IsEnabled = true;
             if (IsVisible) ColorButton.Focus();
         }
-        if (colorPill is not null && colorPill.Background is not null && colorPill.Background != Ui.Resource("ControlFill")) SettingsMotion.TintPill(colorPill, null, IsVisible && SettingsMotion.Enabled(app));
+        foreach (var pill in new[] { colorPill, modePill })
+            if (pill is not null && pill.Background is not null && pill.Background != Ui.Resource("ControlFill")) SettingsMotion.TintPill(pill, null, IsVisible && SettingsMotion.Enabled(app));
         GiveBackRoom("picker");
         RefreshMaterial();
     }
@@ -697,21 +738,31 @@ internal sealed class SettingsWindow : Window
         return border;
     }
     private async Task SetIcon(Image image, string target) => image.Source = await app.Icons.Get(target);
-    private void AddGeneralSettings(StackPanel root)
+    // "Allgemein" opens the settings page: starting with Windows first, the auto close second to last
+    // and the shared bubble colours last, right above the colour row.
+    private void AddGeneralList(StackPanel root)
     {
-        var label = Ui.Text("Allgemein", 17, weight: FontWeights.SemiBold); label.Margin = new Thickness(0, 24, 0, 8); root.Children.Add(label);
-        var colors = new Grid { Margin = new Thickness(0, 0, 0, 8) }; colors.ColumnDefinitions.Add(new ColumnDefinition()); colors.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        LinkColorsCheckBox = new CheckBox { Content = new TextBlock { Text = "Bubble-Farben für alle übernehmen", TextWrapping = TextWrapping.Wrap }, IsChecked = app.State.Settings.LinkBubbleColors, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
-        LinkColorsCheckBox.ToolTip = "Übernimmt die Farbe der ausgewählten Bubble für alle Miniaturen und Ordner. Danach gilt jede Farbänderung für alle. Die App-Farbe bleibt separat.";
-        LinkColorsCheckBox.Click += (_, _) => { AppearancePreferences.LinkColors(app.State, selected, LinkColorsCheckBox.IsChecked == true); app.ApplyAppearance(); };
-        colors.Children.Add(LinkColorsCheckBox);
-        var reset = Ui.Button("Farben zurücksetzen", () => { CancelColorEdit(); AppearancePreferences.ResetColors(app.State); app.ApplySettings(app.State.Settings); });
-        reset.Style = (Style)FindResource("ResetColorsButton");
-        reset.ToolTip = "Setzt App- und alle Bubble-Farben zurück. Transparenz, Größe und Rundung bleiben erhalten.";
-        reset.Margin = new Thickness(0); reset.Padding = new Thickness(10, 7, 10, 7); reset.VerticalAlignment = VerticalAlignment.Center;
-        Grid.SetColumn(reset, 1); colors.Children.Add(reset); root.Children.Add(colors);
+        var label = Ui.Text("Allgemein", 17, weight: FontWeights.SemiBold); label.Margin = new Thickness(0, 2, 0, 4); root.Children.Add(label);
+        CheckBox Check(string text, bool value, Action<bool> set)
+        {
+            var box = new CheckBox { Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap }, IsChecked = value };
+            box.Click += (_, _) => { bool next = box.IsChecked == true; try { set(next); } catch (Exception ex) { box.IsChecked = !next; Ui.Error(ex); } }; root.Children.Add(box);
+            return box;
+        }
+        bool auto = false, otherStartup = false;
+        try { auto = StartupService.EnabledFor(app.Portable, app.DataDirectory); otherStartup = !auto && StartupService.HasRegistration; } catch (Exception ex) { Log.Write(ex.Message); }
+        var startup = Check("Mit Windows starten", auto, value => StartupService.Set(value, app.Portable, app.DataDirectory));
+        startup.ToolTip = otherStartup
+            ? "Eine andere DesktopBubbles-Ausgabe oder ein anderer Datenordner ist für den Windows-Start eingetragen. Aktiviere diese Option, um stattdessen diese Ausgabe mit ihren aktuellen Gruppen zu starten."
+            : "Startet diese Ausgabe von DesktopBubbles mit genau ihrem aktuellen Datenordner.";
+        Check("Desktop-Originale nach Übernahme entfernen", app.State.Settings.MoveDesktopShortcuts, value => { app.State.Settings.MoveDesktopShortcuts = value; app.RequestSave(); });
+        var collect = Check("Von Updates neu angelegte Verknüpfungen einsammeln", app.State.Settings.CollectDesktopDuplicates, value => { app.State.Settings.CollectDesktopDuplicates = value; app.RequestSave(); if (value) app.Duplicates?.Scan(); });
+        collect.ToolTip = "Legt ein Programm-Update eine Desktop-Verknüpfung neu an, obwohl das Programm schon in einer Bubble ist, wandert sie automatisch zurück in die Bubble. Andere Verknüpfungen bleiben unberührt. Wirkt nur, wenn Desktop-Originale entfernt werden.";
+        CollectDuplicatesCheckBox = collect;
+        Check("Desktop-Zuordnung verwenden", app.State.Settings.DesktopIntegration, value => { app.State.Settings.DesktopIntegration = value; app.Changed(true); });
+        Check("Hintergrund weichzeichnen", app.State.Settings.Blur, value => { app.State.Settings.Blur = value; app.ApplySettings(app.State.Settings); });
         // Auto close: switch on the left, seconds stepper on the right.
-        var closing = new Grid { Margin = new Thickness(0, 0, 0, 8) }; closing.ColumnDefinitions.Add(new ColumnDefinition()); closing.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var closing = new Grid { Margin = new Thickness(0, 4, 0, 4) }; closing.ColumnDefinitions.Add(new ColumnDefinition()); closing.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var s = app.State.Settings;
         AutoCloseCheckBox = new CheckBox { Content = new TextBlock { Text = "Bubble automatisch schließen", TextWrapping = TextWrapping.Wrap }, IsChecked = s.AutoCloseFolders, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
         AutoCloseCheckBox.ToolTip = "Schließt einen geöffneten Ordner, wenn die Maus so lange nicht auf ihm war. Mit der Maus darauf läuft keine Zeit ab.";
@@ -735,24 +786,19 @@ internal sealed class SettingsWindow : Window
         stepper.Children.Add(less); stepper.Children.Add(seconds); stepper.Children.Add(more); ShowSeconds();
         AutoCloseSeconds = seconds;
         closing.Children.Add(AutoCloseCheckBox); Grid.SetColumn(stepper, 1); closing.Children.Add(stepper); root.Children.Add(closing);
-        CheckBox Check(string text, bool value, Action<bool> set)
-        {
-            var box = new CheckBox { Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap }, IsChecked = value };
-            box.Click += (_, _) => { bool next = box.IsChecked == true; try { set(next); } catch (Exception ex) { box.IsChecked = !next; Ui.Error(ex); } }; root.Children.Add(box);
-            return box;
-        }
-        bool auto = false, otherStartup = false;
-        try { auto = StartupService.EnabledFor(app.Portable, app.DataDirectory); otherStartup = !auto && StartupService.HasRegistration; } catch (Exception ex) { Log.Write(ex.Message); }
-        var startup = Check("Mit Windows starten", auto, value => StartupService.Set(value, app.Portable, app.DataDirectory));
-        startup.ToolTip = otherStartup
-            ? "Eine andere DesktopBubbles-Ausgabe oder ein anderer Datenordner ist für den Windows-Start eingetragen. Aktiviere diese Option, um stattdessen diese Ausgabe mit ihren aktuellen Gruppen zu starten."
-            : "Startet diese Ausgabe von DesktopBubbles mit genau ihrem aktuellen Datenordner.";
-        Check("Desktop-Originale nach Übernahme entfernen", app.State.Settings.MoveDesktopShortcuts, value => { app.State.Settings.MoveDesktopShortcuts = value; app.RequestSave(); });
-        var collect = Check("Von Updates neu angelegte Verknüpfungen einsammeln", app.State.Settings.CollectDesktopDuplicates, value => { app.State.Settings.CollectDesktopDuplicates = value; app.RequestSave(); if (value) app.Duplicates?.Scan(); });
-        collect.ToolTip = "Legt ein Programm-Update eine Desktop-Verknüpfung neu an, obwohl das Programm schon in einer Bubble ist, wandert sie automatisch zurück in die Bubble. Andere Verknüpfungen bleiben unberührt. Wirkt nur, wenn Desktop-Originale entfernt werden.";
-        CollectDuplicatesCheckBox = collect;
-        Check("Desktop-Zuordnung verwenden", app.State.Settings.DesktopIntegration, value => { app.State.Settings.DesktopIntegration = value; app.Changed(true); });
-        Check("Hintergrund weichzeichnen", app.State.Settings.Blur, value => { app.State.Settings.Blur = value; app.ApplySettings(app.State.Settings); });
+        var colors = new Grid { Margin = new Thickness(0, 4, 0, 0) }; colors.ColumnDefinitions.Add(new ColumnDefinition()); colors.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        LinkColorsCheckBox = new CheckBox { Content = new TextBlock { Text = "Bubble-Farben für alle übernehmen", TextWrapping = TextWrapping.Wrap }, IsChecked = app.State.Settings.LinkBubbleColors, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
+        LinkColorsCheckBox.ToolTip = "Übernimmt die Farbe der ausgewählten Bubble für alle Miniaturen und Ordner. Danach gilt jede Farbänderung für alle. Die App-Farbe bleibt separat.";
+        LinkColorsCheckBox.Click += (_, _) => { AppearancePreferences.LinkColors(app.State, selected, LinkColorsCheckBox.IsChecked == true); app.ApplyAppearance(); };
+        colors.Children.Add(LinkColorsCheckBox);
+        var reset = Ui.Button("Farben zurücksetzen", () => { CancelColorEdit(); AppearancePreferences.ResetColors(app.State); app.ApplySettings(app.State.Settings); });
+        reset.Style = (Style)FindResource("ResetColorsButton");
+        reset.ToolTip = "Setzt App- und alle Bubble-Farben zurück. Transparenz, Größe und Rundung bleiben erhalten.";
+        reset.Margin = new Thickness(0); reset.Padding = new Thickness(10, 7, 10, 7); reset.VerticalAlignment = VerticalAlignment.Center;
+        Grid.SetColumn(reset, 1); colors.Children.Add(reset); root.Children.Add(colors);
+    }
+    private void AddTools(StackPanel root)
+    {
         var actions = Ui.Text("Daten & Werkzeuge", 17, weight: FontWeights.SemiBold); actions.Margin = new Thickness(0, 20, 0, 10); root.Children.Add(actions);
         void Action(string label, Action action, string help) { var button = Ui.Button(label, action); button.ToolTip = help; button.Margin = new Thickness(0, 0, 0, 8); button.HorizontalContentAlignment = HorizontalAlignment.Left; root.Children.Add(button); }
         Action("Sicherung exportieren …", app.Export, "Speichert Gruppen, Einstellungen und verwaltete Verknüpfungen als .bubbles-Datei. Programme werden nicht mitkopiert.");

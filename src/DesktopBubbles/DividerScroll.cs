@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -61,7 +61,8 @@ internal sealed class DividerScroll : Canvas
             if (e.VerticalChange == 0 && e.ExtentHeightChange == 0 && e.ViewportHeightChange == 0) return;
             if (e.VerticalChange == 0 && active is not null && active != viewer && active.IsVisible) return; // Layout of the other side only.
             // A thumb that is still on screen travels to the other area instead of jumping there.
-            if (active != viewer && active is { IsVisible: true } && thumb.Opacity > .02 && shownLength > 0)
+            // Only between two areas that are both still in the window (not from a page just rebuilt).
+            if (active != viewer && active is { IsVisible: true } previous && PresentationSource.FromVisual(previous) is not null && thumb.Opacity > .02 && shownLength > 0)
             {
                 // Starts from wherever the thumb is drawn now, also in the middle of another morph.
                 morphing = true; fromTop = shownTop; fromLength = shownLength; morphStart = clock.Elapsed.TotalSeconds;

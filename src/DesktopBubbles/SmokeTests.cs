@@ -157,11 +157,13 @@ internal static class SmokeTests
         Check("Zahnrad zeigt App-Darstellung und allgemeine Checkboxen", settings.Scope == AppearanceScope.App && Descendants(settings).OfType<System.Windows.Controls.CheckBox>().Count() == 7);
         var modeCombo = Descendants(settings).OfType<System.Windows.Controls.ComboBox>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Farbmodus der Anwendung");
         Check("Modusfarbe sitzt als runder Kreis links neben dem Farbmodus", settings.ModeColorButton!.TranslatePoint(new Point(settings.ModeColorButton.ActualWidth, 0), modeCombo).X <= 0);
+        var generalBoxes = Descendants(settings).OfType<System.Windows.Controls.CheckBox>().ToList();
+        Check("Einstellungen: Allgemein zuerst, Windows-Start oben, Bubble-Farben zuletzt, darunter App-Farbe", generalBoxes.First().Content is System.Windows.Controls.TextBlock { Text: "Mit Windows starten" } && ReferenceEquals(generalBoxes.Last(), settings.LinkColorsCheckBox) && settings.ColorButton!.TranslatePoint(new Point(), settings).Y > settings.LinkColorsCheckBox!.TranslatePoint(new Point(), settings).Y && settings.TransparencySlider!.TranslatePoint(new Point(), settings).Y > settings.ColorButton.TranslatePoint(new Point(), settings).Y);
         Check("Einsammeln neu angelegter Verknüpfungen ist standardmäßig an", settings.CollectDuplicatesCheckBox?.IsChecked == true);
-        // Auto close sits right below the shared bubble colors, its seconds on the right.
+        // Auto close sits second to last, right above the shared bubble colors; its seconds on the right.
         var linkOrigin = settings.LinkColorsCheckBox!.TranslatePoint(new Point(), settings); var autoOrigin = settings.AutoCloseCheckBox!.TranslatePoint(new Point(), settings);
-        Check("„Bubble automatisch schließen“ steht unter der Farbkopplung, Sekunden rechts daneben, standardmäßig aus",
-            autoOrigin.Y > linkOrigin.Y && Math.Abs(autoOrigin.X - linkOrigin.X) < 1 && settings.AutoCloseCheckBox.IsChecked == false
+        Check("„Bubble automatisch schließen“ steht direkt über der Farbkopplung, Sekunden rechts daneben, standardmäßig aus",
+            autoOrigin.Y < linkOrigin.Y && Math.Abs(autoOrigin.X - linkOrigin.X) < 1 && settings.AutoCloseCheckBox.IsChecked == false
             && settings.AutoCloseSeconds!.Text == "5 s" && settings.AutoCloseSeconds.TranslatePoint(new Point(), settings).X > autoOrigin.X + 150);
         Check("Einstellungen verbergen die Ansichtsreiter", !Descendants(settings).OfType<System.Windows.Controls.Button>().Any(b => b.Content is string text && text is "Miniatur" or "Ordner"));
         var back = Descendants(settings).OfType<System.Windows.Controls.Button>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Zurück zur Miniaturansicht");
@@ -215,7 +217,10 @@ internal static class SmokeTests
         Check("Zahnrad-Transparenz verändert nur die Anwendung", Math.Abs(app.State.Settings.AppOpacity - .28) < .001 && app.State.Settings.Opacity == .35 && app.State.Groups[0].Opacity is null);
         Check("Einstellungen ohne Ordner-Vorschau oder Rundungsregler", settings.RoundingSlider is null && !Descendants(settings).OfType<System.Windows.Controls.Border>().Any(b => b.Name == "AppearancePreview"));
         var inspector = Descendants(settings).OfType<System.Windows.Controls.ScrollViewer>().First(s => s.ScrollableHeight > 0);
-        inspector.ScrollToEnd(); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        inspector.ScrollToEnd(); await Task.Delay(250); // The thumb follows on the next frame.
+        var newButton = Descendants(settings).OfType<System.Windows.Controls.Button>().Single(b => b.Content is string label && label == "Neu");
+        double lineEnd = settings.Divider.TranslatePoint(new Point(0, settings.Divider.ActualHeight), settings).Y, newEnd = newButton.TranslatePoint(new Point(0, newButton.ActualHeight), settings).Y;
+        Check("Trennstrich hängt im Fenster und endet auf Höhe der Unterkante von Neu", VisualTreeHelper.GetParent(settings.Divider) is not null && settings.Divider.ActualHeight > 300 && Math.Abs(lineEnd - newEnd) < 1.5, $"Strich={lineEnd:0.#}, Neu={newEnd:0.#}");
         var thumb = settings.Divider.Thumb; var thumbBottom = thumb.TranslatePoint(new Point(0, thumb.ActualHeight), inspector).Y;
         Check("Scrollbar läuft auf dem Trennstrich bis zu den Werkzeugen", inspector.VerticalOffset > 0 && inspector.VerticalScrollBarVisibility == System.Windows.Controls.ScrollBarVisibility.Hidden && ReferenceEquals(settings.Divider.Active, inspector) && thumb.ActualWidth <= 4 && Math.Abs(thumbBottom - inspector.ViewportHeight) < 2, $"Griffende={thumbBottom:0.#}, Sichtbereich={inspector.ViewportHeight:0.#}");
         inspector.ScrollToHome(); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
@@ -242,6 +247,9 @@ internal static class SmokeTests
         Descendants(settings).OfType<System.Windows.Controls.Button>().Single(b => b.Content is string text && text == "Farben zurücksetzen").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
         settings.SelectScope(AppearanceScope.Bubbles); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         Check("Miniatur enthält genau eine Glaswahl zwischen Farbe und Vorschau", settings.GlassSelector is not null && Descendants(settings).OfType<System.Windows.Controls.ComboBox>().Count() == 1);
+        settings.GlassSelector!.IsDropDownOpen = true; await Task.Delay(700); var glassDrop = (System.Windows.Controls.Border)settings.GlassSelector.Template.FindName("Drop", settings.GlassSelector);
+        Check("Glas-Menü klappt mit allen Einträgen sichtbar aus", glassDrop.IsVisible && glassDrop.ActualHeight > 3 * 30 && glassDrop.Clip is null, $"Höhe={glassDrop.ActualHeight:0}");
+        settings.GlassSelector.IsDropDownOpen = false; await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         settings.GlassSelector!.SelectedIndex = 1; settings.RoundingSlider!.Value = 18;
         Check("Gemeinsame Rundung skaliert Miniatur und Ordner proportional", Math.Abs(app.State.Settings.BubbleCornerRadius - 76 * .18) < .001 && app.State.Settings.CornerRoundness == 18);
         settings.SelectScope(AppearanceScope.Window); await Task.Delay(60); double midOpacity = settings.PageBody!.Opacity; await Task.Delay(700);
@@ -252,7 +260,7 @@ internal static class SmokeTests
         Check("Größenregler verändert die Vorschau direkt im Maßstab 1 zu 3", settings.AppearancePreview.Width > smaller && Math.Abs(settings.AppearancePreview.Width * 3 - 432) < .001 && settings.PreviewFootprint.Width == 432);
         var expectedFootprint = settings.PreviewFootprint; var boundsBeforeLarge = Native.Bounds(settings);
         settings.PreviewScaleButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(60);
-        settings.PreviewScaleButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(800); // Double click: the second one is dropped.
+        settings.PreviewScaleButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(1300); // Double click: the second one is dropped.
         var largeScroll = Descendants(settings).OfType<System.Windows.Controls.ScrollViewer>().Single(s => ReferenceEquals(s.Content, settings.AppearancePreview.Parent)); var boundsLarge = Native.Bounds(settings);
         var largeWork = Native.WorkArea(boundsLarge.X + boundsLarge.Width / 2, boundsLarge.Y + boundsLarge.Height / 2);
         Check("1:1 erweitert das Fenster nach rechts und unten, bis der Ordner ganz zu sehen ist", (largeScroll.ScrollableWidth <= 1 || boundsLarge.Width >= largeWork.Width - 1) && (largeScroll.ScrollableHeight <= 1 || boundsLarge.Height >= largeWork.Height - 1) && boundsLarge.X == boundsBeforeLarge.X, $"vorher={boundsBeforeLarge}, 1:1={boundsLarge}, Rest={largeScroll.ScrollableWidth:0}x{largeScroll.ScrollableHeight:0}");
@@ -262,11 +270,11 @@ internal static class SmokeTests
         previewScroll.ScrollToRightEnd(); previewScroll.ScrollToBottom(); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         Check("Originalvorschau lässt sich bis zu den verdeckten Rändern scrollen", (previewScroll.ScrollableWidth <= 0 || previewScroll.HorizontalOffset > 0) && (previewScroll.ScrollableHeight <= 0 || previewScroll.VerticalOffset > 0) && settings.PreviewFootprint == expectedFootprint, $"scrollbar {previewScroll.ScrollableWidth:0}x{previewScroll.ScrollableHeight:0}");
         previewScroll.ScrollToLeftEnd(); previewScroll.ScrollToTop();
-        settings.PreviewScaleButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(800);
+        settings.PreviewScaleButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(1300);
         Check("Vorschau lässt sich ohne Änderung der echten Ordnergröße zurück auf 1 zu 3 schalten", Math.Abs(settings.AppearancePreview.Width * 3 - expectedFootprint.Width) < .001 && settings.PreviewFootprint == expectedFootprint);
         var boundsBackSmall = Native.Bounds(settings);
         Check("Zurück auf 1:3 gleitet das Fenster genau an Platz und Größe von vorher", Math.Abs(boundsBackSmall.X - boundsBeforeLarge.X) <= 1 && Math.Abs(boundsBackSmall.Y - boundsBeforeLarge.Y) <= 1 && Math.Abs(boundsBackSmall.Width - boundsBeforeLarge.Width) <= 1 && Math.Abs(boundsBackSmall.Height - boundsBeforeLarge.Height) <= 1, $"vorher={boundsBeforeLarge}, zurück={boundsBackSmall}");
-        settings.PreviewScaleButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(800);
+        settings.PreviewScaleButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(1300);
         settings.SelectScope(AppearanceScope.Bubbles); await Task.Delay(800); var boundsLeft = Native.Bounds(settings);
         Check("Von 1:1 direkt zur Miniatur gleitet das Fenster ebenfalls zurück", Math.Abs(boundsLeft.Width - boundsBeforeLarge.Width) <= 1 && Math.Abs(boundsLeft.Height - boundsBeforeLarge.Height) <= 1, $"vorher={boundsBeforeLarge}, danach={boundsLeft}");
         settings.SelectScope(AppearanceScope.Window); await Task.Delay(800);
