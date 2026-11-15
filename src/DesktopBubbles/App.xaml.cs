@@ -45,6 +45,7 @@ public partial class App : System.Windows.Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        SettingsMotion.SmoothDropDowns();
         try
         {
             // Used only by the automated .lnk/ShellExecute integration test.

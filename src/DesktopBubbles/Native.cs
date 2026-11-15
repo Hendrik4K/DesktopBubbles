@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
 using System.Windows.Interop;
@@ -60,6 +60,7 @@ internal static class Native
     [DllImport("gdi32.dll")] internal static extern bool EqualRgn(nint first, nint second);
     [DllImport("user32.dll")] internal static extern nint GetDC(nint hwnd);
     [DllImport("user32.dll")] internal static extern int ReleaseDC(nint hwnd, nint dc);
+    [DllImport("gdi32.dll")] internal static extern uint GetPixel(nint dc, int x, int y);
     [DllImport("gdi32.dll", SetLastError = true)] [return: MarshalAs(UnmanagedType.Bool)]
     internal static extern bool BitBlt(nint destination, int x, int y, int width, int height, nint source, int sourceX, int sourceY, uint operation);
     [DllImport("user32.dll", CharSet = CharSet.Unicode)] internal static extern int GetClassName(nint hwnd, StringBuilder buffer, int max);

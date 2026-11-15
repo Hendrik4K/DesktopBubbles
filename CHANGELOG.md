@@ -29,6 +29,11 @@
 - Desktop-Bubbles neu verbinden blendet die Miniaturen weich aus und wieder ein statt kurz zu flackern.
 - Bubble-Wechsel in der Verwaltung: alte Vorschau blendet ganz aus, erst dann die neue ein; die Auswahl-Pille gleitet über die ganze Übergabe. Im Ordner-Tab wächst das Fenster für mehrzeilige Ordner, wird dabei aber nie kleiner.
 - 1:3/1:1 lässt einen laufenden Wechsel nie abbrechen (Doppelklick zählt einmal); die Zahl dreht sich um ihre senkrechte Achse, zu 1:1 rechts herum, zurück links herum.
+- Seitenwechsel (Zahnrad, Miniatur/Ordner, Farbwähler) wie der Bubble-Wechsel: erst ganz ausblenden, dann ganz einblenden, ohne Weichzeichner. Das Zahnrad dreht dabei 135° nach links und beim Zurück 135° nach rechts.
+- Hover auf Anwenden, Ändern, Milchglas, 1:3/1:1 und den Einträgen von Glas und Farbmodus: der Text wird etwas größer und kräftiger statt eines weißen Hintergrunds.
+- Ausklappmenüs öffnen auf ihre echte Höhe mit klassischer Kurve (langsam, schneller, sanft bremsen).
+- Farbwähler: großzügige Greifzonen für Sättigung, Helligkeit und Deckkraft; HEX-Feld zeigt die Farbe selbst; rechts Pipette (Farbe vom Bildschirm, mit Live-Vorschau, Esc bricht ab) und X statt Abbrechen; überschüssige Fläche blendet unten weich aus.
+- Einstellungen: Modusfarbe als runder Kreis links neben dem Farbmodus; Farbmodus-Überschrift so groß wie App-Farbe.
 
 ## 1.8.2 · 15.11.2026
 

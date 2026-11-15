@@ -109,16 +109,20 @@ internal static class SettingsMotion
         slider.IsHitTestVisible = false; slider.IsSnapToTickEnabled = false;
         double target = slider.Value; bool dragging = false, running = false;
         var clock = System.Diagnostics.Stopwatch.StartNew(); double last = 0;
+        // Upright sliders (the colour picker's saturation) run from the bottom (minimum) to the top.
         double ValueAt(Point point)
         {
-            var x = zone.TranslatePoint(point, slider).X; double thumb = 18, usable = Math.Max(1, slider.ActualWidth - thumb);
-            return slider.Minimum + Math.Clamp((x - thumb / 2) / usable, 0, 1) * (slider.Maximum - slider.Minimum);
+            var at = zone.TranslatePoint(point, slider); const double thumb = 18;
+            double share = slider.Orientation == Orientation.Vertical
+                ? 1 - (at.Y - thumb / 2) / Math.Max(1, slider.ActualHeight - thumb)
+                : (at.X - thumb / 2) / Math.Max(1, slider.ActualWidth - thumb);
+            return slider.Minimum + Math.Clamp(share, 0, 1) * (slider.Maximum - slider.Minimum);
         }
         void Frame(object? sender, EventArgs e)
         {
             double now = clock.Elapsed.TotalSeconds, dt = Math.Min(.05, now - last); last = now;
             double next = slider.Value + (target - slider.Value) * (1 - Math.Exp(-dt / .075));
-            if (!dragging && Math.Abs(target - next) < .02)
+            if (!dragging && Math.Abs(target - next) < (slider.Maximum - slider.Minimum) * .0002)
             {
                 CompositionTarget.Rendering -= Frame; running = false;
                 slider.Value = Math.Round(target / slider.SmallChange) * slider.SmallChange; return;
@@ -137,6 +141,23 @@ internal static class SettingsMotion
         zone.LostMouseCapture += (_, _) => dragging = false;
         zone.Unloaded += (_, _) => { if (running) { CompositionTarget.Rendering -= Frame; running = false; } };
     }
+
+    // Every drop-down list opens to its real height on a classic curve: starts gently, speeds up,
+    // brakes softly. Hooked once per combo box, app-wide.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ComboBox, object> smoothed = new();
+    internal static void SmoothDropDowns() => EventManager.RegisterClassHandler(typeof(ComboBox), FrameworkElement.LoadedEvent, new RoutedEventHandler((sender, args) =>
+    {
+        if (sender is not ComboBox box || smoothed.TryGetValue(box, out _)) return;
+        smoothed.Add(box, new object());
+        box.DropDownOpened += (_, _) => box.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
+        {
+            if (box.Template?.FindName("Drop", box) is not Border drop || drop.Child is not UIElement list) return;
+            list.Measure(new Size(Math.Max(1, box.ActualWidth - drop.Padding.Left - drop.Padding.Right - 2), double.PositiveInfinity));
+            double full = list.DesiredSize.Height + drop.Padding.Top + drop.Padding.Bottom + drop.BorderThickness.Bottom;
+            bool animate = System.Windows.Application.Current is App app && Enabled(app);
+            drop.BeginAnimation(FrameworkElement.MaxHeightProperty, new DoubleAnimation(0, full, TimeSpan.FromMilliseconds(animate ? 380 : 0)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut } });
+        });
+    }));
 
     // The old picture fades out over the new one, which fades in: a soft cross-dissolve.
     internal static void Crossfade(FrameworkElement element, BitmapSource? before)
@@ -217,36 +238,26 @@ internal static class SettingsMotion
         lean.BeginAnimation(SkewTransform.AngleYProperty, new DoubleAnimation(0, tilt, TimeSpan.FromMilliseconds(140)) { EasingFunction = new SineEase { EasingMode = EasingMode.EaseIn } });
     }
 
-    // Page change in two beats: the old page dissolves into a growing Gaussian blur first, then the
-    // new one sharpens in. Nothing of the old page lingers over the new one.
+    // Page change in two beats, like the bubble hand-over: the old page fades out completely, only
+    // then the new one fades in. Never both half-visible at once, no blur.
+    internal const double PageOut = .22, PageIn = .3;
     internal static void PageTransition(FrameworkElement host, BitmapSource? before)
     {
         if (AdornerLayer.GetAdornerLayer(host) is not { } layer) return;
-        const double outMs = 190, inMs = 300, blur = 12;
-        var sharpen = new System.Windows.Media.Effects.BlurEffect { Radius = blur, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance };
-        host.Effect = sharpen;
-        double wait = before is null ? 0 : outMs * .8;
-        var radius = new DoubleAnimationUsingKeyFrames();
-        radius.KeyFrames.Add(new DiscreteDoubleKeyFrame(blur, KeyTime.FromTimeSpan(TimeSpan.Zero)));
-        radius.KeyFrames.Add(new DiscreteDoubleKeyFrame(blur, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(wait))));
-        radius.KeyFrames.Add(new EasingDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(wait + inMs)), new CubicEase { EasingMode = EasingMode.EaseOut }));
-        sharpen.BeginAnimation(System.Windows.Media.Effects.BlurEffect.RadiusProperty, radius);
+        double wait = before is null ? 0 : PageOut;
         var appear = new DoubleAnimationUsingKeyFrames();
         appear.KeyFrames.Add(new DiscreteDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
-        appear.KeyFrames.Add(new DiscreteDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(wait))));
-        appear.KeyFrames.Add(new EasingDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromMilliseconds(wait + inMs)), new CubicEase { EasingMode = EasingMode.EaseOut }));
-        appear.Completed += (_, _) => { if (host.Effect == sharpen) host.Effect = null; host.BeginAnimation(UIElement.OpacityProperty, null); };
+        appear.KeyFrames.Add(new DiscreteDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(wait))));
+        appear.KeyFrames.Add(new EasingDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(wait + PageIn)), new CubicEase { EasingMode = EasingMode.EaseOut }));
+        appear.Completed += (_, _) => host.BeginAnimation(UIElement.OpacityProperty, null);
         host.BeginAnimation(UIElement.OpacityProperty, appear);
         if (before is null) return;
-        var smear = new System.Windows.Media.Effects.BlurEffect { Radius = 0, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance };
-        var ghost = new Ghost(host, before) { Effect = smear, IsHitTestVisible = false };
+        var ghost = new Ghost(host, before);
         layer.Add(ghost);
-        smear.BeginAnimation(System.Windows.Media.Effects.BlurEffect.RadiusProperty, new DoubleAnimation(0, blur, TimeSpan.FromMilliseconds(outMs)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } });
-        var vanish = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(outMs)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
+        var vanish = new DoubleAnimation(1, 0, TimeSpan.FromSeconds(PageOut)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
         vanish.Completed += (_, _) => layer.Remove(ghost);
         ghost.BeginAnimation(UIElement.OpacityProperty, vanish);
-    }
-    // The mouse wheel glides: each notch adds to a target the offset eases towards.
+    }    // The mouse wheel glides: each notch adds to a target the offset eases towards.
     internal static void SmoothWheel(ScrollViewer viewer)
     {
         double target = 0; bool running = false; var clock = System.Diagnostics.Stopwatch.StartNew(); double last = 0;

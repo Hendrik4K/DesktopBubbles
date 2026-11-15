@@ -56,7 +56,8 @@ internal sealed class SettingsWindow : Window
     internal TextBlock? AutoCloseSeconds { get; private set; }
     internal LiveMeasurementBar Measurement { get; }
     internal DividerScroll Divider { get; } = new();
-    // The gear swells on hover; it turns 45° to the left and lights up while the settings are open.
+    // The gear swells on hover; it turns 135° to the left and lights up while the settings are open,
+    // turning back to the right when they close, over the whole page hand-over.
     private readonly ScaleTransform gearScale = new(1, 1);
     private readonly RotateTransform gearTurn = new(0);
     private readonly SolidColorBrush gearInk = new(Colors.Black);
@@ -69,12 +70,12 @@ internal sealed class SettingsWindow : Window
     }
     private void SetGear(bool open)
     {
-        double angle = open ? -45 : 0; var ink = open ? GearLit : ((SolidColorBrush)Ui.Resource("Ink")).Color;
+        double angle = open ? -135 : 0; var ink = open ? GearLit : ((SolidColorBrush)Ui.Resource("Ink")).Color;
         if (!IsLoaded || !SettingsMotion.Enabled(app))
         { gearTurn.BeginAnimation(RotateTransform.AngleProperty, null); gearTurn.Angle = angle; gearInk.BeginAnimation(SolidColorBrush.ColorProperty, null); gearInk.Color = ink; return; }
         if (Math.Abs(gearTurn.Angle - angle) < .1 && gearInk.Color == ink) return;
         // Turns, overshoots a touch and settles into place like a detent.
-        gearTurn.BeginAnimation(RotateTransform.AngleProperty, new DoubleAnimation(angle, TimeSpan.FromMilliseconds(460)) { EasingFunction = new BackEase { Amplitude = .45, EasingMode = EasingMode.EaseOut } });
+        gearTurn.BeginAnimation(RotateTransform.AngleProperty, new DoubleAnimation(angle, TimeSpan.FromSeconds(SettingsMotion.PageOut + SettingsMotion.PageIn + .08)) { EasingFunction = new BackEase { Amplitude = .3, EasingMode = EasingMode.EaseInOut } });
         gearInk.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(ink, TimeSpan.FromMilliseconds(320)));
     }
     internal ColorPickerPanel? Picker { get; private set; }
@@ -450,18 +451,19 @@ internal sealed class SettingsWindow : Window
                 colorRow.ColumnDefinitions[0].Width = new GridLength(154);
                 colorRow.ColumnDefinitions.Add(new ColumnDefinition());
                 var options = new StackPanel { Margin = new Thickness(8, 0, 0, 0) };
-                options.Children.Add(Ui.Text("Farbmodus", 13, weight: FontWeights.SemiBold));
+                options.Children.Add(Ui.Text("Farbmodus", 15, weight: FontWeights.SemiBold));
                 var themes = new[] { "Hell", "Dunkel", "Windows-Standard" }; var values = new[] { "Light", "Dark", "System" };
                 var theme = new ComboBox { ItemsSource = themes, SelectedIndex = Array.IndexOf(values, settings.Theme), MinWidth = 0 };
                 System.Windows.Automation.AutomationProperties.SetName(theme, "Farbmodus der Anwendung");
                 theme.SelectionChanged += (_, _) => { if (theme.SelectedIndex >= 0) { settings.Theme = values[theme.SelectedIndex]; app.ApplySettings(settings); } }; themeSelector = theme;
-                var modeRow = new DockPanel { Margin = new Thickness(0, 14, 0, 0), LastChildFill = true };
-                modeSwatch = new Border { Width = 26, Height = 26, CornerRadius = new CornerRadius(4), Background = Ui.Brush(ThemePalette.Color(settings, Ui.Dark)), BorderBrush = Ui.Resource("Line"), BorderThickness = new Thickness(1) };
+                var modeRow = new DockPanel { Margin = new Thickness(0, 12, 0, 0), LastChildFill = true };
+                // The mode colour sits on the left as a round swatch, like the app colour.
+                modeSwatch = new Border { Width = 34, Height = 34, CornerRadius = new CornerRadius(17), Background = Ui.Brush(ThemePalette.Color(settings, Ui.Dark)), BorderBrush = Ui.Resource("Line"), BorderThickness = new Thickness(1) };
                 ModeColorButton = Ui.Button("", () => { if (!editingModeColor) { CancelColorEdit(); OpenPicker(modeColor: true); } }); ModeColorButton.Content = modeSwatch;
-                ModeColorButton.Width = 36; ModeColorButton.Height = 34; ModeColorButton.Padding = new Thickness(3); ModeColorButton.Margin = new Thickness(8, 0, 0, 0);
+                ModeColorButton.Style = (Style)FindResource("PlainButton"); ModeColorButton.Width = ModeColorButton.Height = 36; ModeColorButton.Padding = new Thickness(0); ModeColorButton.Margin = new Thickness(0, 0, 10, 0); SettingsMotion.Swell(modeSwatch, 1.1);
                 ModeColorButton.ToolTip = (Ui.Dark ? "Dunkle" : "Helle") + " Modusfarbe ändern · Flächen und Steuerelemente";
                 System.Windows.Automation.AutomationProperties.SetName(ModeColorButton, "Modusfarbe ändern");
-                DockPanel.SetDock(ModeColorButton, Dock.Right); modeRow.Children.Add(ModeColorButton);
+                DockPanel.SetDock(ModeColorButton, Dock.Left); modeRow.Children.Add(ModeColorButton);
                 modeAction = new ContentControl { Content = theme, HorizontalContentAlignment = HorizontalAlignment.Stretch }; modeRow.Children.Add(modeAction); options.Children.Add(modeRow);
                 Grid.SetColumn(options, 1); colorRow.Children.Add(options);
             }

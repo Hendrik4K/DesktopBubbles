@@ -126,6 +126,7 @@ internal static class SmokeTests
         SaveImage(settings, Path.Combine(app.DataDirectory, "color-picker-light.png"));
         var hexCorner = picker.HexInput.TranslatePoint(new Point(picker.HexInput.ActualWidth, picker.HexInput.ActualHeight), settings);
         Check("Farbauswahl sitzt im Verwaltungsfenster und verdeckt die anderen Regler", Window.GetWindow(picker) == settings && !settings.TransparencySlider!.IsVisible && !settings.SizeSlider!.IsVisible && !settings.RoundingSlider!.IsVisible && (string)settings.ColorButton.Content == "Anwenden");
+        Check("Farbwähler: HEX-Feld trägt die Farbe, rechts Pipette und X statt Abbrechen", picker.HexInput.Background is SolidColorBrush hexFill && hexFill.Color == Ui.Brush(picker.SelectedHex).Color && picker.Eyedropper.IsVisible && picker.CloseButton.IsVisible && picker.CloseButton.TranslatePoint(new Point(), picker.HexInput).X > 0 && !Descendants(picker).OfType<System.Windows.Controls.Button>().Any(b => b.Content is string label && label == "Abbrechen"));
         Check("Farbkreis und HEX-Eingabe bleiben innerhalb der Ansicht", picker.Wheel.ActualWidth >= 140 && hexCorner.X < settings.ActualWidth - 15 && hexCorner.Y < settings.ActualHeight - 86);
         picker.HexInput.Text = "#GGGGGG"; settings.ColorButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
         Check("Ungültige HEX-Eingabe deaktiviert Übernahme und erhält den Entwurf", !settings.ColorButton.IsEnabled && settings.Picker is not null && AppearancePreferences.Color(app.State.Settings, app.State.Groups[0]) == originalColor);
@@ -146,12 +147,16 @@ internal static class SmokeTests
         settings.OpenPickerForTest(); await Task.Delay(100); settings.Picker!.HexInput.Text = "#FF0000";
         var escape = new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice, PresentationSource.FromVisual(settings)!, 0, System.Windows.Input.Key.Escape) { RoutedEvent = System.Windows.Input.Keyboard.PreviewKeyDownEvent }; settings.RaiseEvent(escape);
         Check("Esc verwirft nur den Farbentwurf und lässt die Verwaltung geöffnet", settings.Picker is null && settings.IsVisible && app.State.Groups[0].Color == "#12A3F0");
+        settings.OpenPickerForTest(); await Task.Delay(100); settings.Picker!.HexInput.Text = "#00FF00"; settings.Picker.CloseButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+        Check("X im Farbwähler verwirft den Entwurf wie Abbrechen", settings.Picker is null && app.State.Groups[0].Color == "#12A3F0");
         app.State.Groups[0].Color = null; app.ApplyAppearance();
         Check("Verwaltung verwendet feste dezente Ecken statt eigenem Rundungsregler", app.State.Settings.AppCornerRadius == Ui.AppRadius && !settings.AllowsTransparency);
         var gear = Descendants(settings).OfType<System.Windows.Controls.Button>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Einstellungen");
         Check("Zahnrad ist eine Form mit Luft und wird nirgends abgeschnitten", gear.Content is System.Windows.Shapes.Path gearShape && System.Windows.Controls.Primitives.LayoutInformation.GetLayoutClip(gearShape) is null && gearShape.ActualWidth * 1.2 <= gear.ActualWidth && gearShape.ActualHeight * 1.2 <= gear.ActualHeight);
         gear.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(100);
         Check("Zahnrad zeigt App-Darstellung und allgemeine Checkboxen", settings.Scope == AppearanceScope.App && Descendants(settings).OfType<System.Windows.Controls.CheckBox>().Count() == 7);
+        var modeCombo = Descendants(settings).OfType<System.Windows.Controls.ComboBox>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Farbmodus der Anwendung");
+        Check("Modusfarbe sitzt als runder Kreis links neben dem Farbmodus", settings.ModeColorButton!.TranslatePoint(new Point(settings.ModeColorButton.ActualWidth, 0), modeCombo).X <= 0);
         Check("Einsammeln neu angelegter Verknüpfungen ist standardmäßig an", settings.CollectDuplicatesCheckBox?.IsChecked == true);
         // Auto close sits right below the shared bubble colors, its seconds on the right.
         var linkOrigin = settings.LinkColorsCheckBox!.TranslatePoint(new Point(), settings); var autoOrigin = settings.AutoCloseCheckBox!.TranslatePoint(new Point(), settings);
