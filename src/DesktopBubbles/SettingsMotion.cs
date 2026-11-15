@@ -158,6 +158,80 @@ internal static class SettingsMotion
         protected override void OnRender(DrawingContext drawing) => drawing.DrawImage(picture, new Rect(AdornedElement.RenderSize));
     }
 
+    // A pill as tall and round as its circle: the circle at one end, the segment button beside it.
+    internal static Border Pill(UIElement circle, Button segment, bool circleRight = false)
+    {
+        var row = new StackPanel { Orientation = Orientation.Horizontal };
+        if (circleRight) { row.Children.Add(segment); row.Children.Add(circle); } else { row.Children.Add(circle); row.Children.Add(segment); }
+        segment.Height = 34; segment.VerticalAlignment = VerticalAlignment.Center;
+        var pill = new Border { CornerRadius = new CornerRadius(18), BorderThickness = new Thickness(1), Padding = new Thickness(0), Height = 36, Child = row, HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center };
+        pill.SetResourceReference(Border.BackgroundProperty, "ControlFill"); pill.SetResourceReference(Border.BorderBrushProperty, "Line");
+        return pill;
+    }
+
+    // The label fades out, changes and fades back in; the button keeps its size.
+    internal static void SwapContent(Button button, string text)
+    {
+        if (Equals(button.Content, text)) return;
+        button.Content = text; // State changes at once (callers and tests read it); only the look eases.
+        if (!button.IsLoaded || button.Template?.FindName("Text", button) is not UIElement presenter) return;
+        presenter.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(260)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+    }
+
+    // Page change: the old page dissolves with a growing Gaussian blur while the new one sharpens in.
+    internal static void PageTransition(FrameworkElement host, BitmapSource? before)
+    {
+        if (AdornerLayer.GetAdornerLayer(host) is not { } layer) return;
+        var blur = new System.Windows.Media.Effects.BlurEffect { Radius = 10, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance };
+        host.Effect = blur;
+        blur.BeginAnimation(System.Windows.Media.Effects.BlurEffect.RadiusProperty, new DoubleAnimation(10, 0, TimeSpan.FromMilliseconds(320)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+        var appear = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } };
+        appear.Completed += (_, _) => { if (host.Effect == blur) host.Effect = null; };
+        host.BeginAnimation(UIElement.OpacityProperty, appear);
+        if (before is null) return;
+        var ghost = new Ghost(host, before) { Effect = new System.Windows.Media.Effects.BlurEffect { Radius = 0, RenderingBias = System.Windows.Media.Effects.RenderingBias.Performance } };
+        layer.Add(ghost);
+        ((System.Windows.Media.Effects.BlurEffect)ghost.Effect).BeginAnimation(System.Windows.Media.Effects.BlurEffect.RadiusProperty, new DoubleAnimation(0, 10, TimeSpan.FromMilliseconds(220)));
+        var vanish = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(220)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
+        vanish.Completed += (_, _) => layer.Remove(ghost);
+        ghost.BeginAnimation(UIElement.OpacityProperty, vanish);
+    }
+
+    // The mouse wheel glides: each notch adds to a target the offset eases towards.
+    internal static void SmoothWheel(ScrollViewer viewer)
+    {
+        double target = 0; bool running = false; var clock = System.Diagnostics.Stopwatch.StartNew(); double last = 0;
+        void Frame(object? sender, EventArgs e)
+        {
+            double now = clock.Elapsed.TotalSeconds, dt = Math.Min(.05, now - last); last = now;
+            double next = viewer.VerticalOffset + (target - viewer.VerticalOffset) * (1 - Math.Exp(-dt / .09));
+            if (Math.Abs(target - next) < .5) { viewer.ScrollToVerticalOffset(target); CompositionTarget.Rendering -= Frame; running = false; return; }
+            viewer.ScrollToVerticalOffset(next);
+        }
+        viewer.PreviewMouseWheel += (_, e) =>
+        {
+            if (viewer.ScrollableHeight <= 0) return;
+            if (!running) target = viewer.VerticalOffset;
+            target = Math.Clamp(target - e.Delta * .6, 0, viewer.ScrollableHeight); e.Handled = true;
+            if (!running) { running = true; last = clock.Elapsed.TotalSeconds; CompositionTarget.Rendering += Frame; }
+        };
+        viewer.Unloaded += (_, _) => { if (running) { CompositionTarget.Rendering -= Frame; running = false; } };
+    }
+
+    // No hover background: the content swells a little instead.
+    internal static void Swell(FrameworkElement element, double factor = 1.18)
+    {
+        var scale = new ScaleTransform(1, 1); element.RenderTransformOrigin = new Point(.5, .5); element.RenderTransform = scale;
+        void To(double value, double seconds)
+        {
+            var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+            scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(value, TimeSpan.FromSeconds(seconds)) { EasingFunction = ease });
+            scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(value, TimeSpan.FromSeconds(seconds)) { EasingFunction = ease });
+        }
+        element.MouseEnter += (_, _) => To(factor, .18);
+        element.MouseLeave += (_, _) => To(1, .26);
+    }
+
     // The same closed-form spring as the folder motion, as a WPF easing curve.
     internal sealed class SpringEasing(Spring spring, double duration) : EasingFunctionBase
     {

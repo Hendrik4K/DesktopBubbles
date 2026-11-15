@@ -27,6 +27,10 @@ public sealed class BubbleSettings
     public bool AutoCloseFolders { get; set; } // Close an open folder after a pause without the mouse on it.
     public int AutoCloseSeconds { get; set; } = 5;
     public bool CollectDesktopDuplicates { get; set; } = true; // Re-absorb links that updates put back on the desktop.
+    // The management window's size as the user left it; a new app version starts at the default again.
+    public double? SettingsWindowWidth { get; set; }
+    public double? SettingsWindowHeight { get; set; }
+    public string? SettingsWindowVersion { get; set; }
     public double FrostedFolderOpacity { get; set; } = .55;
     public double AppCornerRadius { get; set; } = 8;
     public double BubbleCornerRadius { get; set; } = 20;

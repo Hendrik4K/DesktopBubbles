@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Drawing;
 using Forms=System.Windows.Forms;
 
@@ -36,7 +36,7 @@ internal sealed class LetterMotion:IDisposable {
  private static double Seed(int index,int salt)=>Math.Abs(Math.Sin(index*12.9898+salt*78.233)*43758.5453)%1;
  private PointF Offset(int index,double t,float scale){
   var a=Amplitude;if(a<=0)return PointF.Empty;
-  if(style==Style.Dance)return new PointF((float)(.5*Math.Sin(t*5.1+index*.9)*a*scale),(float)(-2.1*Math.Sin(t*8.2+index*.62)*a*scale));
+  if(style==Style.Dance)return new PointF((float)(.3*Math.Sin(t*5.1+index*.9)*a*scale),(float)(-1.3*Math.Sin(t*8.2+index*.62)*a*scale)); // Gentle waves, ~60 % of Pi Relay's.
   var strength=(.55+.9*Seed(index,1))*ShakeStrength*a*scale;var u=(t+Seed(index,3)*.4)*(.75+.5*Seed(index,2));
   return new PointF((float)((Math.Sin(u*53+index*3.1)*.8+Math.Sin(u*79+index*1.7)*.45)*strength),(float)((Math.Sin(u*61+index*2.3)*.7+Math.Sin(u*97+index*4.1)*.35)*strength));
  }

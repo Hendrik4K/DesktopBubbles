@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -236,7 +236,7 @@ internal static class SmokeTests
         SaveImage(settings, Path.Combine(app.DataDirectory, "window-preview-actual-size.png"));
         var previewScroll = Descendants(settings).OfType<System.Windows.Controls.ScrollViewer>().Single(s => ReferenceEquals(s.Content, settings.AppearancePreview.Parent));
         previewScroll.ScrollToRightEnd(); previewScroll.ScrollToBottom(); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
-        Check("Originalvorschau lässt sich bis zu den verdeckten Rändern scrollen", previewScroll.HorizontalOffset > 0 && previewScroll.VerticalOffset > 0 && settings.PreviewFootprint == expectedFootprint);
+        Check("Originalvorschau lässt sich bis zu den verdeckten Rändern scrollen", (previewScroll.ScrollableWidth <= 0 || previewScroll.HorizontalOffset > 0) && (previewScroll.ScrollableHeight <= 0 || previewScroll.VerticalOffset > 0) && settings.PreviewFootprint == expectedFootprint, $"scrollbar {previewScroll.ScrollableWidth:0}x{previewScroll.ScrollableHeight:0}");
         previewScroll.ScrollToLeftEnd(); previewScroll.ScrollToTop();
         settings.PreviewScaleButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         Check("Vorschau lässt sich ohne Änderung der echten Ordnergröße zurück auf 1 zu 3 schalten", Math.Abs(settings.AppearancePreview.Width * 3 - expectedFootprint.Width) < .001 && settings.PreviewFootprint == expectedFootprint);

@@ -1,5 +1,13 @@
 # Änderungen
 
+## Unveröffentlicht
+
+- Farbe: Farbkreis mit angesetzter Pille fester Breite; „Ändern“ und „Anwenden“ blenden nur den Text über, der Farbwähler blendet weich mit Weichzeichner ein und aus.
+- Glas-Auswahl klappt als zusammenhängendes Menü nach unten aus, Beschriftung bleibt stehen.
+- Ordnervorschau: runder 1:3/1:1-Knopf mit dauerhaft angesetztem „Milchglas“; Wechsel 1:3 ↔ 1:1 mit weicher Größenänderung und Überblendung.
+- „Neu“ gestrichelt auf grauem Grund; Seitenwechsel Aussehen ↔ Einstellungen mit Gaußschem Weichzeichner; Zurückpfeil direkt am Titel, schwillt beim Überfahren an.
+- Erstes Öffnen groß genug für die volle 1:3-Ordnervorschau; eigene Fenstergröße bleibt bis zur nächsten Version.
+- Weiches Mausrad-Scrollen, größere Beschriftungen für Farbe und Glas, sanftere Wellen in der Tray-Versionszeile.
 ## 1.8.2 · 15.11.2026
 
 - **Von Updates neu angelegte Verknüpfungen werden eingesammelt:** Legt ein Programm-Update eine Desktop-Verknüpfung an, deren Programm (Ziel und Parameter, bzw. URL) schon in einer Bubble liegt, übernimmt DesktopBubbles sie automatisch. Die frische Verknüpfung ersetzt die Kopie in der Bubble; Name des Eintrags und gemerkter Desktop-Platz bleiben. Beim Start wird nachgeholt, was während der Pause angelegt wurde. Unberührt bleiben Verknüpfungen ohne passenden Eintrag, auf Wunsch zurückgelegte oder herausgezogene und alles im Kopiermodus. Abschaltbar unter „Von Updates neu angelegte Verknüpfungen einsammeln“.
