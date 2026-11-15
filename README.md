@@ -8,9 +8,9 @@
 
 **Desktop aufräumen und Verknüpfungen gruppieren.** Steam, Epic, Battle.net und Co. müssen nicht einzeln den Desktop belegen. Pack sie in einen App-Ordner, öffne ihn mit einem Klick und wähle, was du starten möchtest. Danach bleibt wieder die kleine Miniatur. So bekommst du Smartphone-ähnliche Ordner für deinen Windows-Desktop. 🚀
 
-**Version 1.8.1 · Windows 11 x64 · MIT license**
+**Version 1.8.2 · Windows 11 x64 · MIT license**
 
-**[Windows-11-Installer herunterladen](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.8.1/DesktopBubbles-Setup-1.8.1.exe)** · [Portable ZIP](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.8.1/DesktopBubbles-win-x64-v1.8.1.zip) · [Release](https://github.com/Hendrik4K/DesktopBubbles/releases/latest) · [MIT-Lizenz](LICENSE) · [Fehler melden](https://github.com/Hendrik4K/DesktopBubbles/issues)
+**[Windows-11-Installer herunterladen](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.8.2/DesktopBubbles-Setup-1.8.2.exe)** · [Portable ZIP](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.8.2/DesktopBubbles-win-x64-v1.8.2.zip) · [Release](https://github.com/Hendrik4K/DesktopBubbles/releases/latest) · [MIT-Lizenz](LICENSE) · [Fehler melden](https://github.com/Hendrik4K/DesktopBubbles/issues)
 
 <img src="docs/screenshots/desktopbubbles-liquid-glass-desktop.webp" width="100%" alt="DesktopBubbles mit Liquid Glass auf einem Windows-11-Desktop: zwei gläserne App-Ordner mit Gaming-Launchern und Adobe-Apps vor einem Berg-Hintergrund, daneben die Verwaltung mit Glasstil Liquid, Transparenz, Liquid-Stärke und Größe.">
 
@@ -34,6 +34,7 @@
 
 ## Funktionen: App-Ordner und Desktop-Anpassung
 
+- **Neu in 1.8.2:** Verknüpfungen, die ein Programm-Update erneut auf den Desktop legt, wandern automatisch zurück in ihre Bubble. Ein Klick aufs Tray-Symbol öffnet die App, das Tray-Menü trägt das DesktopBubbles-Design und sucht auf Wunsch nach Updates. Die Verwaltung bewegt sich weicher: gleitender Miniatur/Ordner-Schalter, sanfte Hover- und Auswahleffekte, Regler auf der ganzen Zeile.
 - **Neu in 1.8.1:** Ordner auf Wunsch nach einstellbaren Sekunden ohne Maus automatisch schließen. Symbole lassen sich wieder direkt auf den Desktop ziehen, und getauschte Symbole gleiten an ihren neuen Platz. Verknüpfungen finden auch nach dem Verlegen des Desktop-Ordners zurück.
 - **Neu in 1.8.0: Liquid Glass.** Neuer Glasstil, der den echten Hintergrund an den Kanten wie eine Linse bricht, mit einstellbarer Stärke. Ordner öffnen und schließen mit Federanimation aus der Miniatur heraus; die Symbole fliegen an ihren Platz. Vom Desktop übernommene Verknüpfungen liegen wieder an ihrem Platz auf dem Desktop, solange DesktopBubbles nicht läuft.
 - **Neu in 1.7.1:** schillernde Seifenblasen als App-, Taskleisten-, Tray- und Installer-Symbol.
@@ -145,14 +146,14 @@ Vor Löschen der App **Einstellungen → Verknüpfungen auf Desktop zurücklegen
 Windows 11 x64 und .NET-8-SDK beziehungsweise Visual Studio mit .NET-Desktopentwicklung. Keine Drittanbieter-NuGet-Laufzeitabhängigkeiten.
 
 ```powershell
-.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.8.1
+.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.8.2
 # Mit vorhandenem SDK:
-.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.8.1
+.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.8.2
 # Native Tests mit isolierten Testdaten auf interaktivem Windows-Desktop:
-.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.8.1\DesktopBubbles.exe
+.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.8.2\DesktopBubbles.exe
 # Optionaler Installer-Build:
 .\tools\Get-InnoSetup.ps1
-.\tools\Build-Installer.ps1 -Payload .\artifacts\DesktopBubbles-win-x64-v1.8.1
+.\tools\Build-Installer.ps1 -Payload .\artifacts\DesktopBubbles-win-x64-v1.8.2
 ```
 
 Build erstellt die portable Ausgabe, führt die Kernprüfungen aus und packt ZIPs sowie SHA-256-Prüfsummen. Native Tests laufen separat. `dotnet test` ist nicht der Einstieg für die ausführbare Konsolensuite. CI baut App und Installer und prüft Core sowie isolierte Installer-Abläufe auf GitHub Actions. Inno Setup ist nur ein zusätzliches Buildwerkzeug. [Architektur](docs/ARCHITECTURE.md), [Entwicklerregeln](docs/DEVELOPMENT.md), [Release](docs/RELEASE.md), [Design-QA](design-qa.md).

@@ -1,6 +1,6 @@
 # Änderungen
 
-## Unveröffentlicht
+## 1.8.2 · 15.11.2026
 
 - **Von Updates neu angelegte Verknüpfungen werden eingesammelt:** Legt ein Programm-Update eine Desktop-Verknüpfung an, deren Programm (Ziel und Parameter, bzw. URL) schon in einer Bubble liegt, übernimmt DesktopBubbles sie automatisch. Die frische Verknüpfung ersetzt die Kopie in der Bubble; Name des Eintrags und gemerkter Desktop-Platz bleiben. Beim Start wird nachgeholt, was während der Pause angelegt wurde. Unberührt bleiben Verknüpfungen ohne passenden Eintrag, auf Wunsch zurückgelegte oder herausgezogene und alles im Kopiermodus. Abschaltbar unter „Von Updates neu angelegte Verknüpfungen einsammeln“.
 - **Tray:** Ein einfacher Linksklick öffnet DesktopBubbles. Das Rechtsklick-Menü trägt das App-Design: durchgehender heller Verlauf ohne graue Leiste, oben Bubble-Logo mit Version (Klick sucht nach einem neueren Release und bietet es an), „Einstellungen öffnen“, rotes „Beenden“ mit zitternden Buchstaben.
