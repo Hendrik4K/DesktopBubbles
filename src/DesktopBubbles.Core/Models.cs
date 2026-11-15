@@ -31,6 +31,7 @@ public sealed class BubbleSettings
     public double? SettingsWindowWidth { get; set; }
     public double? SettingsWindowHeight { get; set; }
     public string? SettingsWindowVersion { get; set; }
+    public string? Language { get; set; } // "de" or "en"; null follows the Windows display language.
     public double? SettingsWindowLeft { get; set; } // Where it was closed; reopened there if still on a screen.
     public double? SettingsWindowTop { get; set; }
     public double FrostedFolderOpacity { get; set; } = .55;

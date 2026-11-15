@@ -1,4 +1,4 @@
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
 using DesktopBubbles.Core;
@@ -13,7 +13,7 @@ public static class ConfigurationBundle
     {
         StateStore.Validate(state);
         var manifestBytes = JsonSerializer.SerializeToUtf8Bytes(state, StateStore.JsonOptions);
-        if (manifestBytes.Length > 8 * 1024 * 1024) throw new IOException("Die Konfiguration überschreitet 8 MB.");
+        if (manifestBytes.Length > 8 * 1024 * 1024) throw new IOException(Loc.T("Die Konfiguration überschreitet 8 MB.", "The configuration exceeds 8 MB."));
         string temp = path + ".tmp";
         try
         {
@@ -28,15 +28,15 @@ public static class ConfigurationBundle
                     {
                         ManagedTargets.TryFileName(target, out var name);
                         using var memory = new MemoryStream(); vault.ExportPayload(target, memory);
-                        total += memory.Length; if (total > MaxArchiveBytes) throw new IOException("Die Sicherung überschreitet 128 MB.");
+                        total += memory.Length; if (total > MaxArchiveBytes) throw new IOException(Loc.T("Die Sicherung überschreitet 128 MB.", "The backup exceeds 128 MB."));
                         var bytes = memory.ToArray(); hashes[name] = Convert.ToHexString(SHA256.HashData(bytes));
                         using var entry = zip.CreateEntry("shortcuts/" + name).Open(); entry.Write(bytes);
                     }
                     var digestBytes = JsonSerializer.SerializeToUtf8Bytes(hashes);
-                    if (total + digestBytes.Length > MaxArchiveBytes) throw new IOException("Die Sicherung überschreitet 128 MB.");
+                    if (total + digestBytes.Length > MaxArchiveBytes) throw new IOException(Loc.T("Die Sicherung überschreitet 128 MB.", "The backup exceeds 128 MB."));
                     using var digest = zip.CreateEntry("sha256.json").Open(); digest.Write(digestBytes);
                 }
-                if (output.Length > MaxArchiveBytes) throw new IOException("Die Sicherung überschreitet 128 MB.");
+                if (output.Length > MaxArchiveBytes) throw new IOException(Loc.T("Die Sicherung überschreitet 128 MB.", "The backup exceeds 128 MB."));
                 output.Flush(true);
             }
             File.Move(temp, path, true);
@@ -46,9 +46,9 @@ public static class ConfigurationBundle
     public sealed record ImportData(BubbleState State, IReadOnlyDictionary<string, byte[]> Payloads);
     public static ImportData Read(string path)
     {
-        if (new FileInfo(path).Length > MaxArchiveBytes) throw new InvalidDataException("Das Archiv überschreitet 128 MB.");
+        if (new FileInfo(path).Length > MaxArchiveBytes) throw new InvalidDataException(Loc.T("Das Archiv überschreitet 128 MB.", "The archive exceeds 128 MB."));
         using var zip = ZipFile.OpenRead(path);
-        if (zip.Entries.Count > 30002) throw new InvalidDataException("Zu viele Archiveinträge.");
+        if (zip.Entries.Count > 30002) throw new InvalidDataException(Loc.T("Zu viele Archiveinträge.", "Too many archive entries."));
         long total = 0; var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in zip.Entries)
         {
@@ -56,32 +56,32 @@ public static class ConfigurationBundle
             bool allowed = entry.FullName is "groups.json" or "sha256.json" || (entry.FullName.StartsWith("shortcuts/", StringComparison.Ordinal)
                 && ManagedTargets.IsManaged(ManagedTargets.Prefix + entry.FullName[10..]));
             if (!allowed || !names.Add(entry.FullName) || entry.Length < 0 || entry.Length > 8 * 1024 * 1024 || total > MaxArchiveBytes)
-                throw new InvalidDataException("Ungültiger oder zu großer Archiveintrag.");
+                throw new InvalidDataException(Loc.T("Ungültiger oder zu großer Archiveintrag.", "Invalid or oversized archive entry."));
         }
         long actualTotal = 0;
         byte[] Bytes(string name, int limit)
         {
-            var entry = zip.GetEntry(name) ?? throw new InvalidDataException("Archiveintrag fehlt: " + name);
-            if (entry.Length > limit) throw new InvalidDataException("Archiveintrag zu groß.");
+            var entry = zip.GetEntry(name) ?? throw new InvalidDataException(Loc.T("Archiveintrag fehlt: ", "Archive entry missing: ") + name);
+            if (entry.Length > limit) throw new InvalidDataException(Loc.T("Archiveintrag zu groß.", "Archive entry too large."));
             using var stream = entry.Open(); using var memory = new MemoryStream();
             var buffer = new byte[8192]; int count;
             while ((count = stream.Read(buffer)) > 0)
             {
                 actualTotal += count;
-                if (memory.Length + count > limit || actualTotal > MaxArchiveBytes) throw new InvalidDataException("Archiveintrag zu groß.");
+                if (memory.Length + count > limit || actualTotal > MaxArchiveBytes) throw new InvalidDataException(Loc.T("Archiveintrag zu groß.", "Archive entry too large."));
                 memory.Write(buffer, 0, count);
             }
             return memory.ToArray();
         }
-        var state = JsonSerializer.Deserialize<BubbleState>(Bytes("groups.json", 8 * 1024 * 1024), StateStore.JsonOptions) ?? throw new InvalidDataException("Konfiguration fehlt.");
+        var state = JsonSerializer.Deserialize<BubbleState>(Bytes("groups.json", 8 * 1024 * 1024), StateStore.JsonOptions) ?? throw new InvalidDataException(Loc.T("Konfiguration fehlt.", "Configuration missing."));
         StateStore.Validate(state);
-        var hashes = JsonSerializer.Deserialize<Dictionary<string, string>>(Bytes("sha256.json", 4 * 1024 * 1024)) ?? throw new InvalidDataException("Prüfsummen fehlen.");
+        var hashes = JsonSerializer.Deserialize<Dictionary<string, string>>(Bytes("sha256.json", 4 * 1024 * 1024)) ?? throw new InvalidDataException(Loc.T("Prüfsummen fehlen.", "Checksums missing."));
         var payloads = new Dictionary<string, byte[]>();
         foreach (var target in state.Groups.SelectMany(g => g.Items).Select(e => e.Target).Where(ManagedTargets.IsManaged).Distinct())
         {
             ManagedTargets.TryFileName(target, out var name);
             var bytes = Bytes("shortcuts/" + name, ShortcutVault.MaxLinkBytes);
-            if (!hashes.TryGetValue(name, out var hash) || hash != Convert.ToHexString(SHA256.HashData(bytes))) throw new InvalidDataException("Prüfsumme stimmt nicht: " + name);
+            if (!hashes.TryGetValue(name, out var hash) || hash != Convert.ToHexString(SHA256.HashData(bytes))) throw new InvalidDataException(Loc.T("Prüfsumme stimmt nicht: ", "Checksum does not match: ") + name);
             payloads.Add(target, bytes);
         }
         return new(state, payloads);

@@ -1,8 +1,10 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
+
+using DesktopBubbles.Core;
 
 namespace DesktopBubbles;
 
@@ -52,16 +54,16 @@ internal sealed class WindowsShortcutPlatform(string? desktopOverride = null) : 
     }
     public void DeleteOriginalIfUnchanged(string path, string sha256)
     {
-        if (!IsPersonalDesktopShortcut(path) || (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0) throw new IOException("Diese Datei wird nicht vom Desktop entfernt.");
+        if (!IsPersonalDesktopShortcut(path) || (File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0) throw new IOException(Loc.T("Diese Datei wird nicht vom Desktop entfernt.", "This file is not removed from the desktop."));
         // DELETE + GENERIC_READ; sharing only readers prevents a hash/delete race with writers.
         using var handle = CreateFile(path, 0x80010000, 1, 0, 3, 0x00200080, 0); // OPEN_REPARSE_POINT
-        if (handle.IsInvalid) throw new IOException("Desktop-Original ist gesperrt oder schreibgeschützt.", new Win32Exception(Marshal.GetLastWin32Error()));
+        if (handle.IsInvalid) throw new IOException(Loc.T("Desktop-Original ist gesperrt oder schreibgeschützt.", "The desktop original is locked or read-only."), new Win32Exception(Marshal.GetLastWin32Error()));
         using var file = new FileStream(handle, FileAccess.Read);
-        if (file.Length > ShortcutVault.MaxLinkBytes) throw new IOException("Das Desktop-Original wurde inzwischen verändert.");
-        if (Convert.ToHexString(SHA256.HashData(file)) != sha256) throw new IOException("Das Desktop-Original wurde inzwischen verändert.");
+        if (file.Length > ShortcutVault.MaxLinkBytes) throw new IOException(Loc.T("Das Desktop-Original wurde inzwischen verändert.", "The desktop original has changed in the meantime."));
+        if (Convert.ToHexString(SHA256.HashData(file)) != sha256) throw new IOException(Loc.T("Das Desktop-Original wurde inzwischen verändert.", "The desktop original has changed in the meantime."));
         var info = new Disposition { DeleteFile = 1 };
         if (!SetFileInformationByHandle(handle, 4, ref info, (uint)Marshal.SizeOf<Disposition>()))
-            throw new IOException("Desktop-Original konnte nicht entfernt werden.", new Win32Exception(Marshal.GetLastWin32Error()));
+            throw new IOException(Loc.T("Desktop-Original konnte nicht entfernt werden.", "The desktop original could not be removed."), new Win32Exception(Marshal.GetLastWin32Error()));
     }
     [StructLayout(LayoutKind.Sequential)] private struct Disposition { public byte DeleteFile; }
     [DllImport("kernel32.dll", EntryPoint = "CreateFileW", CharSet = CharSet.Unicode, SetLastError = true)]

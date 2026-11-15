@@ -75,7 +75,7 @@ public partial class App : System.Windows.Application
             location.Prepare(); Log.DirectoryPath = DataDirectory;
             if (location.Redirected) Log.Write("Benutzerdaten statt geschütztem Ordner: " + location.RequestedDirectory);
             Store = new StateStore(Path.Combine(DataDirectory, "groups.json"));
-            State = Store.Load(); Ui.ApplyTheme(State.Settings);
+            State = Store.Load(); Loc.Use(State.Settings.Language); Ui.ApplyTheme(State.Settings);
             Vault = new ShortcutVault(DataDirectory, shortcutPlatform);
             Shortcuts = new ShortcutManager(Vault, state => { Store.Save(state); dirty = false; });
             var recoveryNotices = Shortcuts.Recover(State);
@@ -117,7 +117,7 @@ public partial class App : System.Windows.Application
             SetupTray();
             if (smoke)
             {
-                State = SmokeTests.CreateState(); Ui.ApplyTheme(State.Settings); Rebuild();
+                State = SmokeTests.CreateState(); Loc.Use(State.Settings.Language); Ui.ApplyTheme(State.Settings); Rebuild();
                 _ = RunSmoke(e.Args.Contains("--appearance-only"));
             }
             else
@@ -126,8 +126,8 @@ public partial class App : System.Windows.Application
                 _ = ResolveNames();
                 if (!e.Args.Contains("--background") || State.Groups.Count == 0) ShowSettings();
                 if (visual) _ = RunVisualPreview();
-                if (Store.RecoveryNotice is not null) MessageBox.Show(Store.RecoveryNotice, "DesktopBubbles · Wiederherstellung");
-                if (recoveryNotices.Count > 0) MessageBox.Show(string.Join("\n", recoveryNotices.Distinct()), "DesktopBubbles · Verknüpfungen wiederhergestellt");
+                if (Store.RecoveryNotice is not null) MessageBox.Show(Store.RecoveryNotice, Loc.T("DesktopBubbles · Wiederherstellung", "DesktopBubbles · Recovery"));
+                if (recoveryNotices.Count > 0) MessageBox.Show(string.Join("\n", recoveryNotices.Distinct()), Loc.T("DesktopBubbles · Verknüpfungen wiederhergestellt", "DesktopBubbles · Shortcuts restored"));
                 if (e.Args.Contains("--measure-idle")) _ = MeasureAndExit();
             }
             Log.Write($"Started {Environment.OSVersion.Version}, .NET {Environment.Version}, portable={Portable}, data={DataDirectory}");
@@ -162,8 +162,19 @@ public partial class App : System.Windows.Application
         trayIcon = new System.Drawing.Icon(brandIcon, Forms.SystemInformation.SmallIconSize);
         var assembly = Assembly.GetExecutingAssembly();
         string version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0]
-            ?? assembly.GetName().Version?.ToString(3) ?? "unbekannt";
+            ?? assembly.GetName().Version?.ToString(3) ?? Loc.T("unbekannt", "unknown");
         tray = new Forms.NotifyIcon { Text = "DesktopBubbles · " + version, Icon = trayIcon, Visible = true };
+        BuildTrayMenu(version);
+        // A single left click opens the app; the right button keeps the menu.
+        tray.MouseClick += (_, e) => { if (e.Button == Forms.MouseButtons.Left) Dispatcher.Invoke(ShowSettings); };
+    }
+    private string version = "";
+    // Built again when the language changes.
+    private void BuildTrayMenu(string version)
+    {
+        if (tray is null) return;
+        this.version = version;
+        var old = tray.ContextMenuStrip;
         var menu = TrayMenu.Create();
         var head = new VersionItem(version) { Font = menu.Font }; menu.Items.Add(head);
         // The version line checks for updates and must keep the menu open while it does.
@@ -173,14 +184,24 @@ public partial class App : System.Windows.Application
         head.Click += async (_, _) => await head.Check(version);
         menu.Opening += (_, _) => head.Reset();
         menu.Items.Add(TrayMenu.Spacer());
-        menu.Items.Add(TrayMenu.Item("Einstellungen öffnen", (_, _) => Dispatcher.Invoke(ShowSettings)));
-        menu.Items.Add(TrayMenu.Item("Zum Repository", (_, _) => Dispatcher.Invoke(OpenRepository)));
-        menu.Items.Add(TrayMenu.Item("Desktop-Verbindung erneuern", (_, _) => Dispatcher.Invoke(Rebuild)));
+        menu.Items.Add(TrayMenu.Item(Loc.T("Einstellungen öffnen", "Open settings"), (_, _) => Dispatcher.Invoke(ShowSettings)));
+        menu.Items.Add(TrayMenu.Item(Loc.T("Zum Repository", "Open repository"), (_, _) => Dispatcher.Invoke(OpenRepository)));
+        menu.Items.Add(TrayMenu.Item(Loc.T("Desktop-Verbindung erneuern", "Reconnect desktop"), (_, _) => Dispatcher.Invoke(Reconnect)));
         menu.Items.Add(TrayMenu.Spacer());
-        menu.Items.Add(TrayMenu.Exit("Beenden", (_, _) => Dispatcher.Invoke(Quit)));
+        menu.Items.Add(TrayMenu.Exit(Loc.T("Beenden", "Quit"), (_, _) => Dispatcher.Invoke(Quit)));
         tray.ContextMenuStrip = menu;
-        // A single left click opens the app; the right button keeps the menu.
-        tray.MouseClick += (_, e) => { if (e.Button == Forms.MouseButtons.Left) Dispatcher.Invoke(ShowSettings); };
+        old?.Dispose();
+    }
+    // Switches the whole app between German and English, without a restart: the tray menu, the
+    // miniatures' tooltips and menus, and the open management window (with a page hand-over).
+    internal void SetLanguage(string language)
+    {
+        if (State.Settings.Language == language) return;
+        State.Settings.Language = language; Loc.Use(language); RequestSave();
+        BuildTrayMenu(version);
+        CloseFlyout();
+        foreach (var bubble in bubbles) bubble.RefreshTexts();
+        settings?.Retranslate();
     }
     private void OpenRepository()
     {
@@ -244,7 +265,7 @@ public partial class App : System.Windows.Application
         catch (Exception ex)
         {
             Log.Write("SAVE FAILED " + ex);
-            if (!saveWarning && !exiting) { saveWarning = true; Ui.Error(new IOException("Die Änderungen konnten nicht gespeichert werden. Bitte den Datenordner prüfen.\n" + ex.Message)); }
+            if (!saveWarning && !exiting) { saveWarning = true; Ui.Error(new IOException(Loc.T("Die Änderungen konnten nicht gespeichert werden. Bitte den Datenordner prüfen.\n", "The changes could not be saved. Please check the data folder.\n") + ex.Message)); }
         }
     }
     internal void ApplySettings(BubbleSettings value)
@@ -338,7 +359,7 @@ public partial class App : System.Windows.Application
     {
         Log.Write("Shared desktop duplicates: " + string.Join(", ", names));
         tray?.ShowBalloonTip(8000, "DesktopBubbles",
-            $"{string.Join(", ", names)} liegt erneut auf dem öffentlichen Desktop, obwohl es schon in einer Bubble ist. Entfernen: Einstellungen → Daten & Werkzeuge.",
+            Loc.T($"{string.Join(", ", names)} liegt erneut auf dem öffentlichen Desktop, obwohl es schon in einer Bubble ist. Entfernen: Einstellungen → Daten & Werkzeuge.", $"{string.Join(", ", names)} is back on the public desktop although it is already in a bubble. Remove it: Settings → Data & tools."),
             Forms.ToolTipIcon.Info);
     }
     // The shared desktop needs administrator rights; Windows asks once, for exactly these files.
@@ -346,11 +367,11 @@ public partial class App : System.Windows.Application
     {
         Duplicates?.Scan();
         var found = Duplicates?.Shared ?? [];
-        if (found.Count == 0) { MessageBox.Show("Auf dem öffentlichen Desktop liegen keine Verknüpfungen, die schon in einer Bubble sind.", "DesktopBubbles"); return; }
+        if (found.Count == 0) { MessageBox.Show(Loc.T("Auf dem öffentlichen Desktop liegen keine Verknüpfungen, die schon in einer Bubble sind.", "There are no shortcuts on the public desktop that are already in a bubble."), "DesktopBubbles"); return; }
         var list = string.Join("\n", found.Select(f => "• " + Path.GetFileNameWithoutExtension(f.Path) + "  (Bubble " + f.Bubble + ")"));
-        if (MessageBox.Show("Diese Verknüpfungen liegen auf dem öffentlichen Desktop und schon in einer Bubble:\n\n" + list +
-            "\n\nVom öffentlichen Desktop entfernen? Windows fragt dafür nach Administratorrechten. Programme und Bubble-Einträge bleiben unverändert.",
-            "Doppelte Verknüpfungen", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        if (MessageBox.Show(Loc.T("Diese Verknüpfungen liegen auf dem öffentlichen Desktop und schon in einer Bubble:\n\n", "These shortcuts are on the public desktop and already in a bubble:\n\n") + list +
+            Loc.T("\n\nVom öffentlichen Desktop entfernen? Windows fragt dafür nach Administratorrechten. Programme und Bubble-Einträge bleiben unverändert.", "\n\nRemove them from the public desktop? Windows asks for administrator rights. Programs and bubble entries stay unchanged."),
+            Loc.T("Doppelte Verknüpfungen", "Duplicate shortcuts"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
         string paths = string.Join(",", found.Select(f => "'" + f.Path.Replace("'", "''") + "'"));
         try
         {
@@ -362,7 +383,7 @@ public partial class App : System.Windows.Application
         Duplicates?.Scan();
         int left = Duplicates?.Shared.Count ?? 0;
         Log.Write($"Shared desktop duplicates removed: {found.Count - left} of {found.Count}");
-        if (left > 0) MessageBox.Show($"{left} Verknüpfung(en) konnten nicht entfernt werden.", "DesktopBubbles", MessageBoxButton.OK, MessageBoxImage.Warning);
+        if (left > 0) MessageBox.Show(Loc.T($"{left} Verknüpfung(en) konnten nicht entfernt werden.", $"{left} shortcut(s) could not be removed."), "DesktopBubbles", MessageBoxButton.OK, MessageBoxImage.Warning);
     }
     // Effect shown while dragging over a bubble or folder of the given group.
     internal DragDropEffects DropEffect(IDataObject data, BubbleGroup group)
@@ -413,19 +434,19 @@ public partial class App : System.Windows.Application
     }
     internal void CreateGroup()
     {
-        if (State.Groups.Count >= 100) { Ui.Error(new InvalidOperationException("Maximal 100 Gruppen sind möglich.")); return; }
-        string? name = Ui.Ask(settings, "Neue Gruppe", "Wie soll deine Gruppe heißen?", "Meine Apps");
+        if (State.Groups.Count >= 100) { Ui.Error(new InvalidOperationException(Loc.T("Maximal 100 Gruppen sind möglich.", "At most 100 groups are possible."))); return; }
+        string? name = Ui.Ask(settings, Loc.T("Neue Gruppe", "New group"), Loc.T("Wie soll deine Gruppe heißen?", "What should your group be called?"), Loc.T("Meine Apps", "My apps"));
         if (name is null) return;
         var work = Forms.Screen.PrimaryScreen!.WorkingArea;
         var group = new BubbleGroup { Name = StateStore.CleanName(name), X = work.Right - 150 - State.Groups.Count % 5 * 112, Y = work.Y + 80 + State.Groups.Count / 5 * 120 };
         State.Groups.Add(group); Changed(true);
     }
     internal void Rename(BubbleGroup group)
-    { CloseFlyout(); var name = Ui.Ask(settings, "Gruppe umbenennen", "Gruppenname", group.Name); if (name is not null) { group.Name = StateStore.CleanName(name); Changed(true); } }
+    { CloseFlyout(); var name = Ui.Ask(settings, Loc.T("Gruppe umbenennen", "Rename group"), Loc.T("Gruppenname", "Group name"), group.Name); if (name is not null) { group.Name = StateStore.CleanName(name); Changed(true); } }
     internal void Delete(BubbleGroup group)
     {
         CloseFlyout();
-        if (MessageBox.Show($"Gruppe „{group.Name}“ entfernen?\nÜbernommene Desktop-Verknüpfungen werden zurückgelegt, sofern keine andere Gruppe sie verwendet.", "Gruppe löschen", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        if (MessageBox.Show(Loc.T($"Gruppe „{group.Name}“ entfernen?\nÜbernommene Desktop-Verknüpfungen werden zurückgelegt, sofern keine andere Gruppe sie verwendet.", $"Remove group “{group.Name}”?\nAdopted desktop shortcuts are put back unless another group uses them."), Loc.T("Gruppe löschen", "Delete group"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
         try { Shortcuts.RemoveGroup(State, group); Changed(true); } catch (Exception ex) { Ui.Error(ex); }
     }
     internal void ToggleName(BubbleGroup group) { group.ShowName = !group.ShowName; Changed(true); }
@@ -434,8 +455,8 @@ public partial class App : System.Windows.Application
     {
         if (!ManagedTargets.IsManaged(entry.Target)) return entry.Target;
         string source = Vault.OriginalSource(entry.Target) ?? "";
-        string location = "In der Bubble gespeichert" + (string.IsNullOrEmpty(source) ? "" : "\nUrsprünglich: " + source);
-        if (!string.IsNullOrEmpty(source) && File.Exists(source)) location += "\nDas Original ist zusätzlich vorhanden.";
+        string location = Loc.T("In der Bubble gespeichert", "Saved in the bubble") + (string.IsNullOrEmpty(source) ? "" : Loc.T("\nUrsprünglich: ", "\nOriginally: ") + source);
+        if (!string.IsNullOrEmpty(source) && File.Exists(source)) location += Loc.T("\nDas Original ist zusätzlich vorhanden.", "\nThe original exists as well.");
         return location;
     }
     internal void Launch(AppEntry entry) => LaunchService.Launch(new AppEntry { Name = entry.Name, Target = Resolve(entry.Target) });
@@ -457,12 +478,12 @@ public partial class App : System.Windows.Application
     }
     internal void RestoreShortcut(AppEntry entry)
     {
-        try { var path = Shortcuts.Restore(entry.Target); if (path is not null) MessageBox.Show("Auf dem Desktop wiederhergestellt:\n" + path, "DesktopBubbles"); }
+        try { var path = Shortcuts.Restore(entry.Target); if (path is not null) MessageBox.Show(Loc.T("Auf dem Desktop wiederhergestellt:\n", "Restored on the desktop:\n") + path, "DesktopBubbles"); }
         catch (Exception ex) { Ui.Error(ex); }
     }
     internal void RestoreAllShortcuts()
     {
-        try { var paths = Vault.RestoreAll(); MessageBox.Show($"{paths.Count} Verknüpfung(en) liegen wieder auf dem Desktop.", "DesktopBubbles"); }
+        try { var paths = Vault.RestoreAll(); MessageBox.Show(Loc.T($"{paths.Count} Verknüpfung(en) liegen wieder auf dem Desktop.", $"{paths.Count} shortcut(s) are back on the desktop."), "DesktopBubbles"); }
         catch (Exception ex) { Ui.Error(ex); }
     }
     internal void RemoveEntry(BubbleGroup group, AppEntry entry)
@@ -481,12 +502,12 @@ public partial class App : System.Windows.Application
     }
     internal string ReturnToDesktop(BubbleGroup group, AppEntry entry, string? desktopOverride = null)
     {
-        if (!State.Groups.Contains(group) || !group.Items.Contains(entry)) throw new InvalidOperationException("Der Eintrag gehört nicht mehr zu dieser Gruppe.");
+        if (!State.Groups.Contains(group) || !group.Items.Contains(entry)) throw new InvalidOperationException(Loc.T("Der Eintrag gehört nicht mehr zu dieser Gruppe.", "The entry no longer belongs to this group."));
         var export = new ShortcutDrag(this, group, entry, desktopOverride);
         try
         {
             string destination = export.WriteToDesktop();
-            if (!Shortcuts.CompleteExport(State, group, entry, true)) throw new IOException("Der Eintrag konnte nicht aus der Gruppe entfernt werden.");
+            if (!Shortcuts.CompleteExport(State, group, entry, true)) throw new IOException(Loc.T("Der Eintrag konnte nicht aus der Gruppe entfernt werden.", "The entry could not be removed from the group."));
             Changed();
             return destination;
         }
@@ -495,7 +516,7 @@ public partial class App : System.Windows.Application
     internal void SetIcon(BubbleGroup group)
     {
         CloseFlyout();
-        var dialog = new OpenFileDialog { Title = "Gruppensymbol wählen", Filter = "Symbole und Bilder|*.ico;*.png;*.jpg;*.jpeg;*.bmp;*.exe;*.lnk|Alle Dateien|*.*" };
+        var dialog = new OpenFileDialog { Title = Loc.T("Gruppensymbol wählen", "Choose group icon"), Filter = Loc.T("Symbole und Bilder|*.ico;*.png;*.jpg;*.jpeg;*.bmp;*.exe;*.lnk|Alle Dateien|*.*", "Icons and images|*.ico;*.png;*.jpg;*.jpeg;*.bmp;*.exe;*.lnk|All files|*.*") };
         if (dialog.ShowDialog() == true) { group.CustomIcon = dialog.FileName; Changed(true); }
     }
     internal void AddTargets(BubbleGroup group, IEnumerable<string> targets, bool rebuild = true)
@@ -504,7 +525,7 @@ public partial class App : System.Windows.Application
         {
             var warnings = new List<string>();
             foreach (var target in targets) { var warning = Shortcuts.Add(State, group, target); if (warning is not null) warnings.Add(warning); }
-            if (warnings.Count > 0) MessageBox.Show(string.Join("\n", warnings.Distinct()), "DesktopBubbles · Original beibehalten");
+            if (warnings.Count > 0) MessageBox.Show(string.Join("\n", warnings.Distinct()), Loc.T("DesktopBubbles · Original beibehalten", "DesktopBubbles · Original kept"));
         }
         catch (Exception ex) { Ui.Error(ex); }
         finally { Changed(rebuild); }
@@ -512,20 +533,20 @@ public partial class App : System.Windows.Application
     internal void AddFiles(BubbleGroup group, bool rebuild = true)
     {
         if (rebuild) CloseFlyout();
-        var dialog = new OpenFileDialog { Title = "Dateien oder Verknüpfungen hinzufügen", Multiselect = true, Filter = "Alle Dateien|*.*|Apps und Verknüpfungen|*.lnk;*.exe;*.url" };
+        var dialog = new OpenFileDialog { Title = Loc.T("Dateien oder Verknüpfungen hinzufügen", "Add files or shortcuts"), Multiselect = true, Filter = Loc.T("Alle Dateien|*.*|Apps und Verknüpfungen|*.lnk;*.exe;*.url", "All files|*.*|Apps and shortcuts|*.lnk;*.exe;*.url") };
         if (dialog.ShowDialog() == true) AddTargets(group, dialog.FileNames, rebuild);
     }
     internal void AddFolder(BubbleGroup group, bool rebuild = true)
     {
         if (rebuild) CloseFlyout();
-        var dialog = new OpenFolderDialog { Title = "Ordner hinzufügen", Multiselect = true };
+        var dialog = new OpenFolderDialog { Title = Loc.T("Ordner hinzufügen", "Add folder"), Multiselect = true };
         if (dialog.ShowDialog() == true) AddTargets(group, dialog.FolderNames, rebuild);
     }
     internal void AddWeb(BubbleGroup group, Window? owner = null, bool rebuild = true)
     {
-        var url = Ui.Ask(owner ?? settings, "Webadresse hinzufügen", "https-Adresse", "https://");
+        var url = Ui.Ask(owner ?? settings, Loc.T("Webadresse hinzufügen", "Add web address"), Loc.T("https-Adresse", "https address"), "https://");
         if (url is null) return;
-        if (!Targets.IsWeb(url)) { Ui.Error(new ArgumentException("Bitte eine vollständige http- oder https-Adresse eingeben.")); return; }
+        if (!Targets.IsWeb(url)) { Ui.Error(new ArgumentException(Loc.T("Bitte eine vollständige http- oder https-Adresse eingeben.", "Please enter a complete http or https address."))); return; }
         AddTargets(group, [url], rebuild);
     }
     internal void PickApp(BubbleGroup group, bool rebuild = true)
@@ -536,21 +557,21 @@ public partial class App : System.Windows.Application
     }
     internal void Export()
     {
-        var dialog = new SaveFileDialog { Title = "Gruppen und Verknüpfungen sichern", Filter = "DesktopBubbles-Sicherung|*.bubbles", FileName = "DesktopBubbles-Sicherung.bubbles" };
+        var dialog = new SaveFileDialog { Title = Loc.T("Gruppen und Verknüpfungen sichern", "Back up groups and shortcuts"), Filter = Loc.T("DesktopBubbles-Sicherung|*.bubbles", "DesktopBubbles backup|*.bubbles"), FileName = Loc.T("DesktopBubbles-Sicherung.bubbles", "DesktopBubbles-Backup.bubbles") };
         if (dialog.ShowDialog() != true) return;
         try { ConfigurationBundle.Export(dialog.FileName, State, Vault); } catch (Exception ex) { Ui.Error(ex); }
     }
     internal void Import()
     {
-        var dialog = new OpenFileDialog { Title = "Gruppen importieren", Filter = "DesktopBubbles-Sicherung oder ältere Konfiguration|*.bubbles;*.json" };
+        var dialog = new OpenFileDialog { Title = Loc.T("Gruppen importieren", "Import groups"), Filter = Loc.T("DesktopBubbles-Sicherung oder ältere Konfiguration|*.bubbles;*.json", "DesktopBubbles backup or older configuration|*.bubbles;*.json") };
         if (dialog.ShowDialog() != true) return;
         try
         {
             var bundle = Path.GetExtension(dialog.FileName).Equals(".bubbles", StringComparison.OrdinalIgnoreCase) ? ConfigurationBundle.Read(dialog.FileName) : null;
             var imported = bundle?.State ?? StateStore.Read(dialog.FileName);
             if (bundle is null && imported.Groups.SelectMany(g => g.Items).Any(e => ManagedTargets.IsManaged(e.Target)))
-                throw new InvalidDataException("Eine JSON-Datei enthält die gespeicherten Verknüpfungen nicht. Bitte eine .bubbles-Sicherung importieren.");
-            if (MessageBox.Show($"{imported.Groups.Count} Gruppen importieren und die aktuellen Gruppen ersetzen?\nNur Konfigurationen aus vertrauenswürdiger Quelle importieren: Einträge können Programme starten.\nDie bisherige Konfiguration wird gesichert.", "Konfiguration importieren", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+                throw new InvalidDataException(Loc.T("Eine JSON-Datei enthält die gespeicherten Verknüpfungen nicht. Bitte eine .bubbles-Sicherung importieren.", "A JSON file does not contain the saved shortcuts. Please import a .bubbles backup."));
+            if (MessageBox.Show(Loc.T($"{imported.Groups.Count} Gruppen importieren und die aktuellen Gruppen ersetzen?\nNur Konfigurationen aus vertrauenswürdiger Quelle importieren: Einträge können Programme starten.\nDie bisherige Konfiguration wird gesichert.", $"Import {imported.Groups.Count} groups and replace the current groups?\nOnly import configurations from a trusted source: entries can start programs.\nThe current configuration is backed up."), Loc.T("Konfiguration importieren", "Import configuration"), MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
             Store.Save(State);
             File.Copy(Store.Path, Path.Combine(DataDirectory, "before-import-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-ffff") + ".json"));
             if (bundle is not null) foreach (var payload in bundle.Payloads) Vault.ImportPayload(payload.Key, payload.Value);
@@ -564,7 +585,7 @@ public partial class App : System.Windows.Application
     internal void Quit()
     {
         Flush();
-        if (dirty && MessageBox.Show("Änderungen konnten nicht gespeichert werden. Trotzdem beenden?", "DesktopBubbles", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+        if (dirty && MessageBox.Show(Loc.T("Änderungen konnten nicht gespeichert werden. Trotzdem beenden?", "Changes could not be saved. Quit anyway?"), "DesktopBubbles", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
         exiting = true; Shutdown();
     }
     // Lays every taken-over desktop shortcut back onto the desktop and, while Explorer runs,

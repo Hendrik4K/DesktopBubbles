@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -51,8 +51,7 @@ internal sealed class BubbleWindow : Window
         canvas = new Grid { Width = size + 28, Height = size + 40 }; canvas.Children.Add(root);
         Content = new Viewbox { Stretch = Stretch.Fill, Child = canvas };
         System.Windows.Automation.AutomationProperties.SetName(this, group.Name);
-        ToolTip = $"{group.Name} · {group.Items.Count} Einträge\nZiehen zum Verschieben · Rechtsklick zum Bearbeiten";
-        ContextMenu = GroupActionsMenu.Create(app, group, settings: true);
+        RefreshTexts();
         PreviewMouseLeftButtonDown += (_, e) =>
         {
             Native.GetCursorPos(out startCursor); startWindow = Native.Bounds(this);
@@ -202,6 +201,12 @@ internal sealed class BubbleWindow : Window
         return false;
     }
     public void Finish() { closing = true; Close(); }
+    // Tooltip and menu in the current language (built again when it changes).
+    public void RefreshTexts()
+    {
+        ToolTip = Loc.T($"{Group.Name} · {Group.Items.Count} Einträge\nZiehen zum Verschieben · Rechtsklick zum Bearbeiten", $"{Group.Name} · {Group.Items.Count} items\nDrag to move · right-click to edit");
+        ContextMenu = GroupActionsMenu.Create(app, Group, settings: true);
+    }
     public void RefreshAppearance()
     {
         double size = app.State.Settings.MiniatureSize;

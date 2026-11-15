@@ -323,10 +323,10 @@ internal sealed class FlyoutWindow : Window
                 app.ReceiveDrop(Group, e.Data, false, Group.Items.FindIndex(x => x.Id == entry.Id)); _ = Populate(); e.Handled = true;
             };
             var menu = new ContextMenu(); button.ContextMenu = menu;
-            menu.Items.Add(Ui.Menu("Starten", () => { try { app.Launch(entry); Close(); } catch (Exception ex) { Ui.Error(ex); } }));
-            menu.Items.Add(Ui.Menu("Zurück zum Desktop", () => WithDialog(() => { app.RemoveEntry(Group, entry); _ = Populate(); Place(); })));
-            var delete = Ui.Menu("Aus Gruppe löschen", () => WithDialog(() => { app.DeleteEntry(Group, entry); _ = Populate(); Place(); }));
-            delete.ToolTip = "Entfernt nur diesen Eintrag. Keine Dateien oder Programme werden gelöscht und keine Verknüpfung wird auf dem Desktop angelegt.";
+            menu.Items.Add(Ui.Menu(Loc.T("Starten", "Launch"), () => { try { app.Launch(entry); Close(); } catch (Exception ex) { Ui.Error(ex); } }));
+            menu.Items.Add(Ui.Menu(Loc.T("Zurück zum Desktop", "Back to desktop"), () => WithDialog(() => { app.RemoveEntry(Group, entry); _ = Populate(); Place(); })));
+            var delete = Ui.Menu(Loc.T("Aus Gruppe löschen", "Remove from group"), () => WithDialog(() => { app.DeleteEntry(Group, entry); _ = Populate(); Place(); }));
+            delete.ToolTip = Loc.T("Entfernt nur diesen Eintrag. Keine Dateien oder Programme werden gelöscht und keine Verknüpfung wird auf dem Desktop angelegt.", "Removes only this entry. No files or programs are deleted and no shortcut is placed on the desktop.");
             menu.Items.Add(delete);
             grid.Children.Add(button); buttons[entry.Id] = button;
             _ = SetImage(image, app.Resolve(entry.Target));
@@ -338,10 +338,10 @@ internal sealed class FlyoutWindow : Window
     private ContextMenu CreateAddMenu()
     {
         var menu = new ContextMenu();
-        menu.Items.Add(Ui.Menu("Dateien / Verknüpfungen hinzufügen …", () => WithDialog(() => { app.AddFiles(Group, false); _ = Populate(); Place(); })));
-        menu.Items.Add(Ui.Menu("Ordner hinzufügen …", () => WithDialog(() => { app.AddFolder(Group, false); _ = Populate(); Place(); })));
-        menu.Items.Add(Ui.Menu("Installierte App hinzufügen …", () => WithDialog(() => { app.PickApp(Group, false); _ = Populate(); Place(); })));
-        menu.Items.Add(Ui.Menu("Webadresse hinzufügen …", () => WithDialog(() => { app.AddWeb(Group, this, false); _ = Populate(); Place(); })));
+        menu.Items.Add(Ui.Menu(Loc.T("Dateien / Verknüpfungen hinzufügen …", "Add files / shortcuts …"), () => WithDialog(() => { app.AddFiles(Group, false); _ = Populate(); Place(); })));
+        menu.Items.Add(Ui.Menu(Loc.T("Ordner hinzufügen …", "Add folder …"), () => WithDialog(() => { app.AddFolder(Group, false); _ = Populate(); Place(); })));
+        menu.Items.Add(Ui.Menu(Loc.T("Installierte App hinzufügen …", "Add installed app …"), () => WithDialog(() => { app.PickApp(Group, false); _ = Populate(); Place(); })));
+        menu.Items.Add(Ui.Menu(Loc.T("Webadresse hinzufügen …", "Add web address …"), () => WithDialog(() => { app.AddWeb(Group, this, false); _ = Populate(); Place(); })));
         return menu;
     }
 }

@@ -130,7 +130,16 @@ internal static class Native
 
 internal sealed class DesktopHost
 {
-    public string Status { get; private set; } = "Noch nicht verbunden";
+    // Worded when shown, so a language switch is picked up at once.
+    private enum Mode { Unconnected, Desktop, Unavailable, Off }
+    private Mode mode;
+    public string Status => mode switch
+    {
+        Mode.Desktop => Loc.T("Desktop-Modus · eigenes Bubble-Fenster", "Desktop mode · own bubble window"),
+        Mode.Unavailable => Loc.T("Fenstermodus · Desktop-Zuordnung nicht verfügbar", "Window mode · desktop attachment unavailable"),
+        Mode.Off => Loc.T("Fenstermodus · Desktop-Zuordnung ausgeschaltet", "Window mode · desktop attachment off"),
+        _ => Loc.T("Noch nicht verbunden", "Not connected yet"),
+    };
     public bool Attach(Window window, bool enabled)
     {
         var h = Native.Handle(window);
@@ -146,13 +155,13 @@ internal sealed class DesktopHost
             if (Native.GetWindow(h, 4) == owner)
             {
                 Native.SetWindowPos(h, (nint)1, 0, 0, 0, 0, Native.NoMove | Native.NoSize | Native.NoActivate);
-                Status = "Desktop-Modus · eigenes Bubble-Fenster";
+                mode = Mode.Desktop;
                 Log.Write($"Desktop owner=0x{owner:X}; independent top-level DWM surface.");
                 return true;
             }
             Log.Write($"Desktop owner assignment failed: Win32={error}");
         }
-        Status = enabled ? "Fenstermodus · Desktop-Zuordnung nicht verfügbar" : "Fenstermodus · Desktop-Zuordnung ausgeschaltet";
+        mode = enabled ? Mode.Unavailable : Mode.Off;
         Native.SetWindowPos(h, (nint)1, 0, 0, 0, 0, Native.NoMove | Native.NoSize | Native.NoActivate);
         return false;
     }

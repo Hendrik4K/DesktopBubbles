@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows;
@@ -33,10 +33,10 @@ internal sealed class ShortcutDrag
         string staging = Path.Combine(app.DataDirectory, "drag-out", Token); Directory.CreateDirectory(staging); FilePath = Path.Combine(staging, candidate);
         if (copy)
         {
-            if (new FileInfo(source).Length > ShortcutVault.MaxLinkBytes) throw new IOException("Die Verknüpfung ist größer als 1 MB.");
+            if (new FileInfo(source).Length > ShortcutVault.MaxLinkBytes) throw new IOException(Loc.T("Die Verknüpfung ist größer als 1 MB.", "The shortcut is larger than 1 MB."));
             using (var input = File.OpenRead(source)) using (var output = new FileStream(FilePath, FileMode.CreateNew, FileAccess.Write, FileShare.None)) { input.CopyTo(output); output.Flush(true); }
             if (!new WindowsShortcutPlatform().ValidateRelocatedShortcut(source, FilePath) || ShortcutVault.Hash(source) != ShortcutVault.Hash(FilePath))
-                throw new IOException("Diese Verknüpfung lässt sich nicht sicher herausziehen. Sie bleibt in der Bubble.");
+                throw new IOException(Loc.T("Diese Verknüpfung lässt sich nicht sicher herausziehen. Sie bleibt in der Bubble.", "This shortcut can't be dragged out safely. It stays in the bubble."));
         }
         else if (Targets.IsWeb(source)) File.WriteAllText(FilePath, "[InternetShortcut]\r\nURL=" + source + "\r\n");
         else CreateShortcut(source, FilePath);
@@ -66,7 +66,7 @@ internal sealed class ShortcutDrag
             using (var input = File.OpenRead(FilePath))
             using (var output = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
             { input.CopyTo(output); output.Flush(true); }
-            if (ShortcutVault.Hash(temporary) != Hash) throw new IOException("Die Desktop-Kopie konnte nicht geprüft werden.");
+            if (ShortcutVault.Hash(temporary) != Hash) throw new IOException(Loc.T("Die Desktop-Kopie konnte nicht geprüft werden.", "The desktop copy could not be verified."));
             for (int i = 0; i < 10000; i++)
             {
                 string destination = Path.Combine(desktop, name + (i == 0 ? "" : $" (Bubble {i})") + extension);
@@ -74,16 +74,16 @@ internal sealed class ShortcutDrag
                 if (File.Exists(destination) || Directory.Exists(destination)) continue;
                 try { File.Move(temporary, destination, false); }
                 catch (IOException) when (File.Exists(destination) || Directory.Exists(destination)) { continue; }
-                if (!Matches(destination)) throw new IOException("Die Desktop-Verknüpfung konnte nicht geprüft werden. Der Eintrag bleibt in der Gruppe.");
+                if (!Matches(destination)) throw new IOException(Loc.T("Die Desktop-Verknüpfung konnte nicht geprüft werden. Der Eintrag bleibt in der Gruppe.", "The desktop shortcut could not be verified. The entry stays in the group."));
                 return destination;
             }
-            throw new IOException("Kein freier Dateiname auf dem Desktop gefunden.");
+            throw new IOException(Loc.T("Kein freier Dateiname auf dem Desktop gefunden.", "No free file name found on the desktop."));
         }
         finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
     private static void CreateShortcut(string target, string destination)
     {
-        if (!Targets.Exists(target)) throw new FileNotFoundException("Das Ziel fehlt; es wurde nichts herausgezogen.", target);
+        if (!Targets.Exists(target)) throw new FileNotFoundException(Loc.T("Das Ziel fehlt; es wurde nichts herausgezogen.", "The target is missing; nothing was dragged out."), target);
         object? shell = null, shortcut = null;
         try
         {

@@ -1,7 +1,9 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+
+using DesktopBubbles.Core;
 
 namespace DesktopBubbles;
 
@@ -26,8 +28,8 @@ internal static class Diagnostics
             GdiObjects = GetGuiResources(process.Handle, 0), UserObjects = GetGuiResources(process.Handle, 1),
             IconCache = app.Icons.CachedCount, Groups = app.State.Groups.Count,
             DesktopMode = app.Host.Status, PopupOpen = app.HasFlyout,
-            Gpu = "Nicht gemessen", GamingFrametimes = "Nicht gemessen",
-            Note = "Momentaufnahme dieses Prozesses. Keine Aussage über Spiele-Frametimes oder alle Hardwarekonfigurationen."
+            Gpu = Loc.T("Nicht gemessen", "Not measured"), GamingFrametimes = Loc.T("Nicht gemessen", "Not measured"),
+            Note = Loc.T("Momentaufnahme dieses Prozesses. Keine Aussage über Spiele-Frametimes oder alle Hardwarekonfigurationen.", "Snapshot of this process. Says nothing about game frame times or every hardware configuration.")
         };
         var path = Path.Combine(app.DataDirectory, "diagnostics-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff") + ".json");
         File.WriteAllText(path, JsonSerializer.Serialize(data, StateStore.JsonOptions));

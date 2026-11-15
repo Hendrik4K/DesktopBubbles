@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using DesktopBubbles.Core;
 
 namespace DesktopBubbles.Infrastructure;
@@ -23,13 +23,13 @@ public sealed class StateStore(string path)
                     var recovered = Read(Path + ".bak");
                     PreserveDamaged();
                     preserveBackup = true;
-                    RecoveryNotice = "Die Konfiguration war beschädigt. Die letzte Sicherung wurde geladen.";
+                    RecoveryNotice = Loc.T("Die Konfiguration war beschädigt. Die letzte Sicherung wurde geladen.", "The configuration was damaged. The last backup was loaded.");
                     return recovered;
                 }
                 catch (Exception backup) when (backup is IOException or JsonException or InvalidDataException or UnauthorizedAccessException) { }
             }
             PreserveDamaged();
-            RecoveryNotice = "Die Konfiguration konnte nicht gelesen werden. Eine Kopie bleibt als .damaged-Datei erhalten.";
+            RecoveryNotice = Loc.T("Die Konfiguration konnte nicht gelesen werden. Eine Kopie bleibt als .damaged-Datei erhalten.", "The configuration could not be read. A copy is kept as a .damaged file.");
             return new();
         }
     }
@@ -38,16 +38,16 @@ public sealed class StateStore(string path)
 
     public static BubbleState Read(string path)
     {
-        if (new FileInfo(path).Length > 8 * 1024 * 1024) throw new InvalidDataException("Die Konfiguration ist größer als 8 MB.");
+        if (new FileInfo(path).Length > 8 * 1024 * 1024) throw new InvalidDataException(Loc.T("Die Konfiguration ist größer als 8 MB.", "The configuration is larger than 8 MB."));
         var state = JsonSerializer.Deserialize<BubbleState>(File.ReadAllText(path), JsonOptions)
-            ?? throw new InvalidDataException("Leere Konfiguration.");
+            ?? throw new InvalidDataException(Loc.T("Leere Konfiguration.", "Empty configuration."));
         Validate(state);
         return state;
     }
 
     public static void Validate(BubbleState state)
     {
-        if (state.Version is not (1 or 2 or 3 or 4 or 5 or 6)) throw new InvalidDataException("Diese Konfigurationsversion wird nicht unterstützt.");
+        if (state.Version is not (1 or 2 or 3 or 4 or 5 or 6)) throw new InvalidDataException(Loc.T("Diese Konfigurationsversion wird nicht unterstützt.", "This configuration version is not supported."));
         if (state.Version < 3 && state.Settings is { } legacy)
         {
             // Update unchanged old presentation defaults to the selected compact glass design.
@@ -57,7 +57,8 @@ public sealed class StateStore(string path)
             if (legacy.Theme == "System") legacy.Theme = "Light";
         }
         if (state.Settings is null || state.Groups is null || state.Groups.Count > 100)
-            throw new InvalidDataException("Ungültige Gruppen oder Einstellungen (maximal 100 Gruppen).");
+            throw new InvalidDataException(Loc.T("Ungültige Gruppen oder Einstellungen (maximal 100 Gruppen).", "Invalid groups or settings (at most 100 groups)."));
+        if (state.Settings.Language is not (null or "de" or "en")) state.Settings.Language = null;
         bool splitWindow = state.Version < 4;
         if (splitWindow)
         {
@@ -77,7 +78,7 @@ public sealed class StateStore(string path)
         foreach (var g in state.Groups)
         {
             if (g is null || !ids.Add(g.Id) || g.Id == Guid.Empty || g.Items is null || g.Items.Count > 300)
-                throw new InvalidDataException("Ungültige oder doppelte Gruppe.");
+                throw new InvalidDataException(Loc.T("Ungültige oder doppelte Gruppe.", "Invalid or duplicate group."));
             g.Name = CleanName(g.Name);
             if (splitWindow) { g.WindowColor = g.Color; g.WindowOpacity = g.Opacity; }
             if (unifyAppearance) g.Color ??= g.WindowColor;
@@ -86,13 +87,13 @@ public sealed class StateStore(string path)
             if (g.Opacity is { } opacity) g.Opacity = double.IsFinite(opacity) ? Math.Clamp(opacity, 0, .95) : null;
             if (g.WindowOpacity is { } windowOpacity) g.WindowOpacity = double.IsFinite(windowOpacity) ? Math.Clamp(windowOpacity, 0, .95) : null;
             if (!double.IsFinite(g.X) || !double.IsFinite(g.Y) || Math.Abs(g.X) > 1000000 || Math.Abs(g.Y) > 1000000)
-                throw new InvalidDataException("Ungültige Desktop-Position.");
-            if (g.CustomIcon is not null && !Targets.IsAllowed(g.CustomIcon)) throw new InvalidDataException("Ungültiges Gruppensymbol.");
+                throw new InvalidDataException(Loc.T("Ungültige Desktop-Position.", "Invalid desktop position."));
+            if (g.CustomIcon is not null && !Targets.IsAllowed(g.CustomIcon)) throw new InvalidDataException(Loc.T("Ungültiges Gruppensymbol.", "Invalid group icon."));
             var entryIds = new HashSet<Guid>();
             foreach (var e in g.Items)
             {
                 if (e is null || e.Id == Guid.Empty || !entryIds.Add(e.Id) || !Targets.IsAllowed(e.Target))
-                    throw new InvalidDataException("Ungültiger Eintrag.");
+                    throw new InvalidDataException(Loc.T("Ungültiger Eintrag.", "Invalid entry."));
                 e.Name = CleanName(e.Name);
             }
         }
@@ -148,7 +149,7 @@ public sealed class StateStore(string path)
             using (var fs = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None))
             {
                 JsonSerializer.Serialize(fs, state, JsonOptions);
-                if (fs.Length > 8 * 1024 * 1024) throw new InvalidDataException("Die Konfiguration überschreitet die maximalen 8 MB. Bitte weniger oder kürzere Einträge verwenden.");
+                if (fs.Length > 8 * 1024 * 1024) throw new InvalidDataException(Loc.T("Die Konfiguration überschreitet die maximalen 8 MB. Bitte weniger oder kürzere Einträge verwenden.", "The configuration exceeds the maximum of 8 MB. Please use fewer or shorter entries."));
                 fs.Flush(true);
             }
             if (File.Exists(Path)) File.Replace(temp, Path, preserveBackup ? null : Path + ".bak", true);

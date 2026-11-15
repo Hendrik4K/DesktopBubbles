@@ -1,3 +1,5 @@
+﻿using DesktopBubbles.Core;
+
 namespace DesktopBubbles.Application;
 
 /// <summary>Identifies one Windows startup registration by executable and data location.</summary>
@@ -25,7 +27,7 @@ public static class StartupRegistration
     private static string QuotePath(string value)
     {
         if (!Path.IsPathFullyQualified(value) || value.Any(c => c == '"' || char.IsControl(c)))
-            throw new ArgumentException("Der Autostart benötigt einen vollständigen gültigen Pfad.");
+            throw new ArgumentException(Loc.T("Der Autostart benötigt einen vollständigen gültigen Pfad.", "Starting with Windows needs a complete valid path."));
         string path = Path.TrimEndingDirectorySeparator(Path.GetFullPath(value));
         // Windows command-line parsing requires doubling backslashes before a closing quote.
         int trailing = path.Reverse().TakeWhile(c => c == '\\').Count();

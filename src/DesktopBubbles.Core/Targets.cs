@@ -1,4 +1,4 @@
-namespace DesktopBubbles.Core;
+﻿namespace DesktopBubbles.Core;
 
 public static class Targets
 {
@@ -20,7 +20,7 @@ public static class Targets
     public static AppEntry Create(string target, string? name = null)
     {
         target = target.Trim().Trim('"');
-        if (!IsAllowed(target)) throw new ArgumentException("Bitte eine Datei, einen Ordner, eine https-Adresse oder eine Store-App wählen.");
+        if (!IsAllowed(target)) throw new ArgumentException(Loc.T("Bitte eine Datei, einen Ordner, eine https-Adresse oder eine Store-App wählen.", "Please choose a file, a folder, an https address or a Store app."));
         return new AppEntry { Target = target, Name = string.IsNullOrWhiteSpace(name)
             ? (IsWeb(target) ? new Uri(target).Host : Path.GetFileNameWithoutExtension(target.TrimEnd(Path.DirectorySeparatorChar)))
             : name.Trim() };
@@ -28,7 +28,7 @@ public static class Targets
 
     public static bool Add(BubbleGroup group, AppEntry entry)
     {
-        if (group.Items.Count >= 300) throw new InvalidOperationException("Eine Gruppe kann höchstens 300 Einträge enthalten.");
+        if (group.Items.Count >= 300) throw new InvalidOperationException(Loc.T("Eine Gruppe kann höchstens 300 Einträge enthalten.", "A group can hold at most 300 entries."));
         if (group.Items.Any(e => string.Equals(e.Target, entry.Target, StringComparison.OrdinalIgnoreCase))) return false;
         group.Items.Add(entry);
         return true;

@@ -1,10 +1,12 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using Forms = System.Windows.Forms;
+
+using DesktopBubbles.Core;
 
 namespace DesktopBubbles;
 
@@ -130,7 +132,7 @@ internal sealed class VersionItem : Forms.ToolStripMenuItem
 
     public VersionItem(string version)
     {
-        AutoSize = false; Size = new Size(TrayMenu.Width, TrayMenu.EdgeHeight); ToolTipText = "Klicken: nach Updates suchen";
+        AutoSize = false; Size = new Size(TrayMenu.Width, TrayMenu.EdgeHeight); ToolTipText = Loc.T("Klicken: nach Updates suchen", "Click: check for updates");
         Home = "DesktopBubbles " + version; text = Home; color = TrayMenu.Text;
         dance = new LetterMotion(this, LetterMotion.Style.Dance);
         frame.Tick += (_, _) => { if (!Animating) frame.Stop(); Invalidate(); };
@@ -162,10 +164,10 @@ internal sealed class VersionItem : Forms.ToolStripMenuItem
         if (checking) return; checking = true;
         try
         {
-            releasePage = null; SlideTo("Suche nach Updates …", TrayMenu.Text); await Task.Delay(400);
+            releasePage = null; SlideTo(Loc.T("Suche nach Updates …", "Checking for updates …"), TrayMenu.Text); await Task.Delay(400);
             var (latest, page) = await Latest();
-            if (latest is null) { SlideTo("Prüfung nicht möglich (offline?)", TrayMenu.Muted); await Task.Delay(2400); SlideTo(Home, TrayMenu.Text); return; }
-            if (Version.TryParse(current, out var mine) && latest > mine) { releasePage = page; SlideTo($"DesktopBubbles {latest} verfügbar", TrayMenu.Amber); return; }
+            if (latest is null) { SlideTo(Loc.T("Prüfung nicht möglich (offline?)", "Check not possible (offline?)"), TrayMenu.Muted); await Task.Delay(2400); SlideTo(Home, TrayMenu.Text); return; }
+            if (Version.TryParse(current, out var mine) && latest > mine) { releasePage = page; SlideTo(Loc.T($"DesktopBubbles {latest} verfügbar", $"DesktopBubbles {latest} available"), TrayMenu.Amber); return; }
             SlideTo(Home, TrayMenu.Text); await Task.Delay(TimeSpan.FromMilliseconds(OutMs + InMs)); glow.Restart(); frame.Start();
         }
         finally { checking = false; }

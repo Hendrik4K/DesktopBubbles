@@ -21,7 +21,7 @@ internal sealed class SettingsWindow : Window
     private readonly Border selectionPill;
     private double? pillY;
     private readonly ContentControl pane = new();
-    private readonly Button settingsButton;
+    private readonly Button settingsButton, closeButton, createButton;
     private readonly Dictionary<Guid, Border> thumbnails = [];
     private Border? swatch;
     private Border? modeSwatch;
@@ -104,7 +104,7 @@ internal sealed class SettingsWindow : Window
         layout.RowDefinitions.Add(new RowDefinition()); layout.RowDefinitions.Add(new RowDefinition { Height = new GridLength(86) });
         surface = new Border { CornerRadius = new CornerRadius(Ui.AppRadius), BorderBrush = Ui.GlassRim(), BorderThickness = new Thickness(1), Child = layout }; Content = surface;
         var titlebar = new DockPanel { Margin = new Thickness(18, 5, 8, 5), LastChildFill = true };
-        var close = Ui.IconButton("\uE8BB", "Verwaltung schließen", Close); close.BorderThickness = new Thickness(0); DockPanel.SetDock(close, Dock.Right); titlebar.Children.Add(close);
+        var close = closeButton = Ui.IconButton("\uE8BB", "", Close); close.BorderThickness = new Thickness(0); DockPanel.SetDock(close, Dock.Right); titlebar.Children.Add(close);
         var brand = new StackPanel { Orientation = Orientation.Horizontal, Background = Brushes.Transparent, VerticalAlignment = VerticalAlignment.Center };
         brand.Children.Add(Logo()); brand.Children.Add(Ui.Text("DesktopBubbles", 14)); titlebar.Children.Add(brand);
         brand.MouseLeftButtonDown += (_, e) => { if (e.LeftButton == MouseButtonState.Pressed) try { DragMove(); } catch (InvalidOperationException) { } };
@@ -122,7 +122,7 @@ internal sealed class SettingsWindow : Window
         layout.Children.Add(bottom);
         // The line ends level with the bottom of "Neu".
         Divider.Margin = new Thickness(176 - 7.5, 0, 0, 18); Grid.SetRow(Divider, 1); Grid.SetRowSpan(Divider, 2); Panel.SetZIndex(Divider, 2); layout.Children.Add(Divider);
-        var create = Ui.Button("Neu", app.CreateGroup); create.Style = (Style)FindResource("DashedButton"); create.Margin = new Thickness(20, 18, 20, 18); create.ToolTip = "Neue Bubble"; bottom.Children.Add(create);
+        var create = createButton = Ui.Button("", app.CreateGroup); create.Style = (Style)FindResource("DashedButton"); create.Margin = new Thickness(20, 18, 20, 18); bottom.Children.Add(create);
         // The dashes slowly run around "Neu". A light timer, not an endless animation: a forever
         // animation keeps WPF's clock running, which delays layout to its ticks and can throttle every
         // other animation in the window. It only runs while the window is on screen.
@@ -133,14 +133,14 @@ internal sealed class SettingsWindow : Window
         create.Loaded += (_, _) => { dashes = create.Template?.FindName("Dashes", create) as System.Windows.Shapes.Shape; Drift(); };
         IsVisibleChanged += (_, _) => Drift(); StateChanged += (_, _) => Drift(); Closed += (_, _) => drift.Stop();
         Measurement = new LiveMeasurementBar(this, () => SettingsMotion.Enabled(app)); Grid.SetColumn(Measurement, 1); bottom.Children.Add(Measurement);
-        settingsButton = Ui.IconButton("\uE713", "Einstellungen", () => SelectScope(Scope == AppearanceScope.App ? AppearanceScope.Bubbles : AppearanceScope.App));
+        settingsButton = Ui.IconButton("\uE713", "", () => SelectScope(Scope == AppearanceScope.App ? AppearanceScope.Bubbles : AppearanceScope.App));
         // Drawn as a shape with room around it: it turns and swells crisply and is never cut off.
         var gear = Ui.GlyphPath("", 20); gear.Fill = gearInk;
         gear.RenderTransformOrigin = new Point(.5, .5); gear.RenderTransform = new TransformGroup { Children = { gearScale, gearTurn } };
         settingsButton.Style = (Style)FindResource("PlainButton"); settingsButton.Padding = new Thickness(0); settingsButton.Content = gear;
         settingsButton.HorizontalContentAlignment = HorizontalAlignment.Center; settingsButton.VerticalContentAlignment = VerticalAlignment.Center;
         settingsButton.MouseEnter += (_, _) => GearSwell(1.2); settingsButton.MouseLeave += (_, _) => GearSwell(1);
-        settingsButton.ToolTip = "Anwendung und allgemeine Einstellungen"; settingsButton.Width = settingsButton.Height = 36;
+        settingsButton.Width = settingsButton.Height = 36; ApplyChromeTexts();
         settingsButton.VerticalAlignment = VerticalAlignment.Center; settingsButton.Margin = new Thickness(0, 0, 12, 0);
         Grid.SetColumn(settingsButton, 2); bottom.Children.Add(settingsButton);
         SourceInitialized += (_, _) => Ui.Backdrop(this, app.State.Settings);
@@ -247,13 +247,13 @@ internal sealed class SettingsWindow : Window
             button.MouseEnter += (_, _) => SettingsMotion.FadeTo(sheen, group == selected ? 0 : .55, .18);
             button.MouseLeave += (_, _) => SettingsMotion.FadeTo(sheen, 0, .3);
             if (group == selected) selectedRow = button;
-            button.ToolTip = group.Name + " · Rechtsklick für Aktionen";
+            button.ToolTip = group.Name + Loc.T(" · Rechtsklick für Aktionen", " · right-click for actions");
             button.ContextMenu = GroupActionsMenu.Create(app, group); button.AllowDrop = true;
             button.DragOver += (_, e) => { e.Effects = app.DropEffect(e.Data, group); e.Handled = true; };
             button.Drop += (_, e) => { app.ReceiveDrop(group, e.Data, true); e.Handled = true; };
             groups.Children.Add(button);
         }
-        if (app.State.Groups.Count == 0) { var empty = Ui.Text("Noch keine Bubbles", 12, "Muted"); empty.Margin = new Thickness(8, 10, 8, 0); groups.Children.Add(empty); }
+        if (app.State.Groups.Count == 0) { var empty = Ui.Text(Loc.T("Noch keine Bubbles", "No bubbles yet"), 12, "Muted"); empty.Margin = new Thickness(8, 10, 8, 0); groups.Children.Add(empty); }
         RenderPreview(); if (changedSelection && IsLoaded) RefreshPage(); UpdateStatus();
         Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, PlacePill);
     }
@@ -369,11 +369,11 @@ internal sealed class SettingsWindow : Window
         else { pillShift.BeginAnimation(TranslateTransform.YProperty, null); pillShift.Y = y; }
         pillY = y;
     }
-    private static string ScopeLabel(AppearanceScope scope) => scope == AppearanceScope.Bubbles ? "Miniatur" : scope == AppearanceScope.Window ? "Ordner" : "Einstellungen";
+    private static string ScopeLabel(AppearanceScope scope) => scope == AppearanceScope.Bubbles ? Loc.T("Miniatur", "Miniature") : scope == AppearanceScope.Window ? Loc.T("Ordner", "Folder") : Loc.T("Einstellungen", "Settings");
     internal void SelectScope(AppearanceScope scope)
     {
         CancelColorEdit();
-        // Pages hand over in two beats: between "Aussehen" and "Einstellungen" the whole page,
+        // Pages hand over in two beats: between Loc.T("Aussehen", "Appearance") and Loc.T("Einstellungen", "Settings") the whole page,
         // between Miniatur and Ordner only the part below the sliding switch (which slides meanwhile).
         bool animate = scope != Scope && SettingsMotion.Enabled(app) && IsLoaded;
         bool pageChange = (scope == AppearanceScope.App) != (Scope == AppearanceScope.App);
@@ -386,13 +386,66 @@ internal sealed class SettingsWindow : Window
         if (animate && (pageChange ? pane.Content as UIElement : pageBody) is { } arriving) SettingsMotion.PageTransition(pane, at, before, arriving);
         if (scope == AppearanceScope.Window) FitFolderTab();
     }
+    // A round flag: Germany (black, red, gold) or the United Kingdom. The active language wears a
+    // ring in the app colour; the other one is dimmed and comes up on hover, swelling a little.
+    private Button LanguageFlag(bool english)
+    {
+        const double size = 22;
+        var face = new Grid { Width = size, Height = size, Clip = new EllipseGeometry(new Rect(0, 0, size, size)) };
+        if (english)
+        {
+            var blue = Ui.Brush("#012169"); var red = Ui.Brush("#C8102E");
+            face.Children.Add(new System.Windows.Shapes.Rectangle { Fill = blue });
+            foreach (var (x1, y1, x2, y2) in new[] { (0.0, 0.0, size, size), (size, 0.0, 0.0, size) })
+            {
+                face.Children.Add(new System.Windows.Shapes.Line { X1 = x1, Y1 = y1, X2 = x2, Y2 = y2, Stroke = Brushes.White, StrokeThickness = size * .2 });
+                face.Children.Add(new System.Windows.Shapes.Line { X1 = x1, Y1 = y1, X2 = x2, Y2 = y2, Stroke = red, StrokeThickness = size * .07 });
+            }
+            face.Children.Add(new System.Windows.Shapes.Rectangle { Fill = Brushes.White, Height = size / 3 });
+            face.Children.Add(new System.Windows.Shapes.Rectangle { Fill = Brushes.White, Width = size / 3 });
+            face.Children.Add(new System.Windows.Shapes.Rectangle { Fill = red, Height = size / 5 });
+            face.Children.Add(new System.Windows.Shapes.Rectangle { Fill = red, Width = size / 5 });
+        }
+        else
+        {
+            var stripes = new UniformGrid { Rows = 3, Columns = 1 };
+            foreach (var color in new[] { "#000000", "#DD0000", "#FFCE00" }) stripes.Children.Add(new System.Windows.Shapes.Rectangle { Fill = Ui.Brush(color) });
+            face.Children.Add(stripes);
+        }
+        bool active = Loc.English == english;
+        var ring = new Border { CornerRadius = new CornerRadius(size / 2 + 3), Padding = new Thickness(2), BorderThickness = new Thickness(1.5), Child = face, Opacity = active ? 1 : .5 };
+        if (active) ring.SetResourceReference(Border.BorderBrushProperty, "Accent"); else ring.BorderBrush = Brushes.Transparent;
+        var button = new Button { Style = (Style)FindResource("PlainButton"), Content = ring, Margin = new Thickness(2, 0, 2, 0), ToolTip = english ? "English" : "Deutsch" };
+        System.Windows.Automation.AutomationProperties.SetName(button, english ? "English" : "Deutsch");
+        SettingsMotion.Swell(ring, 1.15);
+        if (!active) { button.MouseEnter += (_, _) => SettingsMotion.FadeTo(ring, 1, .18); button.MouseLeave += (_, _) => SettingsMotion.FadeTo(ring, .5, .3); }
+        button.Click += (_, _) => app.SetLanguage(english ? "en" : "de");
+        return button;
+    }
+    // After a language switch: every text of the window in the new language, with a page hand-over.
+    internal void Retranslate()
+    {
+        CancelColorEdit();
+        var before = SettingsMotion.Enabled(app) && IsLoaded ? SettingsMotion.Snapshot(pane) : null;
+        ApplyChromeTexts(); Measurement.RefreshTexts();
+        RefreshGroups(); RefreshPage();
+        if (before is not null && pane.Content is UIElement page) SettingsMotion.PageTransition(pane, new Point(), before, page);
+    }
+    private void ApplyChromeTexts()
+    {
+        string close = Loc.T("Verwaltung schließen", "Close management");
+        closeButton.ToolTip = close; System.Windows.Automation.AutomationProperties.SetName(closeButton, close);
+        createButton.Content = Loc.T("Neu", "New"); createButton.ToolTip = Loc.T("Neue Bubble", "New bubble");
+        settingsButton.ToolTip = Loc.T("Anwendung und allgemeine Einstellungen", "App and general settings");
+        System.Windows.Automation.AutomationProperties.SetName(settingsButton, Loc.T("Einstellungen", "Settings"));
+    }
     internal void RefreshPage()
     {
         CancelColorEdit();
         var layout = new DockPanel { LastChildFill = true };
         var header = new StackPanel(); DockPanel.SetDock(header, Dock.Top); layout.Children.Add(header);
         var headingRow = new Grid { Height = 40 };
-        var heading = Ui.Text(Scope == AppearanceScope.App ? "Einstellungen" : "Aussehen", 27, weight: FontWeights.SemiBold); heading.TextAlignment = TextAlignment.Center; heading.VerticalAlignment = VerticalAlignment.Center;
+        var heading = Ui.Text(Scope == AppearanceScope.App ? Loc.T("Einstellungen", "Settings") : Loc.T("Aussehen", "Appearance"), 27, weight: FontWeights.SemiBold); heading.TextAlignment = TextAlignment.Center; heading.VerticalAlignment = VerticalAlignment.Center;
         // The back arrow sits right before the title: no background, it swells on hover, and its
         // generous padding makes a click near it count too.
         var titleLine = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
@@ -400,13 +453,21 @@ internal sealed class SettingsWindow : Window
         {
             headingRow.Margin = new Thickness(0, 0, 0, 24);
             var arrow = Ui.Symbol("\uE72B", 20); arrow.SetResourceReference(TextBlock.ForegroundProperty, "Ink");
-            var back = new Button { Style = (Style)FindResource("PlainButton"), Content = arrow, Padding = new Thickness(14, 10, 12, 10), Margin = new Thickness(-26, -12, 0, -12), VerticalAlignment = VerticalAlignment.Center, ToolTip = "Zurück" };
+            var back = new Button { Style = (Style)FindResource("PlainButton"), Content = arrow, Padding = new Thickness(14, 10, 12, 10), Margin = new Thickness(-26, -12, 0, -12), VerticalAlignment = VerticalAlignment.Center, ToolTip = Loc.T("Zurück", "Back") };
             back.Click += (_, _) => SelectScope(AppearanceScope.Bubbles);
-            System.Windows.Automation.AutomationProperties.SetName(back, "Zurück zur Miniaturansicht");
+            System.Windows.Automation.AutomationProperties.SetName(back, Loc.T("Zurück zur Miniaturansicht", "Back to the miniature view"));
             SettingsMotion.Swell(arrow);
             titleLine.Children.Add(back);
         }
-        titleLine.Children.Add(heading); headingRow.Children.Add(titleLine); header.Children.Add(headingRow);
+        titleLine.Children.Add(heading);
+        // Right of Loc.T("Einstellungen", "Settings"): the language, as two small round flags.
+        if (Scope == AppearanceScope.App)
+        {
+            var flags = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 2, 0, 0) };
+            flags.Children.Add(LanguageFlag(english: false)); flags.Children.Add(LanguageFlag(english: true));
+            titleLine.Children.Add(flags);
+        }
+        headingRow.Children.Add(titleLine); header.Children.Add(headingRow);
         SetGear(Scope == AppearanceScope.App);
         if (Scope == AppearanceScope.App) lastTabScope = AppearanceScope.Bubbles;
 
@@ -416,7 +477,7 @@ internal sealed class SettingsWindow : Window
             var scopes = new[] { AppearanceScope.Bubbles, AppearanceScope.Window };
             int previousTab = Array.IndexOf(scopes, lastTabScope);
             var tabs = SettingsMotion.Segments(scopes.Select(ScopeLabel).ToArray(), Array.IndexOf(scopes, Scope), SettingsMotion.Enabled(app) ? previousTab : -1,
-                index => SelectScope(scopes[index]), index => scopes[index] == AppearanceScope.Bubbles ? "Mini-Bubbles auf dem Desktop" : "Geöffnetes App-Raster");
+                index => SelectScope(scopes[index]), index => scopes[index] == AppearanceScope.Bubbles ? Loc.T("Mini-Bubbles auf dem Desktop", "Mini bubbles on the desktop") : Loc.T("Geöffnetes App-Raster", "Opened app grid"));
             tabs.Margin = new Thickness(0, 16, 0, 18);
             header.Children.Add(tabs);
             lastTabScope = Scope;
@@ -433,19 +494,19 @@ internal sealed class SettingsWindow : Window
             var colorRow = new Grid { MinHeight = Scope == AppearanceScope.App ? 80 : 108 };
             colorRow.ColumnDefinitions.Add(new ColumnDefinition());
             if (Scope == AppearanceScope.Bubbles) { colorRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(116) }); colorRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(108) }); }
-            var controls = new StackPanel(); controls.Children.Add(Ui.Text(Scope == AppearanceScope.App ? "App-Farbe" : "Farbe", 15, weight: FontWeights.SemiBold));
+            var controls = new StackPanel(); controls.Children.Add(Ui.Text(Scope == AppearanceScope.App ? Loc.T("App-Farbe", "App color") : Loc.T("Farbe", "Color"), 15, weight: FontWeights.SemiBold));
             // The colour circle with a pill folded out to its right, as tall and round as the circle.
-            // Its width fits both "Ändern" and "Anwenden"; only the text changes.
+            // Its width fits both Loc.T("Ändern", "Change") and Loc.T("Anwenden", "Apply"); only the text changes.
             swatch = new Border { Width = 34, Height = 34, CornerRadius = new CornerRadius(17), BorderBrush = Brushes.White, BorderThickness = new Thickness(1), VerticalAlignment = VerticalAlignment.Center };
-            ColorButton = new Button { Style = (Style)FindResource("PillSegment"), Content = "Ändern", Width = 98 };
+            ColorButton = new Button { Style = (Style)FindResource("PillSegment"), Content = Loc.T("Ändern", "Change"), Width = 98 };
             ColorButton.Click += (_, _) => { if (Picker is null) OpenPicker(); else ApplyColorEdit(); };
             colorPill = SettingsMotion.Pill(swatch, ColorButton); colorPill.Margin = new Thickness(0, 12, 0, 0);
             controls.Children.Add(colorPill); colorRow.Children.Add(controls);
             if (Scope == AppearanceScope.Bubbles)
             {
-                var glass = new StackPanel { Margin = new Thickness(0, 0, 12, 0) }; glass.Children.Add(Ui.Text("Glas", 15, weight: FontWeights.SemiBold));
-                GlassSelector = new ComboBox { ItemsSource = new[] { "Klar", "Matt", "Liquid" }, SelectedIndex = settings.LiquidGlass ? 2 : settings.Glass > .65 ? 1 : 0, MinWidth = 0, Margin = new Thickness(0, 12, 0, 0), FontSize = 14 };
-                GlassSelector.ToolTip = "Gemeinsamer Glasstil: Klar ist leichter, Matt dichter. Liquid bricht den echten Hintergrund an den Kanten wie eine Glaslinse und gilt für Miniaturen und Ordner.";
+                var glass = new StackPanel { Margin = new Thickness(0, 0, 12, 0) }; glass.Children.Add(Ui.Text(Loc.T("Glas", "Glass"), 15, weight: FontWeights.SemiBold));
+                GlassSelector = new ComboBox { ItemsSource = new[] { Loc.T("Klar", "Clear"), Loc.T("Matt", "Matte"), "Liquid" }, SelectedIndex = settings.LiquidGlass ? 2 : settings.Glass > .65 ? 1 : 0, MinWidth = 0, Margin = new Thickness(0, 12, 0, 0), FontSize = 14 };
+                GlassSelector.ToolTip = Loc.T("Gemeinsamer Glasstil: Klar ist leichter, Matt dichter. Liquid bricht den echten Hintergrund an den Kanten wie eine Glaslinse und gilt für Miniaturen und Ordner.", "Shared glass style: Clear is lighter, Matte denser. Liquid refracts the real background at the edges like a glass lens and applies to miniatures and folders.");
                 GlassSelector.SelectionChanged += (_, _) =>
                 {
                     bool liquid = GlassSelector.SelectedIndex == 2, toggled = liquid != settings.LiquidGlass;
@@ -458,7 +519,7 @@ internal sealed class SettingsWindow : Window
                 preview.Width = preview.Height = 108; preview.Padding = new Thickness(12); preview.BorderThickness = new Thickness(1); preview.VerticalAlignment = VerticalAlignment.Top;
                 Grid.SetColumn(preview, 2); colorRow.Children.Add(preview);
             }
-            // On every page the colour row comes first; on the settings page "Allgemein" follows it.
+            // On every page the colour row comes first; on the settings page Loc.T("Allgemein", "General") follows it.
             DockPanel.SetDock(colorRow, Dock.Top); content.Children.Add(colorRow);
             if (Scope == AppearanceScope.App) AddGeneralList(root);
             if (Scope == AppearanceScope.App)
@@ -466,18 +527,18 @@ internal sealed class SettingsWindow : Window
                 colorRow.ColumnDefinitions[0].Width = new GridLength(154);
                 colorRow.ColumnDefinitions.Add(new ColumnDefinition());
                 var options = new StackPanel { Margin = new Thickness(8, 0, 0, 0) };
-                options.Children.Add(Ui.Text("Farbmodus", 15, weight: FontWeights.SemiBold));
-                var themes = new[] { "Hell", "Dunkel", "Windows-Standard" }; var values = new[] { "Light", "Dark", "System" };
+                options.Children.Add(Ui.Text(Loc.T("Farbmodus", "Color mode"), 15, weight: FontWeights.SemiBold));
+                var themes = new[] { Loc.T("Hell", "Light"), Loc.T("Dunkel", "Dark"), Loc.T("Windows-Standard", "Windows default") }; var values = new[] { "Light", "Dark", "System" };
                 var theme = new ComboBox { ItemsSource = themes, SelectedIndex = Array.IndexOf(values, settings.Theme), Style = (Style)FindResource("PillCombo"), Height = 34 };
-                System.Windows.Automation.AutomationProperties.SetName(theme, "Farbmodus der Anwendung");
+                System.Windows.Automation.AutomationProperties.SetName(theme, Loc.T("Farbmodus der Anwendung", "App color mode"));
                 theme.SelectionChanged += (_, _) => { if (theme.SelectedIndex >= 0) { settings.Theme = values[theme.SelectedIndex]; app.ApplySettings(settings); } }; themeSelector = theme;
                 // Like the app colour: the mode colour as a circle with a pill folded out to its right.
                 // The pill opens its list below itself, exactly as wide as the pill.
                 modeSwatch = new Border { Width = 34, Height = 34, CornerRadius = new CornerRadius(17), Background = Ui.Brush(ThemePalette.Color(settings, Ui.Dark)), BorderBrush = Brushes.White, BorderThickness = new Thickness(1) };
                 ModeColorButton = Ui.Button("", () => { if (!editingModeColor) { CancelColorEdit(); OpenPicker(modeColor: true); } }); ModeColorButton.Content = modeSwatch;
                 ModeColorButton.Style = (Style)FindResource("PlainButton"); ModeColorButton.Width = ModeColorButton.Height = 34; ModeColorButton.Padding = new Thickness(0); SettingsMotion.Swell(modeSwatch, 1.08);
-                ModeColorButton.ToolTip = (Ui.Dark ? "Dunkle" : "Helle") + " Modusfarbe ändern · Flächen und Steuerelemente";
-                System.Windows.Automation.AutomationProperties.SetName(ModeColorButton, "Modusfarbe ändern");
+                ModeColorButton.ToolTip = Ui.Dark ? Loc.T("Dunkle Modusfarbe ändern · Flächen und Steuerelemente", "Change the dark mode color · surfaces and controls") : Loc.T("Helle Modusfarbe ändern · Flächen und Steuerelemente", "Change the light mode color · surfaces and controls");
+                System.Windows.Automation.AutomationProperties.SetName(ModeColorButton, Loc.T("Modusfarbe ändern", "Change mode color"));
                 modeAction = new ContentControl { Content = theme, Width = 172, HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Stretch };
                 var modeRow = new StackPanel { Orientation = Orientation.Horizontal }; modeRow.Children.Add(ModeColorButton); modeRow.Children.Add(modeAction);
                 var pill = new Border { CornerRadius = new CornerRadius(18), BorderThickness = new Thickness(1), Height = 36, Child = modeRow, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 12, 0, 0) };
@@ -496,7 +557,7 @@ internal sealed class SettingsWindow : Window
         double opacity = Scope switch { AppearanceScope.App => settings.AppOpacity, AppearanceScope.Window => FolderAppearance.Opacity(settings), _ => settings.Opacity };
         if (!frosted)
         {
-            TransparencySlider = AddSlider(root, "Transparenz", 5, Scope == AppearanceScope.App ? 80 : 100,
+            TransparencySlider = AddSlider(root, Loc.T("Transparenz", "Transparency"), 5, Scope == AppearanceScope.App ? 80 : 100,
                 (1 - opacity) * 100, value =>
                 {
                     double next = 1 - value / 100;
@@ -505,42 +566,42 @@ internal sealed class SettingsWindow : Window
                     else settings.Opacity = next;
                     app.ApplyAppearance();
                 }, value => $"{value:0} %");
-            System.Windows.Automation.AutomationProperties.SetName(TransparencySlider, "Transparenz · " + ScopeLabel(Scope));
-            if (Scope != AppearanceScope.App) TransparencySlider.ToolTip = "Gilt für alle " + (Scope == AppearanceScope.Bubbles ? "Miniaturen" : "Ordner") + ". 100 % blendet Fläche und Rahmen aus. App-Symbole bleiben sichtbar.";
+            System.Windows.Automation.AutomationProperties.SetName(TransparencySlider, Loc.T("Transparenz · ", "Transparency · ") + ScopeLabel(Scope));
+            if (Scope != AppearanceScope.App) TransparencySlider.ToolTip = Scope == AppearanceScope.Bubbles ? Loc.T("Gilt für alle Miniaturen. 100 % blendet Fläche und Rahmen aus. App-Symbole bleiben sichtbar.", "Applies to all miniatures. 100 % hides surface and outline. App icons stay visible.") : Loc.T("Gilt für alle Ordner. 100 % blendet Fläche und Rahmen aus. App-Symbole bleiben sichtbar.", "Applies to all folders. 100 % hides surface and outline. App icons stay visible.");
         }
         LiquidStrengthSlider = null;
         if (Scope != AppearanceScope.App && settings.LiquidGlass)
         {
             // One shared value, shown on both tabs right below the transparency.
-            LiquidStrengthSlider = AddSlider(root, "Liquid-Stärke", 0, 100, settings.LiquidStrength * 100, value => { settings.LiquidStrength = value / 100; app.ApplyAppearance(); }, value => $"{value:0} %");
-            System.Windows.Automation.AutomationProperties.SetName(LiquidStrengthSlider, "Liquid-Stärke · " + ScopeLabel(Scope));
-            LiquidStrengthSlider.ToolTip = "Wie tief die Glaskante ist und wie stark sie den Hintergrund bricht. Gilt gemeinsam für Miniaturen und Ordner; Ordner übernehmen sie beim nächsten Öffnen.";
+            LiquidStrengthSlider = AddSlider(root, Loc.T("Liquid-Stärke", "Liquid strength"), 0, 100, settings.LiquidStrength * 100, value => { settings.LiquidStrength = value / 100; app.ApplyAppearance(); }, value => $"{value:0} %");
+            System.Windows.Automation.AutomationProperties.SetName(LiquidStrengthSlider, Loc.T("Liquid-Stärke · ", "Liquid strength · ") + ScopeLabel(Scope));
+            LiquidStrengthSlider.ToolTip = Loc.T("Wie tief die Glaskante ist und wie stark sie den Hintergrund bricht. Gilt gemeinsam für Miniaturen und Ordner; Ordner übernehmen sie beim nächsten Öffnen.", "How deep the glass edge is and how strongly it refracts the background. Shared by miniatures and folders; folders take it on when next opened.");
         }
         SizeSlider = null;
         if (Scope == AppearanceScope.Window)
         {
             int columns = settings.Columns;
-            SizeSlider = AddSlider(root, "Größe", columns * 76 + 48, columns * 160 + 48, columns * settings.TileSize + 48,
+            SizeSlider = AddSlider(root, Loc.T("Größe", "Size"), columns * 76 + 48, columns * 160 + 48, columns * settings.TileSize + 48,
                 value => { settings.TileSize = (value - 48) / columns; app.ApplyAppearance(); }, value => $"{value:0} px");
-            SizeSlider.ToolTip = "Breite bei 100 % Windows-Skalierung. Symbole und Kontur wachsen mit. Gilt für alle Ordner.";
+            SizeSlider.ToolTip = Loc.T("Breite bei 100 % Windows-Skalierung. Symbole und Kontur wachsen mit. Gilt für alle Ordner.", "Width at 100 % Windows scaling. Icons and outline grow with it. Applies to all folders.");
             var previewBar = new DockPanel { Margin = new Thickness(0, 12, 0, 0) };
-            // One pill: the round scale button on the right, "Milchglas" permanently folded out to its left.
+            // One pill: the round scale button on the right, Loc.T("Milchglas", "Frosted") permanently folded out to its left.
             PreviewScaleButton = new Button { Style = (Style)FindResource("PillSegment"), Content = previewScale == 1 ? "1:1" : "1:3", Width = 34, Padding = new Thickness(0), Background = Brushes.Transparent };
             PreviewScaleButton.Click += (_, _) => SwitchPreviewScale();
-            PreviewScaleButton.ToolTip = "Zwischen verkleinerter Vorschau und Originalgröße wechseln. 1:1 entspricht der aktuellen Windows-Skalierung.";
+            PreviewScaleButton.ToolTip = Loc.T("Zwischen verkleinerter Vorschau und Originalgröße wechseln. 1:1 entspricht der aktuellen Windows-Skalierung.", "Switch between the reduced preview and the original size. 1:1 matches the current Windows scaling.");
             var scaleCircle = new Border { Width = 34, Height = 34, CornerRadius = new CornerRadius(17), Child = PreviewScaleButton };
             scaleCircle.SetResourceReference(Border.BackgroundProperty, "HoverFill");
-            FrostedFoldersButton = new Button { Style = (Style)FindResource("PillSegment"), Content = "Milchglas", Padding = new Thickness(14, 0, 12, 0) };
+            FrostedFoldersButton = new Button { Style = (Style)FindResource("PillSegment"), Content = Loc.T("Milchglas", "Frosted"), Padding = new Thickness(14, 0, 12, 0) };
             FrostedFoldersButton.Click += (_, _) => { settings.FrostedFolders = !settings.FrostedFolders; app.ApplyAppearance(); RefreshPage(); };
             FrostedFoldersButton.Background = frosted ? Ui.Brush("#087F4B") : Brushes.Transparent;
             FrostedFoldersButton.Foreground = frosted ? Brushes.White : Ui.Resource("Ink");
-            FrostedFoldersButton.ToolTip = frosted ? "Milchglas ausschalten · normale Farbe und Transparenz wieder verwenden" : "Milchglas für Ordner einschalten";
-            System.Windows.Automation.AutomationProperties.SetName(FrostedFoldersButton, frosted ? "Milchglas für Ordner ausschalten" : "Milchglas für Ordner einschalten");
+            FrostedFoldersButton.ToolTip = frosted ? Loc.T("Milchglas ausschalten · normale Farbe und Transparenz wieder verwenden", "Turn frosted glass off · use the normal color and transparency again") : Loc.T("Milchglas für Ordner einschalten", "Turn on frosted glass for folders");
+            System.Windows.Automation.AutomationProperties.SetName(FrostedFoldersButton, frosted ? Loc.T("Milchglas für Ordner ausschalten", "Turn off frosted glass for folders") : Loc.T("Milchglas für Ordner einschalten", "Turn on frosted glass for folders"));
             if (settings.LiquidGlass)
             {
                 FrostedFoldersButton.IsEnabled = false;
                 ToolTipService.SetShowOnDisabled(FrostedFoldersButton, true);
-                FrostedFoldersButton.ToolTip = "Liquid ist aktiv und hat Vorrang vor Milchglas. Unter Miniaturen → Glas umstellen.";
+                FrostedFoldersButton.ToolTip = Loc.T("Liquid ist aktiv und hat Vorrang vor Milchglas. Unter Miniaturen → Glas umstellen.", "Liquid is active and takes precedence over frosted glass. Change it under Miniature → Glass.");
             }
             var previewActions = SettingsMotion.Pill(scaleCircle, FrostedFoldersButton, circleRight: true);
             DockPanel.SetDock(previewActions, Dock.Right); previewBar.Children.Add(previewActions);
@@ -554,10 +615,10 @@ internal sealed class SettingsWindow : Window
         RoundingSlider = null;
         if (Scope == AppearanceScope.Bubbles)
         {
-            SizeSlider = AddSlider(root, "Größe", 48, 144, settings.MiniatureSize, value => { settings.MiniatureSize = value; app.ApplyAppearance(); }, value => $"{value:0} px");
-            SizeSlider.ToolTip = "Kantenlänge der Miniatur bei 100 % Windows-Skalierung. Gilt für alle Miniaturen; die Beschriftung bleibt lesbar.";
-            RoundingSlider = AddSlider(root, "Eckenrundung", 0, 50, settings.CornerRoundness, value => { settings.CornerRoundness = value; app.ApplyAppearance(); }, value => $"{value:0} %");
-            RoundingSlider.ToolTip = "Gemeinsame Rundung als Anteil der kürzeren Kante. Miniatur und Ordner bleiben proportional gleich gerundet.";
+            SizeSlider = AddSlider(root, Loc.T("Größe", "Size"), 48, 144, settings.MiniatureSize, value => { settings.MiniatureSize = value; app.ApplyAppearance(); }, value => $"{value:0} px");
+            SizeSlider.ToolTip = Loc.T("Kantenlänge der Miniatur bei 100 % Windows-Skalierung. Gilt für alle Miniaturen; die Beschriftung bleibt lesbar.", "Edge length of the miniature at 100 % Windows scaling. Applies to all miniatures; the label stays readable.");
+            RoundingSlider = AddSlider(root, Loc.T("Eckenrundung", "Corner rounding"), 0, 50, settings.CornerRoundness, value => { settings.CornerRoundness = value; app.ApplyAppearance(); }, value => $"{value:0} %");
+            RoundingSlider.ToolTip = Loc.T("Gemeinsame Rundung als Anteil der kürzeren Kante. Miniatur und Ordner bleiben proportional gleich gerundet.", "Shared rounding as a share of the shorter edge. Miniature and folder stay proportionally equally rounded.");
         }
         if (Scope == AppearanceScope.App) AddTools(root);
         ScrollViewer? pageScroll = null;
@@ -607,11 +668,11 @@ internal sealed class SettingsWindow : Window
         var apply = ColorButton;
         if (modeColor && modeAction is not null)
         {
-            // The mode pill's segment becomes "Anwenden", like the app colour's.
-            modeApplyButton = new Button { Style = (Style)FindResource("PillSegment"), Content = "Anwenden", Height = 34 }; modeApplyButton.Click += (_, _) => ApplyColorEdit();
+            // The mode pill's segment becomes Loc.T("Anwenden", "Apply"), like the app colour's.
+            modeApplyButton = new Button { Style = (Style)FindResource("PillSegment"), Content = Loc.T("Anwenden", "Apply"), Height = 34 }; modeApplyButton.Click += (_, _) => ApplyColorEdit();
             modeAction.Content = modeApplyButton; apply = modeApplyButton; ColorButton.IsEnabled = false;
         }
-        SettingsMotion.SwapContent(apply, "Anwenden"); apply.Foreground = Brushes.White; apply.IsDefault = true;
+        SettingsMotion.SwapContent(apply, Loc.T("Anwenden", "Apply")); apply.Foreground = Brushes.White; apply.IsDefault = true;
         // The whole pill turns green, also around the colour circle.
         var greenPill = apply == ColorButton ? colorPill : modePill;
         if (greenPill is not null) SettingsMotion.TintPill(greenPill, Ui.Brush("#087F4B").Color, SettingsMotion.Enabled(app));
@@ -674,7 +735,7 @@ internal sealed class SettingsWindow : Window
         }
         if (ColorButton is not null)
         {
-            SettingsMotion.SwapContent(ColorButton, "Ändern"); ColorButton.Background = Brushes.Transparent; ColorButton.Foreground = Ui.Resource("Ink"); ColorButton.IsDefault = false; ColorButton.IsEnabled = true;
+            SettingsMotion.SwapContent(ColorButton, Loc.T("Ändern", "Change")); ColorButton.Background = Brushes.Transparent; ColorButton.Foreground = Ui.Resource("Ink"); ColorButton.IsDefault = false; ColorButton.IsEnabled = true;
             if (IsVisible) ColorButton.Focus();
         }
         foreach (var pill in new[] { colorPill, modePill })
@@ -712,7 +773,7 @@ internal sealed class SettingsWindow : Window
             Canvas.SetLeft(image, 22 + (i % settings.Columns) * settings.TileSize + (settings.TileSize - icon) / 2);
             Canvas.SetTop(image, 22 + (i / settings.Columns) * settings.TileSize + (settings.TileSize - icon) / 2);
         }
-        if (previewDimensions is not null) previewDimensions.Text = $"{footprint.Width:0} × {footprint.Height:0} px · Vorschau";
+        if (previewDimensions is not null) previewDimensions.Text = Loc.T($"{footprint.Width:0} × {footprint.Height:0} px · Vorschau", $"{footprint.Width:0} × {footprint.Height:0} px · preview");
         if (PreviewScaleButton is not null) SettingsMotion.SwapContent(PreviewScaleButton, previewScale == 1 ? "1:1" : "1:3");
     }
     private Border Preview(BubbleGroup? group, double size, bool material = true)
@@ -724,11 +785,11 @@ internal sealed class SettingsWindow : Window
         return border;
     }
     private async Task SetIcon(Image image, string target) => image.Source = await app.Icons.Get(target);
-    // "Allgemein", right below the colour row: starting with Windows first, the auto close second to
+    // Loc.T("Allgemein", "General"), right below the colour row: starting with Windows first, the auto close second to
     // last and the shared bubble colours last, right above the transparency.
     private void AddGeneralList(StackPanel root)
     {
-        var label = Ui.Text("Allgemein", 17, weight: FontWeights.SemiBold); label.Margin = new Thickness(0, 6, 0, 4); root.Children.Add(label);
+        var label = Ui.Text(Loc.T("Allgemein", "General"), 17, weight: FontWeights.SemiBold); label.Margin = new Thickness(0, 6, 0, 4); root.Children.Add(label);
         CheckBox Check(string text, bool value, Action<bool> set)
         {
             var box = new CheckBox { Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap }, IsChecked = value };
@@ -737,21 +798,21 @@ internal sealed class SettingsWindow : Window
         }
         bool auto = false, otherStartup = false;
         try { auto = StartupService.EnabledFor(app.Portable, app.DataDirectory); otherStartup = !auto && StartupService.HasRegistration; } catch (Exception ex) { Log.Write(ex.Message); }
-        var startup = Check("Mit Windows starten", auto, value => StartupService.Set(value, app.Portable, app.DataDirectory));
+        var startup = Check(Loc.T("Mit Windows starten", "Start with Windows"), auto, value => StartupService.Set(value, app.Portable, app.DataDirectory));
         startup.ToolTip = otherStartup
-            ? "Eine andere DesktopBubbles-Ausgabe oder ein anderer Datenordner ist für den Windows-Start eingetragen. Aktiviere diese Option, um stattdessen diese Ausgabe mit ihren aktuellen Gruppen zu starten."
-            : "Startet diese Ausgabe von DesktopBubbles mit genau ihrem aktuellen Datenordner.";
-        Check("Desktop-Originale nach Übernahme entfernen", app.State.Settings.MoveDesktopShortcuts, value => { app.State.Settings.MoveDesktopShortcuts = value; app.RequestSave(); });
-        var collect = Check("Von Updates neu angelegte Verknüpfungen einsammeln", app.State.Settings.CollectDesktopDuplicates, value => { app.State.Settings.CollectDesktopDuplicates = value; app.RequestSave(); if (value) app.Duplicates?.Scan(); });
-        collect.ToolTip = "Legt ein Programm-Update eine Desktop-Verknüpfung neu an, obwohl das Programm schon in einer Bubble ist, wandert sie automatisch zurück in die Bubble. Andere Verknüpfungen bleiben unberührt. Wirkt nur, wenn Desktop-Originale entfernt werden.";
+            ? Loc.T("Eine andere DesktopBubbles-Ausgabe oder ein anderer Datenordner ist für den Windows-Start eingetragen. Aktiviere diese Option, um stattdessen diese Ausgabe mit ihren aktuellen Gruppen zu starten.", "Another DesktopBubbles copy or another data folder is registered to start with Windows. Turn this on to start this copy with its current groups instead.")
+            : Loc.T("Startet diese Ausgabe von DesktopBubbles mit genau ihrem aktuellen Datenordner.", "Starts this copy of DesktopBubbles with exactly its current data folder.");
+        Check(Loc.T("Desktop-Originale nach Übernahme entfernen", "Remove desktop originals after adopting them"), app.State.Settings.MoveDesktopShortcuts, value => { app.State.Settings.MoveDesktopShortcuts = value; app.RequestSave(); });
+        var collect = Check(Loc.T("Von Updates neu angelegte Verknüpfungen einsammeln", "Collect shortcuts recreated by updates"), app.State.Settings.CollectDesktopDuplicates, value => { app.State.Settings.CollectDesktopDuplicates = value; app.RequestSave(); if (value) app.Duplicates?.Scan(); });
+        collect.ToolTip = Loc.T("Legt ein Programm-Update eine Desktop-Verknüpfung neu an, obwohl das Programm schon in einer Bubble ist, wandert sie automatisch zurück in die Bubble. Andere Verknüpfungen bleiben unberührt. Wirkt nur, wenn Desktop-Originale entfernt werden.", "If a program update puts a desktop shortcut back although the program is already in a bubble, it moves back into the bubble automatically. Other shortcuts stay untouched. Only works while desktop originals are removed.");
         CollectDuplicatesCheckBox = collect;
-        Check("Desktop-Zuordnung verwenden", app.State.Settings.DesktopIntegration, value => { app.State.Settings.DesktopIntegration = value; app.Changed(true); });
-        Check("Hintergrund weichzeichnen", app.State.Settings.Blur, value => { app.State.Settings.Blur = value; app.ApplySettings(app.State.Settings); });
+        Check(Loc.T("Desktop-Zuordnung verwenden", "Attach to the desktop"), app.State.Settings.DesktopIntegration, value => { app.State.Settings.DesktopIntegration = value; app.Changed(true); });
+        Check(Loc.T("Hintergrund weichzeichnen", "Blur the background"), app.State.Settings.Blur, value => { app.State.Settings.Blur = value; app.ApplySettings(app.State.Settings); });
         // Auto close: switch on the left, seconds stepper on the right.
         var closing = new Grid { Margin = new Thickness(0, 4, 0, 4) }; closing.ColumnDefinitions.Add(new ColumnDefinition()); closing.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         var s = app.State.Settings;
-        AutoCloseCheckBox = new CheckBox { Content = new TextBlock { Text = "Bubble automatisch schließen", TextWrapping = TextWrapping.Wrap }, IsChecked = s.AutoCloseFolders, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
-        AutoCloseCheckBox.ToolTip = "Schließt einen geöffneten Ordner, wenn die Maus so lange nicht auf ihm war. Mit der Maus darauf läuft keine Zeit ab.";
+        AutoCloseCheckBox = new CheckBox { Content = new TextBlock { Text = Loc.T("Bubble automatisch schließen", "Close bubbles automatically"), TextWrapping = TextWrapping.Wrap }, IsChecked = s.AutoCloseFolders, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
+        AutoCloseCheckBox.ToolTip = Loc.T("Schließt einen geöffneten Ordner, wenn die Maus so lange nicht auf ihm war. Mit der Maus darauf läuft keine Zeit ab.", "Closes an open folder once the mouse has been off it for that long. While the mouse is on it, no time runs.");
         var seconds = Ui.Text("", 13); seconds.Width = 52; seconds.TextWrapping = TextWrapping.NoWrap; seconds.TextAlignment = TextAlignment.Center; seconds.VerticalAlignment = VerticalAlignment.Center;
         var stepper = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
         Button less = null!, more = null!;
@@ -761,39 +822,39 @@ internal sealed class SettingsWindow : Window
             // No focus: a focused control is scrolled into view, which made the whole page jump.
             button.Padding = new Thickness(7); button.Focusable = false; return button;
         }
-        less = Step("", "Eine Sekunde weniger", -1); more = Step("", "Eine Sekunde mehr", 1);
+        less = Step("", Loc.T("Eine Sekunde weniger", "One second less"), -1); more = Step("", Loc.T("Eine Sekunde mehr", "One second more"), 1);
         void ShowSeconds()
         {
             seconds.Text = $"{s.AutoCloseSeconds} s"; less.IsEnabled = s.AutoCloseFolders && s.AutoCloseSeconds > 1; more.IsEnabled = s.AutoCloseFolders && s.AutoCloseSeconds < 120;
             seconds.Opacity = stepper.Opacity = s.AutoCloseFolders ? 1 : .45;
-            System.Windows.Automation.AutomationProperties.SetName(seconds, $"Ordner schließen nach {s.AutoCloseSeconds} Sekunden");
+            System.Windows.Automation.AutomationProperties.SetName(seconds, Loc.T($"Ordner schließen nach {s.AutoCloseSeconds} Sekunden", $"Close folders after {s.AutoCloseSeconds} seconds"));
         }
         AutoCloseCheckBox.Click += (_, _) => { s.AutoCloseFolders = AutoCloseCheckBox.IsChecked == true; ShowSeconds(); app.ApplyAutoClose(); };
         stepper.Children.Add(less); stepper.Children.Add(seconds); stepper.Children.Add(more); ShowSeconds();
         AutoCloseSeconds = seconds;
         closing.Children.Add(AutoCloseCheckBox); Grid.SetColumn(stepper, 1); closing.Children.Add(stepper); root.Children.Add(closing);
         var colors = new Grid { Margin = new Thickness(0, 4, 0, 0) }; colors.ColumnDefinitions.Add(new ColumnDefinition()); colors.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        LinkColorsCheckBox = new CheckBox { Content = new TextBlock { Text = "Bubble-Farben für alle übernehmen", TextWrapping = TextWrapping.Wrap }, IsChecked = app.State.Settings.LinkBubbleColors, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
-        LinkColorsCheckBox.ToolTip = "Übernimmt die Farbe der ausgewählten Bubble für alle Miniaturen und Ordner. Danach gilt jede Farbänderung für alle. Die App-Farbe bleibt separat.";
+        LinkColorsCheckBox = new CheckBox { Content = new TextBlock { Text = Loc.T("Bubble-Farben für alle übernehmen", "Use the bubble colors for all"), TextWrapping = TextWrapping.Wrap }, IsChecked = app.State.Settings.LinkBubbleColors, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
+        LinkColorsCheckBox.ToolTip = Loc.T("Übernimmt die Farbe der ausgewählten Bubble für alle Miniaturen und Ordner. Danach gilt jede Farbänderung für alle. Die App-Farbe bleibt separat.", "Applies the color of the selected bubble to all miniatures and folders. From then on every color change applies to all. The app color stays separate.");
         LinkColorsCheckBox.Click += (_, _) => { AppearancePreferences.LinkColors(app.State, selected, LinkColorsCheckBox.IsChecked == true); app.ApplyAppearance(); };
         colors.Children.Add(LinkColorsCheckBox);
-        var reset = Ui.Button("Farben zurücksetzen", () => { CancelColorEdit(); AppearancePreferences.ResetColors(app.State); app.ApplySettings(app.State.Settings); });
+        var reset = Ui.Button(Loc.T("Farben zurücksetzen", "Reset colors"), () => { CancelColorEdit(); AppearancePreferences.ResetColors(app.State); app.ApplySettings(app.State.Settings); });
         reset.Style = (Style)FindResource("ResetColorsButton");
-        reset.ToolTip = "Setzt App- und alle Bubble-Farben zurück. Transparenz, Größe und Rundung bleiben erhalten.";
+        reset.ToolTip = Loc.T("Setzt App- und alle Bubble-Farben zurück. Transparenz, Größe und Rundung bleiben erhalten.", "Resets the app color and all bubble colors. Transparency, size and rounding stay as they are.");
         reset.Margin = new Thickness(0); reset.Padding = new Thickness(10, 7, 10, 7); reset.VerticalAlignment = VerticalAlignment.Center;
         Grid.SetColumn(reset, 1); colors.Children.Add(reset); root.Children.Add(colors);
     }
     private void AddTools(StackPanel root)
     {
-        var actions = Ui.Text("Daten & Werkzeuge", 17, weight: FontWeights.SemiBold); actions.Margin = new Thickness(0, 20, 0, 10); root.Children.Add(actions);
+        var actions = Ui.Text(Loc.T("Daten & Werkzeuge", "Data & tools"), 17, weight: FontWeights.SemiBold); actions.Margin = new Thickness(0, 20, 0, 10); root.Children.Add(actions);
         void Action(string label, Action action, string help) { var button = Ui.Button(label, action); button.ToolTip = help; button.Margin = new Thickness(0, 0, 0, 8); button.HorizontalContentAlignment = HorizontalAlignment.Left; root.Children.Add(button); }
-        Action("Sicherung exportieren …", app.Export, "Speichert Gruppen, Einstellungen und verwaltete Verknüpfungen als .bubbles-Datei. Programme werden nicht mitkopiert.");
-        Action("Sicherung importieren …", app.Import, "Lädt eine Sicherung nach Rückfrage. Der bisherige Zustand wird zusätzlich gesichert.");
-        Action("Doppelte Verknüpfungen vom öffentlichen Desktop entfernen …", app.RemoveSharedDuplicates, "Zeigt Verknüpfungen auf dem öffentlichen Desktop, deren Programm schon in einer Bubble ist, und entfernt sie nach Bestätigung. Windows fragt dafür nach Administratorrechten.");
-        Action("Verknüpfungen auf Desktop zurücklegen", app.RestoreAllShortcuts, "Legt gesicherte Desktop-Verknüpfungen zusätzlich auf den Desktop. Die Einträge bleiben in ihren Gruppen. Hilfreich vor dem Entfernen der App.");
-        Action("Programmordner öffnen", () => { try { Process.Start(new ProcessStartInfo(AppContext.BaseDirectory) { UseShellExecute = true }); } catch (Exception ex) { Ui.Error(ex); } }, "Öffnet den Ordner mit DesktopBubbles.exe.");
-        Action("Datenordner öffnen", () => { try { Process.Start(new ProcessStartInfo(app.DataDirectory) { UseShellExecute = true }); } catch (Exception ex) { Ui.Error(ex); } }, "Öffnet den tatsächlich verwendeten Speicher für Gruppen, Einstellungen und interne Verknüpfungen: " + app.DataDirectory);
-        Action("Desktop-Bubbles neu verbinden", app.Reconnect, "Baut die Desktop-Fenster neu auf, zum Beispiel nach einem Explorer-Neustart. Inhalte und Positionen bleiben erhalten.");
-        Action("Diagnosebericht speichern", async () => { try { await Diagnostics.Measure(app); } catch (Exception ex) { Ui.Error(ex); } }, "Misst diesen Prozess zehn Sekunden lang und speichert einen lokalen Bericht. Es wird nichts hochgeladen.");
+        Action(Loc.T("Sicherung exportieren …", "Export backup …"), app.Export, Loc.T("Speichert Gruppen, Einstellungen und verwaltete Verknüpfungen als .bubbles-Datei. Programme werden nicht mitkopiert.", "Saves groups, settings and managed shortcuts as a .bubbles file. Programs are not copied."));
+        Action(Loc.T("Sicherung importieren …", "Import backup …"), app.Import, Loc.T("Lädt eine Sicherung nach Rückfrage. Der bisherige Zustand wird zusätzlich gesichert.", "Loads a backup after asking. The current state is backed up as well."));
+        Action(Loc.T("Doppelte Verknüpfungen vom öffentlichen Desktop entfernen …", "Remove duplicate shortcuts from the public desktop …"), app.RemoveSharedDuplicates, Loc.T("Zeigt Verknüpfungen auf dem öffentlichen Desktop, deren Programm schon in einer Bubble ist, und entfernt sie nach Bestätigung. Windows fragt dafür nach Administratorrechten.", "Shows shortcuts on the public desktop whose program is already in a bubble and removes them after confirmation. Windows asks for administrator rights."));
+        Action(Loc.T("Verknüpfungen auf Desktop zurücklegen", "Put shortcuts back on the desktop"), app.RestoreAllShortcuts, Loc.T("Legt gesicherte Desktop-Verknüpfungen zusätzlich auf den Desktop. Die Einträge bleiben in ihren Gruppen. Hilfreich vor dem Entfernen der App.", "Places the saved desktop shortcuts on the desktop again. The entries stay in their groups. Useful before uninstalling the app."));
+        Action(Loc.T("Programmordner öffnen", "Open program folder"), () => { try { Process.Start(new ProcessStartInfo(AppContext.BaseDirectory) { UseShellExecute = true }); } catch (Exception ex) { Ui.Error(ex); } }, Loc.T("Öffnet den Ordner mit DesktopBubbles.exe.", "Opens the folder containing DesktopBubbles.exe."));
+        Action(Loc.T("Datenordner öffnen", "Open data folder"), () => { try { Process.Start(new ProcessStartInfo(app.DataDirectory) { UseShellExecute = true }); } catch (Exception ex) { Ui.Error(ex); } }, Loc.T("Öffnet den tatsächlich verwendeten Speicher für Gruppen, Einstellungen und interne Verknüpfungen: ", "Opens the storage actually used for groups, settings and internal shortcuts: ") + app.DataDirectory);
+        Action(Loc.T("Desktop-Bubbles neu verbinden", "Reconnect desktop bubbles"), app.Reconnect, Loc.T("Baut die Desktop-Fenster neu auf, zum Beispiel nach einem Explorer-Neustart. Inhalte und Positionen bleiben erhalten.", "Rebuilds the desktop windows, for example after an Explorer restart. Contents and positions stay as they are."));
+        Action(Loc.T("Diagnosebericht speichern", "Save diagnostic report"), async () => { try { await Diagnostics.Measure(app); } catch (Exception ex) { Ui.Error(ex); } }, Loc.T("Misst diesen Prozess zehn Sekunden lang und speichert einen lokalen Bericht. Es wird nichts hochgeladen.", "Measures this process for ten seconds and saves a local report. Nothing is uploaded."));
     }
 }

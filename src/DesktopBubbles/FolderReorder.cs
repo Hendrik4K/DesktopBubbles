@@ -42,7 +42,7 @@ internal sealed class FolderReorder : IDisposable
     public void Attach(Button button, AppEntry entry)
     {
         entries.Add(button, entry);
-        System.Windows.Automation.AutomationProperties.SetHelpText(button, "Kurz klicken zum Starten · Gedrückt halten zum Sortieren");
+        System.Windows.Automation.AutomationProperties.SetHelpText(button, Loc.T("Kurz klicken zum Starten · Gedrückt halten zum Sortieren", "Click to launch · press and hold to sort"));
         button.PreviewMouseLeftButtonDown += (_, e) => { BeginPress(button, e.GetPosition(owner)); if (IsSorting) e.Handled = true; };
         button.PreviewMouseLeftButtonUp += (_, e) =>
         {
@@ -172,14 +172,14 @@ internal sealed class FolderReorder : IDisposable
         {
             StopWiggle(button); button.ClearValue(FrameworkElement.CursorProperty);
             ToolTipService.SetIsEnabled(button, true);
-            System.Windows.Automation.AutomationProperties.SetHelpText(button, "Kurz klicken zum Starten · Gedrückt halten zum Sortieren");
+            System.Windows.Automation.AutomationProperties.SetHelpText(button, Loc.T("Kurz klicken zum Starten · Gedrückt halten zum Sortieren", "Click to launch · press and hold to sort"));
         }
     }
     private void Wiggle(Button button, int index)
     {
         button.Cursor = Cursors.SizeAll;
         ToolTipService.SetIsEnabled(button, false);
-        System.Windows.Automation.AutomationProperties.SetHelpText(button, "Sortiermodus · Auf ein anderes Symbol ziehen zum Platztausch · Esc beendet das Sortieren");
+        System.Windows.Automation.AutomationProperties.SetHelpText(button, Loc.T("Sortiermodus · Auf ein anderes Symbol ziehen zum Platztausch · Esc beendet das Sortieren", "Sorting mode · drag onto another icon to swap places · Esc ends sorting"));
         if (button.Content is not Image image) return;
         image.RenderTransformOrigin = new Point(.5, .5);
         var rotation = new RotateTransform(); image.RenderTransform = rotation;

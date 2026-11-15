@@ -1,7 +1,9 @@
-using System.Security;
+﻿using System.Security;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+
+using DesktopBubbles.Core;
 
 namespace DesktopBubbles.Infrastructure;
 
@@ -19,12 +21,12 @@ public sealed record DataLocation(string RequestedDirectory, string DirectoryPat
         if (Directory.Exists(fallback))
         {
             VerifyOrigin(fallback, requested);
-            if (!canWrite(fallback)) throw new IOException("Der Benutzerdatenordner ist nicht beschreibbar: " + fallback);
+            if (!canWrite(fallback)) throw new IOException(Loc.T("Der Benutzerdatenordner ist nicht beschreibbar: ", "The user data folder is not writable: ") + fallback);
             return new(requested, fallback, true);
         }
         if (canWrite(requested)) return new(requested, requested, false);
         string parent = Path.GetDirectoryName(fallback)!;
-        if (!canWrite(parent)) throw new IOException("Kein beschreibbarer Datenspeicher verfügbar. Bitte einen eigenen Datenordner mit Schreibrechten wählen.");
+        if (!canWrite(parent)) throw new IOException(Loc.T("Kein beschreibbarer Datenspeicher verfügbar. Bitte einen eigenen Datenordner mit Schreibrechten wählen.", "No writable data storage available. Please choose your own data folder with write access."));
         return new(requested, fallback, true);
     }
 
@@ -68,11 +70,11 @@ public sealed record DataLocation(string RequestedDirectory, string DirectoryPat
                 // Copy bytes, not read-only attributes or ACLs from Program Files.
                 using (var input = File.OpenRead(source))
                 using (var output = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None)) { input.CopyTo(output); output.Flush(true); }
-                if (Hash(destination) != before) throw new IOException("Datenkopie konnte nicht geprüft werden.");
+                if (Hash(destination) != before) throw new IOException(Loc.T("Datenkopie konnte nicht geprüft werden.", "The data copy could not be verified."));
                 hashes[source] = before;
             }
             if (!SourceFiles().Order().SequenceEqual(files.Order()) || hashes.Any(pair => Hash(pair.Key) != pair.Value))
-                throw new IOException("Die bisherigen Daten wurden während der Übernahme geändert. Bitte die alte App beenden und erneut starten.");
+                throw new IOException(Loc.T("Die bisherigen Daten wurden während der Übernahme geändert. Bitte die alte App beenden und erneut starten.", "The previous data changed during the takeover. Please quit the old app and start again."));
             string state = Path.Combine(staging, "groups.json");
             if (File.Exists(state))
             {
@@ -122,13 +124,13 @@ public sealed record DataLocation(string RequestedDirectory, string DirectoryPat
         }
     }
     private static void RejectReparse(string path)
-    { if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0) throw new IOException("Der Datenspeicher enthält einen Dateisystem-Link und kann nicht automatisch kopiert werden."); }
+    { if ((File.GetAttributes(path) & FileAttributes.ReparsePoint) != 0) throw new IOException(Loc.T("Der Datenspeicher enthält einen Dateisystem-Link und kann nicht automatisch kopiert werden.", "The data storage contains a file system link and cannot be copied automatically.")); }
     private static string Hash(string path) { using var input = File.OpenRead(path); return Convert.ToHexString(SHA256.HashData(input)); }
     private static void VerifyOrigin(string directory, string requested)
     {
         var origin = JsonSerializer.Deserialize<Origin>(File.ReadAllText(Path.Combine(directory, Marker)));
         if (origin is null || !string.Equals(origin.SourceDirectory, requested, StringComparison.OrdinalIgnoreCase))
-            throw new IOException("Vorhandene Benutzerdaten gehören zu einem anderen Speicherort; sie werden nicht überschrieben.");
+            throw new IOException(Loc.T("Vorhandene Benutzerdaten gehören zu einem anderen Speicherort; sie werden nicht überschrieben.", "Existing user data belongs to another location; it is not overwritten."));
     }
     private sealed record Origin(string SourceDirectory);
 }

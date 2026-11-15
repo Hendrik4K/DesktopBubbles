@@ -45,6 +45,7 @@
 - Miniatur ↔ Ordner blendet sichtbar aus und ein: das Bild der alten Seite wird sofort angeheftet, die Uhr startet erst mit dem ersten gezeichneten Bild nach dem Seitenaufbau (vorher lief die Blende beim langsamen Aufbau ins Leere).
 - Ausklappmenüs (Glas, Farbmodus) fahren weich auf und wieder ein; Klicks während des Aufklappens werden verworfen. Vorher wurde die Animation nie angehängt, weil WPF Loaded nur bei Elementen mit eigenem Handler auslöst.
 - Einstellungen: App-Farbe und Farbmodus wieder zuerst, dann Allgemein, dann Transparenz und Werkzeuge.
+- **Deutsch und Englisch:** Zwei runde Flaggen rechts neben „Einstellungen“ schalten die ganze App ohne Neustart um: Verwaltung (mit Seitenblende), Tray-Menü, Bubble-Tooltips und -Menüs, Ordner-Menüs, Farbwähler, Dialoge und Fehlermeldungen. Die Wahl wird gespeichert; ohne Wahl gilt die Windows-Anzeigesprache.
 
 ## 1.8.2 · 15.11.2026
 

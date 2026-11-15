@@ -16,8 +16,8 @@ internal sealed class ColorWheel : FrameworkElement
     public ColorWheel()
     {
         Width = Height = 208; Focusable = true; FocusVisualStyle = null; Cursor = Cursors.Cross;
-        System.Windows.Automation.AutomationProperties.SetName(this, "Farbkreis");
-        System.Windows.Automation.AutomationProperties.SetHelpText(this, "Links/Rechts: Farbton. Oben/Unten: Sättigung. Alternativ HEX-Eingabe.");
+        System.Windows.Automation.AutomationProperties.SetName(this, Loc.T("Farbkreis", "Color wheel"));
+        System.Windows.Automation.AutomationProperties.SetHelpText(this, Loc.T("Links/Rechts: Farbton. Oben/Unten: Sättigung. Alternativ HEX-Eingabe.", "Left/right: hue. Up/down: saturation. Or type a HEX value."));
         MouseLeftButtonDown += (_, e) => { Focus(); CaptureMouse(); Select(e.GetPosition(this)); e.Handled = true; };
         MouseMove += (_, e) => { if (IsMouseCaptured) Select(e.GetPosition(this)); };
         MouseLeftButtonUp += (_, _) => ReleaseMouseCapture();
@@ -89,30 +89,30 @@ internal sealed class ColorPickerPanel : UserControl
         frame = new Border { CornerRadius = new CornerRadius(14), BorderBrush = Ui.GlassRim(), BorderThickness = new Thickness(1), Padding = new Thickness(12), Child = root };
         frame.SetResourceReference(Border.BackgroundProperty, "ControlFill"); Content = frame;
         var left = new StackPanel(); root.Children.Add(left);
-        var saturationLabel = Ui.Text("Sättigung", 12); saturationLabel.Margin = new Thickness(0, 0, 0, 4); left.Children.Add(saturationLabel);
+        var saturationLabel = Ui.Text(Loc.T("Sättigung", "Saturation"), 12); saturationLabel.Margin = new Thickness(0, 0, 0, 4); left.Children.Add(saturationLabel);
         var wheelRow = new Grid(); wheelRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(38) }); wheelRow.ColumnDefinitions.Add(new ColumnDefinition()); left.Children.Add(wheelRow);
         Saturation = new Slider { Minimum = 0, Maximum = 1, SmallChange = .01, LargeChange = .1, Orientation = Orientation.Vertical, Width = 24, Height = 144, Style = (Style)FindResource("SaturationSlider"), HorizontalAlignment = HorizontalAlignment.Center };
-        System.Windows.Automation.AutomationProperties.SetName(Saturation, "Sättigung");
+        System.Windows.Automation.AutomationProperties.SetName(Saturation, Loc.T("Sättigung", "Saturation"));
         // Generous grips, as everywhere else: the whole column (and each whole row on the right)
         // moves its slider smoothly, not just the thin track.
         var saturationZone = new Grid { Margin = new Thickness(0, -8, 4, -8) }; saturationZone.Children.Add(Saturation); wheelRow.Children.Add(saturationZone);
         SettingsMotion.SmoothZone(saturationZone, Saturation);
         Wheel.Width = Wheel.Height = 144; Grid.SetColumn(Wheel, 1); wheelRow.Children.Add(Wheel);
         var controls = new StackPanel(); Grid.SetColumn(controls, 2); root.Children.Add(controls);
-        var brightnessZone = new StackPanel { Margin = new Thickness(0, 0, 0, 10) }; brightnessZone.Children.Add(Ui.Text("Helligkeit", 12));
+        var brightnessZone = new StackPanel { Margin = new Thickness(0, 0, 0, 10) }; brightnessZone.Children.Add(Ui.Text(Loc.T("Helligkeit", "Brightness"), 12));
         var level = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
         percent = Ui.Text("100 %", 12); percent.Width = 42; percent.TextAlignment = TextAlignment.Right; percent.VerticalAlignment = VerticalAlignment.Center; DockPanel.SetDock(percent, Dock.Right); level.Children.Add(percent);
         Brightness = new Slider { Minimum = 0, Maximum = 1, Value = 1, SmallChange = .01, LargeChange = .1, Foreground = Brushes.Transparent };
-        System.Windows.Automation.AutomationProperties.SetName(Brightness, "Helligkeit"); level.Children.Add(Brightness); brightnessZone.Children.Add(level); controls.Children.Add(brightnessZone);
+        System.Windows.Automation.AutomationProperties.SetName(Brightness, Loc.T("Helligkeit", "Brightness")); level.Children.Add(Brightness); brightnessZone.Children.Add(level); controls.Children.Add(brightnessZone);
         SettingsMotion.SmoothZone(brightnessZone, Brightness);
         if (opacity is { } initialOpacity)
         {
-            var opacityZone = new StackPanel { Margin = new Thickness(0, 0, 0, 10) }; opacityZone.Children.Add(Ui.Text("Deckkraft", 12));
+            var opacityZone = new StackPanel { Margin = new Thickness(0, 0, 0, 10) }; opacityZone.Children.Add(Ui.Text(Loc.T("Deckkraft", "Opacity"), 12));
             var opacityRow = new DockPanel { Margin = new Thickness(0, 4, 0, 0) };
             var amount = Ui.Text($"{initialOpacity:P0}", 12); amount.Width = 42; amount.TextAlignment = TextAlignment.Right; amount.VerticalAlignment = VerticalAlignment.Center;
             DockPanel.SetDock(amount, Dock.Right); opacityRow.Children.Add(amount);
-            ColorOpacity = new Slider { Minimum = 0, Maximum = 1, SmallChange = .01, LargeChange = .1, Value = initialOpacity, ToolTip = "Deckkraft der Steuerelement-Hintergründe. Helligkeit und Text bleiben unabhängig." };
-            System.Windows.Automation.AutomationProperties.SetName(ColorOpacity, "Deckkraft der Steuerelemente");
+            ColorOpacity = new Slider { Minimum = 0, Maximum = 1, SmallChange = .01, LargeChange = .1, Value = initialOpacity, ToolTip = Loc.T("Deckkraft der Steuerelement-Hintergründe. Helligkeit und Text bleiben unabhängig.", "Opacity of control backgrounds. Brightness and text stay independent.") };
+            System.Windows.Automation.AutomationProperties.SetName(ColorOpacity, Loc.T("Deckkraft der Steuerelemente", "Control opacity"));
             ColorOpacity.ValueChanged += (_, _) => { amount.Text = ColorOpacity.Value.ToString("P0"); if (!syncing) Edited?.Invoke(); };
             opacityRow.Children.Add(ColorOpacity); opacityZone.Children.Add(opacityRow); controls.Children.Add(opacityZone);
             SettingsMotion.SmoothZone(opacityZone, ColorOpacity);
@@ -120,11 +120,11 @@ internal sealed class ColorPickerPanel : UserControl
         var hexLabel = Ui.Text("HEX", 12); hexLabel.Margin = new Thickness(0, 0, 0, 4); controls.Children.Add(hexLabel);
         // The HEX field itself shows the colour; right of it the eyedropper and the close cross.
         var hexRow = new DockPanel();
-        CloseButton = Icon("\uE711", "Farbänderung verwerfen · Esc", () => CancelRequested?.Invoke(), danger: true); DockPanel.SetDock(CloseButton, Dock.Right);
-        Eyedropper = Icon("\uEF3C", "Farbe vom Bildschirm aufnehmen", PickFromScreen); DockPanel.SetDock(Eyedropper, Dock.Right);
+        CloseButton = Icon("\uE711", Loc.T("Farbänderung verwerfen · Esc", "Discard color change · Esc"), () => CancelRequested?.Invoke(), danger: true); DockPanel.SetDock(CloseButton, Dock.Right);
+        Eyedropper = Icon("\uEF3C", Loc.T("Farbe vom Bildschirm aufnehmen", "Pick a color from the screen"), PickFromScreen); DockPanel.SetDock(Eyedropper, Dock.Right);
         hexRow.Children.Add(CloseButton); hexRow.Children.Add(Eyedropper);
         HexInput = new TextBox { Text = SelectedHex, MaxLength = 7, VerticalContentAlignment = VerticalAlignment.Center, FontSize = 13, Padding = new Thickness(8, 6, 8, 6), FontWeight = FontWeights.SemiBold };
-        System.Windows.Automation.AutomationProperties.SetName(HexInput, "HEX-Farbe, sechs Stellen"); hexRow.Children.Add(HexInput); controls.Children.Add(hexRow);
+        System.Windows.Automation.AutomationProperties.SetName(HexInput, Loc.T("HEX-Farbe, sechs Stellen", "HEX color, six digits")); hexRow.Children.Add(HexInput); controls.Children.Add(hexRow);
         ColorValue.TryParse(SelectedHex, out var start); var hsv = start.ToHsv(); Wheel.Hue = hsv.H; Wheel.Saturation = hsv.S; Saturation.Value = hsv.S; Brightness.Value = hsv.V;
         Wheel.Edited += UpdateFromWheel; Brightness.ValueChanged += (_, _) => { if (!syncing) UpdateFromWheel(); };
         Saturation.ValueChanged += (_, _) => { if (!syncing) { Wheel.Saturation = Saturation.Value; UpdateFromWheel(); } };
@@ -132,7 +132,7 @@ internal sealed class ColorPickerPanel : UserControl
         {
             if (syncing) return;
             bool valid = ColorValue.TryParse(HexInput.Text, out var color);
-            HexInput.ToolTip = valid ? "HEX-Farbe" : "Bitte sechs Hex-Ziffern eingeben, zum Beispiel #7B6BFF.";
+            HexInput.ToolTip = valid ? Loc.T("HEX-Farbe", "HEX color") : Loc.T("Bitte sechs Hex-Ziffern eingeben, zum Beispiel #7B6BFF.", "Enter six hex digits, for example #7B6BFF.");
             if (!valid) { Edited?.Invoke(); return; }
             syncing = true;
             SelectedHex = color.Hex; var value = color.ToHsv(); Wheel.Hue = value.H; Wheel.Saturation = value.S; Saturation.Value = value.S; Brightness.Value = value.V;

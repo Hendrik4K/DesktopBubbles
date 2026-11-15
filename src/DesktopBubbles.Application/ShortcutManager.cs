@@ -1,4 +1,4 @@
-using DesktopBubbles.Core;
+﻿using DesktopBubbles.Core;
 
 namespace DesktopBubbles.Application;
 
@@ -42,14 +42,14 @@ public sealed class ShortcutManager(IShortcutVault vault, Action<BubbleState> pe
 
     public string? Add(BubbleState state, BubbleGroup group, string source, bool forceTakeover = false)
     {
-        if (!state.Groups.Contains(group)) throw new InvalidOperationException("Unbekannte Gruppe.");
+        if (!state.Groups.Contains(group)) throw new InvalidOperationException(Loc.T("Unbekannte Gruppe.", "Unknown group."));
         var entry = Targets.Create(source);
         source = entry.Target;
         var existing = vault.FindBySource(source);
         var old = group.Items.FirstOrDefault(e => string.Equals(e.Target, source, StringComparison.OrdinalIgnoreCase)
             || (existing is not null && e.Target == existing));
         if (old is not null && !forceTakeover) return null;
-        if (old is null && group.Items.Count >= 300) throw new InvalidOperationException("Maximal 300 Einträge pro Gruppe.");
+        if (old is null && group.Items.Count >= 300) throw new InvalidOperationException(Loc.T("Maximal 300 Einträge pro Gruppe.", "At most 300 entries per group."));
         // Prepare a verified durable copy. Unsupported targets stay external.
         var prepared = vault.Prepare(source, state.Settings.MoveDesktopShortcuts || forceTakeover);
         entry.Target = prepared.Target;
@@ -67,7 +67,7 @@ public sealed class ShortcutManager(IShortcutVault vault, Action<BubbleState> pe
         // Any failure here leaves both the usable vault copy and the original.
         try { vault.Complete(prepared); return null; }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or InvalidOperationException)
-        { return "In der Bubble gespeichert; das Desktop-Original bleibt erhalten: " + ex.Message; }
+        { return Loc.T("In der Bubble gespeichert; das Desktop-Original bleibt erhalten: ", "Saved in the bubble; the desktop original stays: ") + ex.Message; }
     }
 
     public void Remove(BubbleState state, BubbleGroup group, AppEntry entry)
@@ -82,7 +82,7 @@ public sealed class ShortcutManager(IShortcutVault vault, Action<BubbleState> pe
     /// <summary>Remove only the group reference; never resolve, restore or delete the target or recovery files.</summary>
     public void RemoveFromGroup(BubbleState state, BubbleGroup group, AppEntry entry)
     {
-        if (!state.Groups.Contains(group)) throw new InvalidOperationException("Unbekannte Gruppe.");
+        if (!state.Groups.Contains(group)) throw new InvalidOperationException(Loc.T("Unbekannte Gruppe.", "Unknown group."));
         int index = group.Items.IndexOf(entry); if (index < 0) return;
         group.Items.RemoveAt(index);
         try { persist(state); } catch { group.Items.Insert(index, entry); throw; }
@@ -101,7 +101,7 @@ public sealed class ShortcutManager(IShortcutVault vault, Action<BubbleState> pe
     public void Swap(BubbleState state, BubbleGroup group, AppEntry first, AppEntry second)
     {
         int a = group.Items.IndexOf(first), b = group.Items.IndexOf(second);
-        if (!state.Groups.Contains(group) || a < 0 || b < 0) throw new InvalidOperationException("Die Einträge gehören nicht mehr zu dieser Gruppe.");
+        if (!state.Groups.Contains(group) || a < 0 || b < 0) throw new InvalidOperationException(Loc.T("Die Einträge gehören nicht mehr zu dieser Gruppe.", "The entries no longer belong to this group."));
         if (a == b) return;
         (group.Items[a], group.Items[b]) = (group.Items[b], group.Items[a]);
         try { persist(state); }
@@ -109,14 +109,14 @@ public sealed class ShortcutManager(IShortcutVault vault, Action<BubbleState> pe
     }
     public void Transfer(BubbleState state, BubbleGroup source, BubbleGroup destination, AppEntry entry, int? index = null)
     {
-        if (!state.Groups.Contains(source) || !state.Groups.Contains(destination) || !source.Items.Contains(entry)) throw new InvalidOperationException("Der gezogene Eintrag ist nicht mehr vorhanden.");
+        if (!state.Groups.Contains(source) || !state.Groups.Contains(destination) || !source.Items.Contains(entry)) throw new InvalidOperationException(Loc.T("Der gezogene Eintrag ist nicht mehr vorhanden.", "The dragged entry no longer exists."));
         var beforeSource = source.Items.ToList(); var beforeDestination = destination.Items.ToList();
         if (source == destination) Targets.Move(source, entry.Id, index ?? source.Items.Count - 1);
         else
         {
             if (!destination.Items.Any(e => string.Equals(e.Target, entry.Target, StringComparison.OrdinalIgnoreCase)))
             {
-                if (destination.Items.Count >= 300) throw new InvalidOperationException("Die Ziel-Bubble ist voll.");
+                if (destination.Items.Count >= 300) throw new InvalidOperationException(Loc.T("Die Ziel-Bubble ist voll.", "The target bubble is full."));
                 destination.Items.Insert(Math.Clamp(index ?? destination.Items.Count, 0, destination.Items.Count), entry);
             }
             source.Items.Remove(entry);
@@ -142,7 +142,7 @@ public sealed class ShortcutManager(IShortcutVault vault, Action<BubbleState> pe
         {
             try { if (vault.Park(target) is { } item) parked.Add(item); }
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
-            { notice?.Invoke("Verknüpfung bleibt in der Bubble: " + target + " · " + ex.Message); }
+            { notice?.Invoke(Loc.T("Verknüpfung bleibt in der Bubble: ", "The shortcut stays in the bubble: ") + target + " · " + ex.Message); }
         }
         return parked;
     }
@@ -156,7 +156,7 @@ public sealed class ShortcutManager(IShortcutVault vault, Action<BubbleState> pe
         {
             try { if (vault.Unpark(target) is { } notice) notices.Add(notice); }
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
-            { notices.Add("Desktop-Verknüpfung bleibt zusätzlich auf dem Desktop: " + target + " · " + ex.Message); }
+            { notices.Add(Loc.T("Desktop-Verknüpfung bleibt zusätzlich auf dem Desktop: ", "The desktop shortcut also stays on the desktop: ") + target + " · " + ex.Message); }
         }
         return notices;
     }

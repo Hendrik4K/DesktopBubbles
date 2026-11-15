@@ -18,7 +18,7 @@ internal static class SmokeTests
         var work = System.Windows.Forms.Screen.PrimaryScreen!.WorkingArea;
         return new BubbleState
         {
-            Settings = new BubbleSettings { Theme = "Light" },
+            Settings = new BubbleSettings { Theme = "Light", Language = "de" },
             Groups =
             [
                 new BubbleGroup { Name = "Werkzeuge", X = work.Right - 350, Y = work.Top + 150, Items =
@@ -117,6 +117,7 @@ internal static class SmokeTests
         // A short window, so the picker really has to make room.
         settings.Height = 560; await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         var boundsBeforePicker = Native.Bounds(settings);
+        Check("Farbknopf vorhanden", settings.ColorButton is not null, $"Bereich={settings.Scope}, Fenster={System.Windows.Application.Current.Windows.OfType<SettingsWindow>().Count()}, gleich={ReferenceEquals(settings, System.Windows.Application.Current.Windows.OfType<SettingsWindow>().LastOrDefault())}, sichtbar={settings.IsVisible}, Picker={settings.Picker is not null}");
         settings.ColorButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(800);
         var picker = settings.Picker!;
         var pickerScroll = Descendants(settings).OfType<System.Windows.Controls.ScrollViewer>().Single(s => ReferenceEquals(s.Content, picker));
@@ -159,7 +160,12 @@ internal static class SmokeTests
         Check("Modusfarbe sitzt als runder Kreis links neben dem Farbmodus", settings.ModeColorButton!.TranslatePoint(new Point(settings.ModeColorButton.ActualWidth, 0), modeCombo).X <= 0);
         var generalBoxes = Descendants(settings).OfType<System.Windows.Controls.CheckBox>().ToList();
         Check("Einstellungen: erst App-Farbe und Farbmodus, dann Allgemein (Windows-Start oben, Bubble-Farben zuletzt), dann Transparenz", generalBoxes.First().Content is System.Windows.Controls.TextBlock { Text: "Mit Windows starten" } && ReferenceEquals(generalBoxes.Last(), settings.LinkColorsCheckBox) && settings.ColorButton!.TranslatePoint(new Point(), settings).Y < generalBoxes.First().TranslatePoint(new Point(), settings).Y && settings.TransparencySlider!.TranslatePoint(new Point(), settings).Y > settings.LinkColorsCheckBox!.TranslatePoint(new Point(), settings).Y);
-        Check("Einsammeln neu angelegter Verknüpfungen ist standardmäßig an", settings.CollectDuplicatesCheckBox?.IsChecked == true);
+        // Language: the English flag switches the whole window (and saves the choice), the German one switches back.
+        Descendants(settings).OfType<System.Windows.Controls.Button>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "English").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(700);
+        SaveImage(settings, Path.Combine(app.DataDirectory, "app-settings-english.png"));
+        Check("Englisch-Flagge stellt die Verwaltung auf Englisch um und merkt es sich", Loc.English && app.State.Settings.Language == "en" && Descendants(settings).OfType<System.Windows.Controls.TextBlock>().Any(text => text.Text == "Settings") && (string)settings.ColorButton!.Content == "Change" && Descendants(settings).OfType<System.Windows.Controls.Button>().Any(b => b.Content is string label && label == "New") && settings.Title.Contains("mode"));
+        Descendants(settings).OfType<System.Windows.Controls.Button>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Deutsch").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(700);
+        Check("Deutsch-Flagge stellt alles wieder auf Deutsch", !Loc.English && app.State.Settings.Language == "de" && (string)settings.ColorButton!.Content == "Ändern" && Descendants(settings).OfType<System.Windows.Controls.TextBlock>().Any(text => text.Text == "Einstellungen"));        Check("Einsammeln neu angelegter Verknüpfungen ist standardmäßig an", settings.CollectDuplicatesCheckBox?.IsChecked == true);
         // Auto close sits second to last, right above the shared bubble colors; its seconds on the right.
         var linkOrigin = settings.LinkColorsCheckBox!.TranslatePoint(new Point(), settings); var autoOrigin = settings.AutoCloseCheckBox!.TranslatePoint(new Point(), settings);
         Check("„Bubble automatisch schließen“ steht direkt über der Farbkopplung, Sekunden rechts daneben, standardmäßig aus",

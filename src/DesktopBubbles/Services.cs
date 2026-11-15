@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -30,8 +30,8 @@ internal static class LaunchService
 {
     public static void Launch(AppEntry entry)
     {
-        if (!Targets.IsAllowed(entry.Target)) throw new InvalidOperationException("Ungültiges Ziel.");
-        if (!Targets.Exists(entry.Target)) throw new FileNotFoundException("Das Ziel wurde verschoben oder gelöscht. Bitte den Eintrag neu hinzufügen.", entry.Target);
+        if (!Targets.IsAllowed(entry.Target)) throw new InvalidOperationException(Loc.T("Ungültiges Ziel.", "Invalid target."));
+        if (!Targets.Exists(entry.Target)) throw new FileNotFoundException(Loc.T("Das Ziel wurde verschoben oder gelöscht. Bitte den Eintrag neu hinzufügen.", "The target was moved or deleted. Please add the entry again."), entry.Target);
         if (Targets.IsStore(entry.Target))
             Process.Start(new ProcessStartInfo("explorer.exe") { UseShellExecute = true, ArgumentList = { entry.Target } });
         else Process.Start(new ProcessStartInfo(entry.Target) { UseShellExecute = true });
@@ -39,7 +39,7 @@ internal static class LaunchService
 
     public static string Describe(AppEntry entry)
     {
-        if (!Targets.Exists(entry.Target)) return "Ziel fehlt: " + entry.Target;
+        if (!Targets.Exists(entry.Target)) return Loc.T("Ziel fehlt: ", "Target missing: ") + entry.Target;
         if (!entry.Target.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase)) return entry.Target;
         object? shell = null, shortcut = null;
         try
@@ -49,7 +49,7 @@ internal static class LaunchService
             string target = ((dynamic)shortcut).TargetPath;
             string args = ((dynamic)shortcut).Arguments;
             return string.IsNullOrWhiteSpace(target) ? entry.Target : target + (args.Length > 0 ? " " + args : "")
-                + (!File.Exists(target) && !Directory.Exists(target) && Path.IsPathFullyQualified(target) ? "\nVerknüpfungsziel fehlt möglicherweise." : "");
+                + (!File.Exists(target) && !Directory.Exists(target) && Path.IsPathFullyQualified(target) ? Loc.T("\nVerknüpfungsziel fehlt möglicherweise.", "\nThe shortcut target may be missing.") : "");
         }
         catch (COMException) { return entry.Target; }
         finally { if (shortcut is not null) Marshal.FinalReleaseComObject(shortcut); if (shell is not null) Marshal.FinalReleaseComObject(shell); }

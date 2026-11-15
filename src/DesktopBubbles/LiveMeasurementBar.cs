@@ -157,13 +157,12 @@ internal sealed class LiveMeasurementBar : Grid, IDisposable
         // The speedometer sits in a slot that narrows to nothing while it slides off to the left.
         gauge = new Gauge(ink) { LayoutTransform = new ScaleTransform(1.2, 1.2), RenderTransform = gaugeShift, Margin = new Thickness(6, 0, 4, 0), VerticalAlignment = VerticalAlignment.Center };
         gaugeSlot = new Border { Child = gauge, Width = GaugeWidth, ClipToBounds = true, Background = Brushes.Transparent };
-        gaugeButton = new Button { Style = plain, Content = gaugeSlot, VerticalAlignment = VerticalAlignment.Stretch, ToolTip = "Verbrauch messen" };
+        gaugeButton = new Button { Style = plain, Content = gaugeSlot, VerticalAlignment = VerticalAlignment.Stretch };
         gaugeButton.Click += (_, _) => Fold(!open);
-        System.Windows.Automation.AutomationProperties.SetName(gaugeButton, "Verbrauchsmessung ausklappen");
         row.Children.Add(gaugeButton);
         // Curve and values first, play/stop right before the arrow.
         drawerContent.Children.Add(trace);
-        drawerContent.Children.Add(Metric("CPU Ø", cpu, 64)); drawerContent.Children.Add(Metric("RAM", ram, 68));
+        drawerContent.Children.Add(Metric(cpuLabel, cpu, 64)); drawerContent.Children.Add(Metric(ramLabel, ram, 68));
         var time = new StackPanel { Orientation = Orientation.Horizontal }; time.Children.Add(duration); time.Children.Add(dot);
         var timeBox = new StackPanel { Width = 62, VerticalAlignment = VerticalAlignment.Center }; timeBox.Children.Add(Ui.Text(" ", 11, "Muted")); timeBox.Children.Add(time); duration.Margin = new Thickness(0, 2, 0, 0);
         drawerContent.Children.Add(timeBox);
@@ -176,19 +175,16 @@ internal sealed class LiveMeasurementBar : Grid, IDisposable
         drawer = new Border { Child = drawerContent, Width = 0, ClipToBounds = true, Opacity = 0, VerticalAlignment = VerticalAlignment.Center };
         row.Children.Add(drawer);
         arrow.Fill = ink; arrow.Stroke = ink; arrow.StrokeThickness = .1; arrow.RenderTransformOrigin = new Point(.5, .5); arrow.RenderTransform = arrowTurn;
-        arrowButton = new Button { Style = plain, Content = arrow, Padding = new Thickness(8, 10, 10, 10), VerticalAlignment = VerticalAlignment.Stretch, ToolTip = "Verbrauch messen" };
+        arrowButton = new Button { Style = plain, Content = arrow, Padding = new Thickness(8, 10, 10, 10), VerticalAlignment = VerticalAlignment.Stretch };
         arrowButton.Click += (_, _) => Fold(!open);
-        System.Windows.Automation.AutomationProperties.SetName(arrowButton, "Verbrauchsmessung ein- oder ausklappen");
         row.Children.Add(arrowButton);
         foreach (var button in new[] { gaugeButton, arrowButton }) { button.MouseEnter += (_, _) => Hover(); button.MouseLeave += (_, _) => Hover(); }
-        ToolTip = "Manuell gestartetes Ressourcen-Tracking dieses Prozesses: zeitgewichteter CPU-Durchschnitt über alle logischen Prozessoren; RAM = aktueller Working Set. Die Kurve zeigt die letzten 20 Sekunden, die Durchschnittswerte gelten für die ganze Messung. Stoppen hält die letzten Werte fest; erneutes Starten beginnt eine neue Messung. Bei ausgeblendeter/minimierter Verwaltung wird nicht gemessen.";
         SizeChanged += (_, _) => { if (open) { openWidth = OpenWidth(); ApplyFold(); } };
         timer.Tick += (_, _) => Sample();
         window.IsVisibleChanged += VisibilityChanged; window.StateChanged += StateChanged;
         Loaded += (_, _) => { RefreshInk(); UpdateRunning(); };
         Unloaded += (_, _) => StopFold();
-        System.Windows.Automation.AutomationProperties.SetName(this, "Ressourcen-Tracking von DesktopBubbles");
-        UpdateButton();
+        RefreshTexts();
     }
     // Speedometer and arrow are one hover target: moving from one to the other keeps them lit.
     private void Hover() => Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
@@ -212,9 +208,22 @@ internal sealed class LiveMeasurementBar : Grid, IDisposable
     {
         var text = Ui.Text("–", 14, weight: FontWeights.SemiBold); System.Windows.Documents.Typography.SetNumeralAlignment(text, FontNumeralAlignment.Tabular); return text;
     }
-    private static UIElement Metric(string label, TextBlock value, double width)
+    private readonly TextBlock cpuLabel = Ui.Text("", 11, "Muted"), ramLabel = Ui.Text("RAM", 11, "Muted");
+    // Every text of the bar in the current language; called again when the language changes.
+    internal void RefreshTexts()
     {
-        var stack = new StackPanel { Width = width, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center }; stack.Children.Add(Ui.Text(label, 11, "Muted")); value.Margin = new Thickness(0, 2, 0, 0); stack.Children.Add(value); return stack;
+        cpuLabel.Text = Loc.T("CPU Ø", "CPU avg");
+        gaugeButton.ToolTip = arrowButton.ToolTip = Loc.T("Verbrauch messen", "Measure usage");
+        System.Windows.Automation.AutomationProperties.SetName(gaugeButton, Loc.T("Verbrauchsmessung ausklappen", "Show usage measurement"));
+        System.Windows.Automation.AutomationProperties.SetName(arrowButton, Loc.T("Verbrauchsmessung ein- oder ausklappen", "Show or hide usage measurement"));
+        ToolTip = Loc.T("Manuell gestartetes Ressourcen-Tracking dieses Prozesses: zeitgewichteter CPU-Durchschnitt über alle logischen Prozessoren; RAM = aktueller Working Set. Die Kurve zeigt die letzten 20 Sekunden, die Durchschnittswerte gelten für die ganze Messung. Stoppen hält die letzten Werte fest; erneutes Starten beginnt eine neue Messung. Bei ausgeblendeter/minimierter Verwaltung wird nicht gemessen.",
+            "Manually started resource tracking of this process: time-weighted CPU average across all logical processors; RAM = current working set. The curve shows the last 20 seconds, the averages cover the whole measurement. Stopping keeps the last values; starting again begins a new measurement. Nothing is measured while the management window is hidden or minimized.");
+        System.Windows.Automation.AutomationProperties.SetName(this, Loc.T("Ressourcen-Tracking von DesktopBubbles", "DesktopBubbles resource tracking"));
+        UpdateButton();
+    }
+    private static UIElement Metric(TextBlock label, TextBlock value, double width)
+    {
+        var stack = new StackPanel { Width = width, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center }; stack.Children.Add(label); value.Margin = new Thickness(0, 2, 0, 0); stack.Children.Add(value); return stack;
     }
     // Width follows the content; the curve steps aside when the window is too narrow, so nothing
     // (like the status dot) is ever cut off at the edge.
@@ -276,7 +285,7 @@ internal sealed class LiveMeasurementBar : Grid, IDisposable
     }
     private void UpdateButton()
     {
-        string name = requested ? "Tracking stoppen" : "Tracking starten";
+        string name = requested ? Loc.T("Tracking stoppen", "Stop tracking") : Loc.T("Tracking starten", "Start tracking");
         System.Windows.Automation.AutomationProperties.SetName(toggle, name); toggle.ToolTip = name;
         string glyph = requested ? "\uE71A" : "\uE768";
         if (toggleIcon.Text != glyph)

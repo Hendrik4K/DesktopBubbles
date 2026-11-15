@@ -239,8 +239,8 @@ internal static class Ui
         panel.Children.Add(Text(label, 14));
         var input = new TextBox { Text = initial, Margin = new Thickness(0, 12, 0, 20), MaxLength = 32767 }; panel.Children.Add(input);
         var row = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
-        var cancel = Button("Abbrechen", () => w.DialogResult = false); cancel.IsCancel = true;
-        var ok = Button("Übernehmen", () => { if (!string.IsNullOrWhiteSpace(input.Text)) w.DialogResult = true; }); ok.IsDefault = true;
+        var cancel = Button(Loc.T("Abbrechen", "Cancel"), () => w.DialogResult = false); cancel.IsCancel = true;
+        var ok = Button(Loc.T("Übernehmen", "OK"), () => { if (!string.IsNullOrWhiteSpace(input.Text)) w.DialogResult = true; }); ok.IsDefault = true;
         row.Children.Add(cancel); row.Children.Add(ok); panel.Children.Add(row); w.Content = panel;
         w.Loaded += (_, _) => { input.Focus(); input.SelectAll(); };
         return w.ShowDialog() == true ? input.Text.Trim() : null;
