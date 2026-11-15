@@ -22,6 +22,9 @@
 - Vorschauwechsel (1:3 ↔ 1:1, andere Bubble) mit derselben zweistufigen Weichzeichner-Blende wie der Seitenwechsel.
 - Messleiste: Tacho gleitet nach links weg, dann zieht der Pfeil die Messung auf; beim Einklappen umgekehrt. Tacho und Pfeil ohne Hover-Hintergrund, stattdessen weiß und kräftiger.
 - Ordner: Das Öffnen läuft ungestört zu Ende; ein Klick auf die Miniatur währenddessen wird ignoriert, ein Fokuswechsel schließt erst danach. Schließt die App den Ordner mitten im Öffnen, faltet er sich ohne Aufblitzen aus dem aktuellen Zustand zurück. Ein Klick auf eine leere Stelle im geöffneten Ordner klappt ihn zu.
+- 1:3 ↔ 1:1 blendet das alte Bild ganz aus und das neue mittig ein, während das Fenster gleichzeitig zur neuen Größe gleitet; von 1:1 direkt zur Miniatur gleitet es ebenfalls zurück.
+- Beim Wechsel in den Ordner-Tab wächst das Fenster nur, wenn die 1:3-Vorschau nicht ganz hineinpasst, und nur so weit wie nötig.
+- Scrollbalken-Morph als weiche S-Kurve, die der Scrollposition live folgt: Scrollen geht sofort, auch mitten im Morph.
 
 ## 1.8.2 · 15.11.2026
 

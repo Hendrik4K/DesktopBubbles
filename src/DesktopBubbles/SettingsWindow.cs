@@ -239,18 +239,48 @@ internal sealed class SettingsWindow : Window
     private FrameworkElement? pageBody; // Everything below the heading and the switch.
     private Grid? detailLayer; // Holds the page and the color picker that replaces it.
     // 1:1 widens the window to the right and down until the real-size folder fits whole; 1:3 glides
-    // it back to where it was. Meanwhile the old preview blurs away and the new one sharpens in.
-    private void FitPreview(System.Windows.Media.Imaging.BitmapSource? before = null)
+    // it back to where it was. Sized from the folder's footprint, so the window can start moving
+    // before the new preview is even laid out.
+    private void FitPreview()
     {
         Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
         {
-            if (folderViewport is null || folderStage is null) return;
-            if (before is not null && SettingsMotion.Enabled(app)) SettingsMotion.PageTransition(folderViewport, before);
+            if (folderViewport is null) return;
             if (previewScale != 1) { GiveBackRoom("preview"); return; }
-            folderStage.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            MakeRoom("preview", folderStage.DesiredSize.Width - folderViewport.ActualWidth + 2, folderStage.DesiredSize.Height - folderViewport.ActualHeight + 2);
+            var (width, height) = StageSize(1);
+            MakeRoom("preview", width - folderViewport.ActualWidth + 2, height - folderViewport.ActualHeight + 2);
         });
     }
+    // The stage around the preview: its size plus the 8 px frame and the 8 px gap above it.
+    private (double Width, double Height) StageSize(double scale) => (PreviewFootprint.Width * scale + 8, PreviewFootprint.Height * scale + 16);
+    // 1:3 ↔ 1:1: the old picture fades out completely, the new one is laid on fully transparent and
+    // fades in, centred, while the window glides to its new size at the same time.
+    private void SwitchPreviewScale()
+    {
+        previewScale = previewScale == 1 ? 1d / 3 : 1;
+        if (PreviewScaleButton is not null) SettingsMotion.SwapContent(PreviewScaleButton, previewScale == 1 ? "1:1" : "1:3");
+        FitPreview();
+        if (!SettingsMotion.Enabled(app) || !IsLoaded) { UpdateFolderPreview(); return; }
+        var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(190)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
+        fadeOut.Completed += (_, _) =>
+        {
+            UpdateFolderPreview();
+            preview.BeginAnimation(OpacityProperty, new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(320)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut } });
+        };
+        preview.BeginAnimation(OpacityProperty, fadeOut);
+    }
+    // Opening the folder tab: a 1:3 preview that does not fit whole makes the window taller for good
+    // (only as much as needed); one that fits leaves the window as it is.
+    private void FitFolderTab() => Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
+    {
+        if (folderViewport is null || restBounds is not null || !IsVisible || WindowState != WindowState.Normal) return;
+        double taller = StageSize(previewScale).Height - folderViewport.ActualHeight + 2;
+        if (taller <= 1) return;
+        double scale = Native.GetDpiForWindow(Native.Handle(this)) / 96d;
+        var now = glide.Running ? glide.Target : Native.Bounds(this); var work = Native.WorkArea(now.X + now.Width / 2, now.Y + now.Height / 2);
+        double height = Math.Min(work.Height, Math.Ceiling(now.Height + taller * scale));
+        glide.To(new PixelRect(now.X, Math.Clamp(now.Y, work.Y, Math.Max(work.Y, work.Bottom - height)), now.Width, height), .52, SettingsMotion.Enabled(app));
+    });
     private void SelectGroup(BubbleGroup group)
     {
         CancelColorEdit();
@@ -287,6 +317,7 @@ internal sealed class SettingsWindow : Window
         if (Scope == AppearanceScope.Window && scope != AppearanceScope.Window && previewScale == 1) { previewScale = 1d / 3; GiveBackRoom("preview"); }
         Scope = scope; RefreshPage();
         if (animate) SettingsMotion.PageTransition(pageChange ? pane : pageBody ?? pane, before);
+        if (scope == AppearanceScope.Window) FitFolderTab();
     }
     internal void RefreshPage()
     {
@@ -415,7 +446,7 @@ internal sealed class SettingsWindow : Window
             var previewBar = new DockPanel { Margin = new Thickness(0, 12, 0, 0) };
             // One pill: the round scale button on the right, "Milchglas" permanently folded out to its left.
             PreviewScaleButton = new Button { Style = (Style)FindResource("PillSegment"), Content = previewScale == 1 ? "1:1" : "1:3", Width = 34, Padding = new Thickness(0), Background = Brushes.Transparent };
-            PreviewScaleButton.Click += (_, _) => { previewScale = previewScale == 1 ? 1d / 3 : 1; var before = SettingsMotion.Snapshot(folderViewport!); UpdateFolderPreview(); FitPreview(before); };
+            PreviewScaleButton.Click += (_, _) => SwitchPreviewScale();
             PreviewScaleButton.ToolTip = "Zwischen verkleinerter Vorschau und Originalgröße wechseln. 1:1 entspricht der aktuellen Windows-Skalierung.";
             var scaleCircle = new Border { Width = 34, Height = 34, CornerRadius = new CornerRadius(17), Child = PreviewScaleButton };
             scaleCircle.SetResourceReference(Border.BackgroundProperty, "HoverFill");
@@ -434,7 +465,7 @@ internal sealed class SettingsWindow : Window
             var previewActions = SettingsMotion.Pill(scaleCircle, FrostedFoldersButton, circleRight: true);
             DockPanel.SetDock(previewActions, Dock.Right); previewBar.Children.Add(previewActions);
             previewDimensions = Ui.Text("", 12, "Muted"); previewDimensions.VerticalAlignment = VerticalAlignment.Center; previewBar.Children.Add(previewDimensions); root.Children.Add(previewBar);
-            folderStage = new Grid { Background = Brushes.Transparent, Margin = new Thickness(0, 8, 0, 0) };
+            folderStage = new Grid { Background = Brushes.Transparent, Margin = new Thickness(0, 8, 0, 0), HorizontalAlignment = HorizontalAlignment.Center };
             preview.Padding = new Thickness(0); preview.BorderThickness = new Thickness(1d / 3); preview.HorizontalAlignment = HorizontalAlignment.Center; preview.VerticalAlignment = VerticalAlignment.Center;
             folderStage.Children.Add(preview);
             folderViewport = new ScrollViewer { Content = folderStage, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };

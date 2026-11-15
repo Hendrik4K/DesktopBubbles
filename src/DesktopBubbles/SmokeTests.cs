@@ -258,6 +258,16 @@ internal static class SmokeTests
         Check("Vorschau lässt sich ohne Änderung der echten Ordnergröße zurück auf 1 zu 3 schalten", Math.Abs(settings.AppearancePreview.Width * 3 - expectedFootprint.Width) < .001 && settings.PreviewFootprint == expectedFootprint);
         var boundsBackSmall = Native.Bounds(settings);
         Check("Zurück auf 1:3 gleitet das Fenster genau an Platz und Größe von vorher", Math.Abs(boundsBackSmall.X - boundsBeforeLarge.X) <= 1 && Math.Abs(boundsBackSmall.Y - boundsBeforeLarge.Y) <= 1 && Math.Abs(boundsBackSmall.Width - boundsBeforeLarge.Width) <= 1 && Math.Abs(boundsBackSmall.Height - boundsBeforeLarge.Height) <= 1, $"vorher={boundsBeforeLarge}, zurück={boundsBackSmall}");
+        settings.PreviewScaleButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(800);
+        settings.SelectScope(AppearanceScope.Bubbles); await Task.Delay(800); var boundsLeft = Native.Bounds(settings);
+        Check("Von 1:1 direkt zur Miniatur gleitet das Fenster ebenfalls zurück", Math.Abs(boundsLeft.Width - boundsBeforeLarge.Width) <= 1 && Math.Abs(boundsLeft.Height - boundsBeforeLarge.Height) <= 1, $"vorher={boundsBeforeLarge}, danach={boundsLeft}");
+        settings.SelectScope(AppearanceScope.Window); await Task.Delay(800);
+        Check("Passt 1:3 schon, bleibt das Fenster beim Wechsel in den Ordner-Tab gleich", Native.Bounds(settings).Height == boundsLeft.Height, $"vorher={boundsLeft.Height}, jetzt={Native.Bounds(settings).Height}");
+        settings.SelectScope(AppearanceScope.Bubbles); settings.Height = 510; await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        settings.SelectScope(AppearanceScope.Window); await Task.Delay(800);
+        var tabScroll = Descendants(settings).OfType<System.Windows.Controls.ScrollViewer>().Single(s => ReferenceEquals(s.Content, settings.AppearancePreview.Parent));
+        Check("Passt 1:3 nicht, wächst das Fenster im Ordner-Tab genau so weit nach unten", tabScroll.ScrollableHeight <= 1 && Math.Abs(settings.AppearancePreview.Width * 3 - expectedFootprint.Width) < .001, $"Rest={tabScroll.ScrollableHeight:0.#}, Höhe={settings.ActualHeight:0}");
+        settings.Height = 760; await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
         SaveImage(settings, Path.Combine(app.DataDirectory, "window-settings.png"));
         settings.Close(); app.Open(app.Bubbles[0]); await Task.Delay(200); await SettleMotion();
         Check("Live-Vorschau entspricht der echten Rasterhöhe und -breite", Math.Abs(app.CurrentFlyout!.ActualWidth - expectedFootprint.Width) < 2 && Math.Abs(app.CurrentFlyout.ActualHeight - expectedFootprint.Height) < 2);
@@ -373,6 +383,9 @@ internal static class SmokeTests
         Check("Flyout öffnet", app.CurrentFlyout is { IsVisible: true }, $"Ordner={openingFolder is not null}, geklickt={clickedWhileOpening}, aktuell={app.CurrentFlyout is not null}, sichtbar={openingFolder?.IsVisible}, aktiv={openingFolder?.IsActive}, Vordergrund={foregroundName}");
         Check("Klick während des Öffnens lässt die Animation ungestört zu Ende laufen", !clickedWhileOpening || ReferenceEquals(app.CurrentFlyout, openingFolder) && openingFolder is { IsVisible: true });
         await SettleMotion();
+        // Lost focus meanwhile (another window came to the front): it folded away after landing, as
+        // intended. Open it once more for the checks below.
+        if (app.CurrentFlyout is null) { await SettleWindows(); await Task.Delay(300); app.Open(app.Bubbles[0]); await Task.Delay(200); await SettleMotion(); }
         Check("Geöffnetes Raster enthält keinerlei sichtbaren Text", !Descendants(app.CurrentFlyout!).OfType<System.Windows.Controls.TextBlock>().Any());
         Check("Kacheln behalten zugängliche App-Namen", Descendants(app.CurrentFlyout!).OfType<System.Windows.Controls.Button>().All(b => !string.IsNullOrWhiteSpace(System.Windows.Automation.AutomationProperties.GetName(b))));
         Check("Mini-Bubble während geöffnetem Raster ausgeblendet", app.Bubbles[0].Expanded && !app.Bubbles[0].TileVisible);
