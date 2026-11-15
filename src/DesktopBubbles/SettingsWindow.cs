@@ -55,6 +55,9 @@ internal sealed class SettingsWindow : Window
     internal CheckBox? AutoCloseCheckBox { get; private set; }
     internal CheckBox? CollectDuplicatesCheckBox { get; private set; }
     internal TextBlock? AutoCloseSeconds { get; private set; }
+    internal FrameworkElement? AutoCloseStepper { get; private set; }
+    internal Button? ResetColorsButton { get; private set; }
+    internal TextBlock? TransparencyValue { get; private set; }
     internal LiveMeasurementBar Measurement { get; }
     internal DividerScroll Divider { get; } = new();
     // The gear swells on hover; it turns 135° to the left and lights up while the settings are open,
@@ -517,7 +520,7 @@ internal sealed class SettingsWindow : Window
         var root = new StackPanel(); var settings = app.State.Settings;
         modePill = null;
         swatch = null; colorPill = null; scaleSwitching = false; ColorButton = null; GlassSelector = null; folderCanvas = null; folderStage = null; folderViewport = null; previewDimensions = null; PreviewScaleButton = null; LinkColorsCheckBox = null;
-        FrostedFoldersButton = null; TransparencySlider = null;
+        FrostedFoldersButton = null; TransparencySlider = null; TransparencyValue = null;
         modeSwatch = null; ModeColorButton = null; modeAction = null; modeApplyButton = null; themeSelector = null;
         if (preview.Parent is Panel previous) previous.Children.Remove(preview);
         if (Scope != AppearanceScope.Window)
@@ -597,7 +600,8 @@ internal sealed class SettingsWindow : Window
                     else if (Scope == AppearanceScope.Window) FolderAppearance.SetTransparency(settings, value);
                     else settings.Opacity = next;
                     app.ApplyAppearance();
-                }, value => $"{value:0} %");
+                }, value => $"{value:0} %", onDemand: Scope == AppearanceScope.App, out var shownValue);
+            TransparencyValue = Scope == AppearanceScope.App ? shownValue : null;
             System.Windows.Automation.AutomationProperties.SetName(TransparencySlider, Loc.T("Transparenz · ", "Transparency · ") + ScopeLabel(Scope));
             if (Scope != AppearanceScope.App) TransparencySlider.ToolTip = Scope == AppearanceScope.Bubbles ? Loc.T("Gilt für alle Miniaturen. 100 % blendet Fläche und Rahmen aus. App-Symbole bleiben sichtbar.", "Applies to all miniatures. 100 % hides surface and outline. App icons stay visible.") : Loc.T("Gilt für alle Ordner. 100 % blendet Fläche und Rahmen aus. App-Symbole bleiben sichtbar.", "Applies to all folders. 100 % hides surface and outline. App icons stay visible.");
         }
@@ -674,15 +678,44 @@ internal sealed class SettingsWindow : Window
         if (IsLoaded) Ui.Backdrop(this, settings);
     }
     private static Slider AddSlider(Panel root, string label, double minimum, double maximum, double value, Action<double> changed, Func<double, string> format)
+        => AddSlider(root, label, minimum, maximum, value, changed, format, onDemand: false, out _);
+    // onDemand: the slider runs the full width and its value appears right of the title only while
+    // it is being moved (and briefly after), fading out once it is let go. The value's place is kept
+    // free all the time, so nothing changes size when it shows.
+    private static Slider AddSlider(Panel root, string label, double minimum, double maximum, double value, Action<double> changed, Func<double, string> format, bool onDemand, out TextBlock number)
     {
         // Title and slider row share one grip area, from the title down to the value.
         var zone = new StackPanel { Background = Brushes.Transparent };
-        var title = Ui.Text(label, 13, weight: FontWeights.SemiBold); title.Margin = new Thickness(0, 8, 0, 5); zone.Children.Add(title);
-        var row = new DockPanel(); var number = Ui.Text(format(value), 12); number.Width = 58; number.TextAlignment = TextAlignment.Right; number.VerticalAlignment = VerticalAlignment.Center;
-        DockPanel.SetDock(number, Dock.Right); row.Children.Add(number);
+        var title = Ui.Text(label, 13, weight: FontWeights.SemiBold);
+        var shown = Ui.Text(format(value), 12); shown.VerticalAlignment = VerticalAlignment.Center; number = shown;
+        var row = new DockPanel();
+        if (onDemand)
+        {
+            var titleLine = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 8, 0, 5) };
+            titleLine.Children.Add(title); shown.Margin = new Thickness(10, 0, 0, 0); shown.Opacity = 0; shown.MinWidth = 40; titleLine.Children.Add(shown);
+            zone.Children.Add(titleLine);
+        }
+        else
+        {
+            title.Margin = new Thickness(0, 8, 0, 5); zone.Children.Add(title);
+            shown.Width = 58; shown.TextAlignment = TextAlignment.Right; DockPanel.SetDock(shown, Dock.Right); row.Children.Add(shown);
+        }
         var slider = new Slider { Minimum = minimum, Maximum = maximum, Value = value, TickFrequency = 1, IsSnapToTickEnabled = true, SmallChange = 1, LargeChange = 10 };
         System.Windows.Automation.AutomationProperties.SetName(slider, label);
-        slider.ValueChanged += (_, _) => { number.Text = format(slider.Value); changed(slider.Value); }; row.Children.Add(slider); zone.Children.Add(row);
+        var linger = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(900) };
+        linger.Tick += (_, _) =>
+        {
+            // Still held: keep showing it until the slider is let go.
+            if (zone.IsMouseCaptureWithin && Mouse.LeftButton == MouseButtonState.Pressed) return;
+            linger.Stop(); SettingsMotion.FadeTo(shown, 0, .35);
+        };
+        slider.ValueChanged += (_, _) =>
+        {
+            shown.Text = format(slider.Value); changed(slider.Value);
+            if (onDemand) { SettingsMotion.FadeTo(shown, 1, .15); linger.Stop(); linger.Start(); }
+        };
+        if (onDemand) zone.Unloaded += (_, _) => linger.Stop();
+        row.Children.Add(slider); zone.Children.Add(row);
         SettingsMotion.SmoothZone(zone, slider); root.Children.Add(zone); return slider;
     }
     private string CurrentColor() => Scope == AppearanceScope.App ? app.State.Settings.AppColor : AppearancePreferences.Color(app.State.Settings, selected);
@@ -840,13 +873,15 @@ internal sealed class SettingsWindow : Window
         CollectDuplicatesCheckBox = collect;
         Check(Loc.T("Desktop-Zuordnung verwenden", "Attach to the desktop"), app.State.Settings.DesktopIntegration, value => { app.State.Settings.DesktopIntegration = value; app.Changed(true); });
         Check(Loc.T("Hintergrund weichzeichnen", "Blur the background"), app.State.Settings.Blur, value => { app.State.Settings.Blur = value; app.ApplySettings(app.State.Settings); });
-        // Auto close: switch on the left, seconds stepper on the right.
-        var closing = new Grid { Margin = new Thickness(0, 4, 0, 4) }; closing.ColumnDefinitions.Add(new ColumnDefinition()); closing.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        // Auto close: switch on the left, seconds stepper on the right. The stepper and "Reset colors"
+        // below it share one column width, so both end and begin on the same lines.
+        Grid.SetIsSharedSizeScope(root, true);
+        var closing = new Grid { Margin = new Thickness(0, 4, 0, 4) }; closing.ColumnDefinitions.Add(new ColumnDefinition()); closing.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "RightControls" });
         var s = app.State.Settings;
         AutoCloseCheckBox = new CheckBox { Content = new TextBlock { Text = Loc.T("Bubble automatisch schließen", "Close bubbles automatically"), TextWrapping = TextWrapping.Wrap }, IsChecked = s.AutoCloseFolders, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
         AutoCloseCheckBox.ToolTip = Loc.T("Schließt einen geöffneten Ordner, wenn die Maus so lange nicht auf ihm war. Mit der Maus darauf läuft keine Zeit ab.", "Closes an open folder once the mouse has been off it for that long. While the mouse is on it, no time runs.");
         var seconds = Ui.Text("", 13); seconds.Width = 52; seconds.TextWrapping = TextWrapping.NoWrap; seconds.TextAlignment = TextAlignment.Center; seconds.VerticalAlignment = VerticalAlignment.Center;
-        var stepper = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        var stepper = new DockPanel { VerticalAlignment = VerticalAlignment.Center };
         Button less = null!, more = null!;
         Button Step(string glyph, string name, int delta)
         {
@@ -862,10 +897,11 @@ internal sealed class SettingsWindow : Window
             System.Windows.Automation.AutomationProperties.SetName(seconds, Loc.T($"Ordner schließen nach {s.AutoCloseSeconds} Sekunden", $"Close folders after {s.AutoCloseSeconds} seconds"));
         }
         AutoCloseCheckBox.Click += (_, _) => { s.AutoCloseFolders = AutoCloseCheckBox.IsChecked == true; ShowSeconds(); app.ApplyAutoClose(); };
-        stepper.Children.Add(less); stepper.Children.Add(seconds); stepper.Children.Add(more); ShowSeconds();
+        DockPanel.SetDock(less, Dock.Left); DockPanel.SetDock(more, Dock.Right);
+        stepper.Children.Add(less); stepper.Children.Add(more); stepper.Children.Add(seconds); ShowSeconds();
         AutoCloseSeconds = seconds;
         closing.Children.Add(AutoCloseCheckBox); Grid.SetColumn(stepper, 1); closing.Children.Add(stepper); root.Children.Add(closing);
-        var colors = new Grid { Margin = new Thickness(0, 4, 0, 0) }; colors.ColumnDefinitions.Add(new ColumnDefinition()); colors.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var colors = new Grid { Margin = new Thickness(0, 4, 0, 0) }; colors.ColumnDefinitions.Add(new ColumnDefinition()); colors.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto, SharedSizeGroup = "RightControls" });
         LinkColorsCheckBox = new CheckBox { Content = new TextBlock { Text = Loc.T("Bubble-Farben für alle übernehmen", "Use the bubble colors for all"), TextWrapping = TextWrapping.Wrap }, IsChecked = app.State.Settings.LinkBubbleColors, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
         LinkColorsCheckBox.ToolTip = Loc.T("Übernimmt die Farbe der ausgewählten Bubble für alle Miniaturen und Ordner. Danach gilt jede Farbänderung für alle. Die App-Farbe bleibt separat.", "Applies the color of the selected bubble to all miniatures and folders. From then on every color change applies to all. The app color stays separate.");
         LinkColorsCheckBox.Click += (_, _) => { AppearancePreferences.LinkColors(app.State, selected, LinkColorsCheckBox.IsChecked == true); app.ApplyAppearance(); };
@@ -874,6 +910,7 @@ internal sealed class SettingsWindow : Window
         reset.Style = (Style)FindResource("ResetColorsButton");
         reset.ToolTip = Loc.T("Setzt App- und alle Bubble-Farben zurück. Transparenz, Größe und Rundung bleiben erhalten.", "Resets the app color and all bubble colors. Transparency, size and rounding stay as they are.");
         reset.Margin = new Thickness(0); reset.Padding = new Thickness(10, 7, 10, 7); reset.VerticalAlignment = VerticalAlignment.Center;
+        reset.HorizontalAlignment = HorizontalAlignment.Stretch; reset.HorizontalContentAlignment = HorizontalAlignment.Center; ResetColorsButton = reset; AutoCloseStepper = stepper;
         Grid.SetColumn(reset, 1); colors.Children.Add(reset); root.Children.Add(colors);
     }
     private void AddTools(StackPanel root)

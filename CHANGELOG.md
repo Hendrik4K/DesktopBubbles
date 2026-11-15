@@ -50,6 +50,7 @@
 - Sprachwahl als Schalter wie in Pi Relay statt zwei Flaggen: eine Pille mit rundem Flaggenknopf, der die Zielsprache zeigt (im deutschen UI britische Flagge und „English“). Klick, kurzes Ziehen oder die Pfeiltasten schalten um; der Knopf gleitet erst hinüber, dann wechselt die App.
 - Ausklappmenüs: das Feld bleibt unten eckig, bis die Liste ganz eingefahren ist, erst dann rundet es sich wieder (vorher sprangen die Ecken beim Einklappen sofort rund).
 - Farbmodus klappt wie Glas als ein Stück aus der Pille aus (unten eckig, bündig, gleich breit) und steht weiter rechts, etwa ab der Seitenmitte.
+- Einstellungen: „Farben zurücksetzen“ ist genau so breit wie der Sekunden-Regler darüber. Der Transparenz-Regler läuft als durchgehende Linie über die ganze Breite; die Prozentzahl erscheint nur beim Verschieben rechts neben „Transparenz“ und blendet nach dem Loslassen wieder aus, ohne dass sich etwas verschiebt.
 
 ## 1.8.2 · 15.11.2026
 

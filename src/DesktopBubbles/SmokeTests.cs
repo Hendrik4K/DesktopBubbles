@@ -183,6 +183,17 @@ internal static class SmokeTests
         Check("„Bubble automatisch schließen“ steht direkt über der Farbkopplung, Sekunden rechts daneben, standardmäßig aus",
             autoOrigin.Y < linkOrigin.Y && Math.Abs(autoOrigin.X - linkOrigin.X) < 1 && settings.AutoCloseCheckBox.IsChecked == false
             && settings.AutoCloseSeconds!.Text == "5 s" && settings.AutoCloseSeconds.TranslatePoint(new Point(), settings).X > autoOrigin.X + 150);
+        var stepperLeft = settings.AutoCloseStepper!.TranslatePoint(new Point(), settings); var resetLeft = settings.ResetColorsButton!.TranslatePoint(new Point(), settings);
+        Check("„Farben zurücksetzen“ ist genau so breit wie der Sekunden-Regler darüber", Math.Abs(stepperLeft.X - resetLeft.X) < 1 && Math.Abs(settings.AutoCloseStepper.ActualWidth - settings.ResetColorsButton.ActualWidth) < 1, $"Regler={settings.AutoCloseStepper.ActualWidth:0}, Knopf={settings.ResetColorsButton.ActualWidth:0}");
+        // Transparency in the settings: a full-width line; its value shows right of the title only while it moves.
+        var appSlider = settings.TransparencySlider!; var shownValue = settings.TransparencyValue!;
+        double titleHeight = ((FrameworkElement)shownValue.Parent).ActualHeight, sliderWidth = appSlider.ActualWidth;
+        Check("Transparenz in den Einstellungen: durchgehende Linie, Prozent zunächst unsichtbar", shownValue.Opacity == 0 && sliderWidth > ((FrameworkElement)appSlider.Parent).ActualWidth - 1, $"Regler={sliderWidth:0}");
+        appSlider.Value += 1; await Task.Delay(250);
+        Check("Beim Verschieben erscheint die Prozentzahl rechts neben „Transparenz“, ohne dass sich etwas verschiebt", !SettingsMotion.Enabled(app) || shownValue.Opacity > .9 && shownValue.Text.EndsWith("%") && Math.Abs(((FrameworkElement)shownValue.Parent).ActualHeight - titleHeight) < .5 && Math.Abs(appSlider.ActualWidth - sliderWidth) < .5);
+        await Task.Delay(1600);
+        Check("Nach dem Loslassen blendet die Prozentzahl wieder aus", shownValue.Opacity < .05, $"Deckkraft={shownValue.Opacity:0.00}");
+        appSlider.Value -= 1;
         Check("Einstellungen verbergen die Ansichtsreiter", !Descendants(settings).OfType<System.Windows.Controls.Button>().Any(b => b.Content is string text && text is "Miniatur" or "Ordner"));
         var back = Descendants(settings).OfType<System.Windows.Controls.Button>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Zurück zur Miniaturansicht");
         back.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
