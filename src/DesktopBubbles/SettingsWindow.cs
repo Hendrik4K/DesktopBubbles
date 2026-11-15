@@ -250,6 +250,7 @@ internal sealed class SettingsWindow : Window
     private Button? selectedRow;
     private Border? colorPill;
     private FrameworkElement? pageBody; // Everything below the heading and the switch.
+    internal FrameworkElement? PageBody => pageBody;
     private Grid? detailLayer; // Holds the page and the color picker that replaces it.
     // 1:1 widens the window to the right and down until the real-size folder fits whole; 1:3 glides
     // it back to where it was. Sized from the folder's footprint, so the window can start moving
@@ -573,11 +574,12 @@ internal sealed class SettingsWindow : Window
         if (Picker is not null || ColorButton is null || colorOverlay is null || standardDetails is null) return;
         editingModeColor = modeColor; editingDarkMode = Ui.Dark;
         Picker = new ColorPickerPanel(modeColor ? ThemePalette.Color(app.State.Settings, editingDarkMode) : CurrentColor(), modeColor ? editingDarkMode ? app.State.Settings.DarkModeOpacity : app.State.Settings.LightModeOpacity : null); Picker.Edited += RefreshColorDraft; Picker.CancelRequested += CancelColorEdit;
-        var before = SettingsMotion.Enabled(app) && detailLayer is not null ? SettingsMotion.Snapshot(detailLayer) : null;
-        standardDetails.Visibility = Visibility.Hidden;
         colorOverlay.Content = new ScrollViewer { Content = Picker, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled, Margin = new Thickness(0, 8, 0, 0) };
         colorOverlay.Visibility = Visibility.Visible;
-        if (before is not null && detailLayer is not null) SettingsMotion.PageTransition(detailLayer, before);
+        // The sliders themselves fade out completely, then the picker fades in (no picture of them).
+        var details = standardDetails;
+        if (SettingsMotion.Enabled(app) && IsLoaded) SettingsMotion.Handover(details, colorOverlay, left: () => { if (Picker is not null) details.Visibility = Visibility.Hidden; });
+        else details.Visibility = Visibility.Hidden;
         var apply = ColorButton;
         if (modeColor && modeAction is not null)
         {
@@ -636,10 +638,14 @@ internal sealed class SettingsWindow : Window
             if (modeAction is not null) modeAction.Content = themeSelector;
             modeApplyButton = null;
         }
-        var before = IsVisible && SettingsMotion.Enabled(app) && detailLayer is not null ? SettingsMotion.Snapshot(detailLayer) : null;
-        if (colorOverlay is not null) { colorOverlay.Content = null; colorOverlay.Visibility = Visibility.Collapsed; }
+        // Back the same way: the picker fades out completely, then the sliders fade in.
         if (standardDetails is not null) standardDetails.Visibility = Visibility.Visible;
-        if (before is not null && detailLayer is not null) SettingsMotion.PageTransition(detailLayer, before);
+        if (colorOverlay is { } overlay)
+        {
+            void Leave() { if (Picker is null) { overlay.Content = null; overlay.Visibility = Visibility.Collapsed; } }
+            if (IsVisible && SettingsMotion.Enabled(app) && standardDetails is not null) SettingsMotion.Handover(overlay, standardDetails, Leave);
+            else Leave();
+        }
         if (ColorButton is not null)
         {
             SettingsMotion.SwapContent(ColorButton, "Ändern"); ColorButton.Background = Brushes.Transparent; ColorButton.Foreground = Ui.Resource("Ink"); ColorButton.IsDefault = false; ColorButton.IsEnabled = true;

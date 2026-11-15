@@ -241,9 +241,17 @@ internal static class SettingsMotion
     // Page change in two beats, like the bubble hand-over: the old page fades out completely, only
     // then the new one fades in. Never both half-visible at once, no blur.
     internal const double PageOut = .22, PageIn = .3;
-    internal static void PageTransition(FrameworkElement host, BitmapSource? before)
+    internal static void PageTransition(FrameworkElement host, BitmapSource? before, bool retried = false)
     {
-        if (AdornerLayer.GetAdornerLayer(host) is not { } layer) return;
+        if (AdornerLayer.GetAdornerLayer(host) is not { } layer)
+        {
+            // A page built a moment ago is not in the window's tree yet: keep it hidden and start
+            // the hand-over once it has been laid out (otherwise it would just pop in).
+            if (retried) return;
+            host.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(0, 0, TimeSpan.Zero));
+            host.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () => PageTransition(host, before, retried: true));
+            return;
+        }
         double wait = before is null ? 0 : PageOut;
         var appear = new DoubleAnimationUsingKeyFrames();
         appear.KeyFrames.Add(new DiscreteDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
@@ -257,7 +265,25 @@ internal static class SettingsMotion
         var vanish = new DoubleAnimation(1, 0, TimeSpan.FromSeconds(PageOut)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
         vanish.Completed += (_, _) => layer.Remove(ghost);
         ghost.BeginAnimation(UIElement.OpacityProperty, vanish);
-    }    // The mouse wheel glides: each notch adds to a target the offset eases towards.
+    }
+
+    // The same two beats with live elements instead of a picture: "leaving" fades out first, then
+    // "arriving" fades in. Both stay visible (and readable for code) throughout; whoever is left
+    // over is only hidden once it has faded out completely.
+    internal static void Handover(UIElement leaving, UIElement arriving, Action? left = null)
+    {
+        var fadeOut = new DoubleAnimation(0, TimeSpan.FromSeconds(PageOut)) { EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn } };
+        fadeOut.Completed += (_, _) => { left?.Invoke(); leaving.BeginAnimation(UIElement.OpacityProperty, null); };
+        leaving.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+        var appear = new DoubleAnimationUsingKeyFrames();
+        appear.KeyFrames.Add(new DiscreteDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.Zero)));
+        appear.KeyFrames.Add(new DiscreteDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(PageOut))));
+        appear.KeyFrames.Add(new EasingDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(PageOut + PageIn)), new CubicEase { EasingMode = EasingMode.EaseOut }));
+        appear.Completed += (_, _) => arriving.BeginAnimation(UIElement.OpacityProperty, null);
+        arriving.BeginAnimation(UIElement.OpacityProperty, appear);
+    }
+
+    // The mouse wheel glides: each notch adds to a target the offset eases towards.
     internal static void SmoothWheel(ScrollViewer viewer)
     {
         double target = 0; bool running = false; var clock = System.Diagnostics.Stopwatch.StartNew(); double last = 0;

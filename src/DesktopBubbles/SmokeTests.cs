@@ -244,7 +244,9 @@ internal static class SmokeTests
         Check("Miniatur enthält genau eine Glaswahl zwischen Farbe und Vorschau", settings.GlassSelector is not null && Descendants(settings).OfType<System.Windows.Controls.ComboBox>().Count() == 1);
         settings.GlassSelector!.SelectedIndex = 1; settings.RoundingSlider!.Value = 18;
         Check("Gemeinsame Rundung skaliert Miniatur und Ordner proportional", Math.Abs(app.State.Settings.BubbleCornerRadius - 76 * .18) < .001 && app.State.Settings.CornerRoundness == 18);
-        settings.SelectScope(AppearanceScope.Window); await Dispatcher.Yield(DispatcherPriority.ApplicationIdle); settings.TransparencySlider!.Value = 37;
+        settings.SelectScope(AppearanceScope.Window); await Task.Delay(60); double midOpacity = settings.PageBody!.Opacity; await Task.Delay(700);
+        Check("Miniatur zu Ordner blendet erst aus und dann die neue Seite ein", !SettingsMotion.Enabled(app) || midOpacity < .05 && settings.PageBody!.Opacity == 1, $"mitten={midOpacity:0.00}, danach={settings.PageBody!.Opacity:0.00}");
+        settings.TransparencySlider!.Value = 37;
         Check("Ordnertransparenz gilt gemeinsam und unabhängig von App und Miniatur", Math.Abs(app.State.Settings.WindowOpacity - .63) < .001 && app.State.Groups.All(g => g.WindowOpacity is null) && app.State.Settings.Opacity == .35 && app.State.Settings.AppOpacity == originalAppOpacity && settings.GlassSelector is null && settings.RoundingSlider is null);
         double smaller = settings.AppearancePreview.Width; settings.SizeSlider!.Value = 432;
         Check("Größenregler verändert die Vorschau direkt im Maßstab 1 zu 3", settings.AppearancePreview.Width > smaller && Math.Abs(settings.AppearancePreview.Width * 3 - 432) < .001 && settings.PreviewFootprint.Width == 432);

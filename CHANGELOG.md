@@ -34,6 +34,9 @@
 - Ausklappmenüs öffnen auf ihre echte Höhe mit klassischer Kurve (langsam, schneller, sanft bremsen).
 - Farbwähler: großzügige Greifzonen für Sättigung, Helligkeit und Deckkraft; HEX-Feld zeigt die Farbe selbst; rechts Pipette (Farbe vom Bildschirm, mit Live-Vorschau, Esc bricht ab) und X statt Abbrechen; überschüssige Fläche blendet unten weich aus.
 - Einstellungen: Modusfarbe als runder Kreis links neben dem Farbmodus; Farbmodus-Überschrift so groß wie App-Farbe.
+- Miniatur ↔ Ordner blendet jetzt wirklich nacheinander aus und ein (die neue Seite sprang vorher sofort hinein, weil sie beim Start der Blende noch nicht im Fenster hing).
+- Farbwähler öffnen und schließen: die echten Regler blenden ganz aus, dann der Farbwähler ein (und zurück), ohne flackerndes Schnappschuss-Bild.
+- Das X im Farbwähler wird beim Überfahren weich rot, kräftiger und etwas größer.
 
 ## 1.8.2 · 15.11.2026
 

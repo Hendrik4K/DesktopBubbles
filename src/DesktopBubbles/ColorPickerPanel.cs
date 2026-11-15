@@ -120,7 +120,7 @@ internal sealed class ColorPickerPanel : UserControl
         var hexLabel = Ui.Text("HEX", 12); hexLabel.Margin = new Thickness(0, 0, 0, 4); controls.Children.Add(hexLabel);
         // The HEX field itself shows the colour; right of it the eyedropper and the close cross.
         var hexRow = new DockPanel();
-        CloseButton = Icon("\uE711", "Farbänderung verwerfen · Esc", () => CancelRequested?.Invoke()); DockPanel.SetDock(CloseButton, Dock.Right);
+        CloseButton = Icon("\uE711", "Farbänderung verwerfen · Esc", () => CancelRequested?.Invoke(), danger: true); DockPanel.SetDock(CloseButton, Dock.Right);
         Eyedropper = Icon("\uEF3C", "Farbe vom Bildschirm aufnehmen", PickFromScreen); DockPanel.SetDock(Eyedropper, Dock.Right);
         hexRow.Children.Add(CloseButton); hexRow.Children.Add(Eyedropper);
         HexInput = new TextBox { Text = SelectedHex, MaxLength = 7, VerticalContentAlignment = VerticalAlignment.Center, FontSize = 13, Padding = new Thickness(8, 6, 8, 6), FontWeight = FontWeights.SemiBold };
@@ -143,10 +143,22 @@ internal sealed class ColorPickerPanel : UserControl
         frame.SizeChanged += (_, _) => FadeSurplus();
         UpdateVisuals();
     }
-    private Button Icon(string glyph, string name, Action action)
+    // Icon buttons swell on hover; the closing cross also turns red and bolder, fading in and out.
+    private Button Icon(string glyph, string name, Action action, bool danger = false)
     {
         var shape = Ui.GlyphPath(glyph, 16); shape.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, "Ink");
         var button = new Button { Style = (Style)FindResource("PlainButton"), Content = shape, Width = 34, Height = 34, Margin = new Thickness(6, 0, 0, 0), ToolTip = name, HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center };
+        if (danger)
+        {
+            var ink = new SolidColorBrush(Ui.Resource("Ink").Color); shape.Fill = ink; shape.Stroke = ink; shape.StrokeThickness = .1;
+            void Glow(bool on)
+            {
+                var time = TimeSpan.FromMilliseconds(on ? 180 : 300);
+                ink.BeginAnimation(SolidColorBrush.ColorProperty, new System.Windows.Media.Animation.ColorAnimation(on ? Color.FromRgb(0xE0, 0x3A, 0x3A) : Ui.Resource("Ink").Color, time));
+                shape.BeginAnimation(System.Windows.Shapes.Shape.StrokeThicknessProperty, new System.Windows.Media.Animation.DoubleAnimation(on ? 1 : .1, time));
+            }
+            button.MouseEnter += (_, _) => Glow(true); button.MouseLeave += (_, _) => Glow(false);
+        }
         System.Windows.Automation.AutomationProperties.SetName(button, name);
         SettingsMotion.Swell(shape, 1.2);
         button.Click += (_, _) => action(); return button;
