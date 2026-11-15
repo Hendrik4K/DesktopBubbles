@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -93,11 +93,18 @@ internal sealed class FolderReorder : IDisposable
     {
         if (!entries.TryGetValue(button, out picked)) return;
         dragged = true; StopWiggle(button); Panel.SetZIndex(button, 10);
-        button.Opacity = .85;
+        // The picked icon stays enlarged (no background) until it is dropped.
         if (button.Content is Image image)
         {
-            translation = new TranslateTransform(); var transforms = new TransformGroup();
-            transforms.Children.Add(new ScaleTransform(1.08, 1.08)); transforms.Children.Add(translation);
+            translation = new TranslateTransform(); var transforms = new TransformGroup(); var grow = new ScaleTransform(1.06, 1.06);
+            transforms.Children.Add(grow); transforms.Children.Add(translation); image.RenderTransformOrigin = new Point(.5, .5);
+            if (animate() && SystemParameters.ClientAreaAnimation)
+            {
+                var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+                grow.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1.12, TimeSpan.FromMilliseconds(180)) { EasingFunction = ease });
+                grow.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1.12, TimeSpan.FromMilliseconds(180)) { EasingFunction = ease });
+            }
+            else grow.ScaleX = grow.ScaleY = 1.12;
             image.RenderTransform = transforms;
         }
         if (!button.CaptureMouse()) CancelPress();
@@ -127,8 +134,19 @@ internal sealed class FolderReorder : IDisposable
     private void SetTarget(Button? button)
     {
         if (target == button) return;
-        target?.ClearValue(Control.BackgroundProperty); target = button;
-        if (target is not null) { var color = Ui.Resource("Accent").Color; color.A = 80; target.Background = new SolidColorBrush(color); }
+        // The icon it would swap with lights up white, fading in and out.
+        if (target is not null && target.Background is SolidColorBrush lit && lit.Opacity > 0)
+        {
+            var old = target; var fade = new DoubleAnimation(0, TimeSpan.FromMilliseconds(220));
+            fade.Completed += (_, _) => { if (old != this.target && old.Background == lit) old.ClearValue(Control.BackgroundProperty); };
+            lit.BeginAnimation(Brush.OpacityProperty, fade);
+        }
+        target = button;
+        if (target is not null)
+        {
+            var white = new SolidColorBrush(Color.FromArgb(0x8C, 0xFF, 0xFF, 0xFF)) { Opacity = 0 }; target.Background = white;
+            white.BeginAnimation(Brush.OpacityProperty, new DoubleAnimation(1, TimeSpan.FromMilliseconds(animate() ? 180 : 0)));
+        }
     }
     internal void CancelPress()
     {

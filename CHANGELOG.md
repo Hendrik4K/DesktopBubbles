@@ -12,6 +12,8 @@
 - Trennstrich zwischen Bubble-Liste und Seite läuft bis unten durch und ist zugleich die Scrollbar beider Seiten; die Liste blendet über „Neu“ weich aus.
 - Verbrauchsmessung als Tacho mit Ausklapppfeil: Play/Stopp, geglättete Kurve über die letzten 20 Sekunden, die nach links wandert und weich ausblendet; der Tachozeiger folgt der CPU-Last.
 - Zahnrad wächst beim Überfahren, dreht beim Öffnen der Einstellungen 45° nach links und leuchtet gelb.
+- Ordner-Symbole schwellen beim Überfahren sanft an statt eines Hover-Hintergrunds; beim Sortieren bleibt das gegriffene Symbol vergrößert und nur das Tauschziel leuchtet weiß auf.
+- Messleiste: Werte und Play/Stopp klappen links vom Tacho aus, der Tacho wandert mit nach rechts; weicher Hover am Tacho; Zahlen mit fester Breite, nichts verrutscht mehr beim Ticken.
 
 ## 1.8.2 · 15.11.2026
 

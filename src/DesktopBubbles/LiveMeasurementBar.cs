@@ -110,8 +110,8 @@ internal sealed class Gauge : Canvas
     }
 }
 
-// Bottom bar next to "Neu": a speedometer with an arrow. A click folds out play/stop, the curve and
-// the values to the right; the arrow travels along and turns to fold it back in.
+// Bottom bar next to "Neu": a speedometer with an arrow. A click folds out the curve, the values and
+// play/stop to the left of it, pushing the speedometer to the right; the arrow turns to fold it back.
 internal sealed class LiveMeasurementBar : Grid, IDisposable
 {
     private readonly Window window;
@@ -120,14 +120,14 @@ internal sealed class LiveMeasurementBar : Grid, IDisposable
     private readonly Stopwatch clock = new();
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromSeconds(1) };
     private CpuSeries series = new(Environment.ProcessorCount);
-    private readonly TextBlock cpu = Ui.Text("–", 14, weight: FontWeights.SemiBold), ram = Ui.Text("–", 14, weight: FontWeights.SemiBold), duration = Ui.Text("00:00", 14, weight: FontWeights.SemiBold);
+    private readonly TextBlock cpu = Value(), ram = Value(), duration = Value();
     private readonly CpuTrace trace;
     private readonly Gauge gauge = new();
-    private readonly Button toggle, expander, collapser;
-    private readonly TextBlock toggleIcon = Ui.Symbol("", 13);
-    private readonly Ellipse dot = new() { Width = 7, Height = 7, Margin = new Thickness(6, 1, 1, 0), VerticalAlignment = VerticalAlignment.Center };
+    private readonly Button toggle, expander;
+    private readonly TextBlock toggleIcon = Ui.Symbol("\uE768", 13), arrow = Ui.Symbol("\uE76C", 12);
+    private readonly Ellipse dot = new() { Width = 7, Height = 7, Margin = new Thickness(5, 1, 1, 0), VerticalAlignment = VerticalAlignment.Center };
     private readonly Border drawer;
-    private readonly StackPanel drawerContent = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+    private readonly StackPanel drawerContent = new() { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Right };
     private readonly RotateTransform arrowTurn = new(0);
     private bool requested, disposed, open;
     public int SampleCount => series.Samples;
@@ -139,47 +139,63 @@ internal sealed class LiveMeasurementBar : Grid, IDisposable
     public LiveMeasurementBar(Window window, Func<bool> animate)
     {
         this.window = window; this.animate = animate; Margin = new Thickness(10, 10, 6, 10);
-        trace = new CpuTrace(animate) { Width = 84, Height = 34, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
+        trace = new CpuTrace(animate) { Width = 76, Height = 34, Margin = new Thickness(0, 0, 10, 0), VerticalAlignment = VerticalAlignment.Center };
         var row = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center }; Children.Add(row);
-        expander = new Button { Style = (Style)System.Windows.Application.Current.FindResource("PlainButton"), Content = gauge, Padding = new Thickness(8, 8, 6, 8), VerticalAlignment = VerticalAlignment.Center, ToolTip = "Verbrauch messen" };
-        expander.Click += (_, _) => Fold(!open);
-        System.Windows.Automation.AutomationProperties.SetName(expander, "Verbrauchsmessung ein- oder ausklappen");
-        row.Children.Add(expander);
-        toggle = new Button { Style = (Style)System.Windows.Application.Current.FindResource("PlainButton"), Width = 32, Height = 32, Margin = new Thickness(4, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center };
+        // Curve and values first, play/stop right next to the speedometer.
+        drawerContent.Children.Add(trace);
+        drawerContent.Children.Add(Metric("CPU Ø", cpu, 64)); drawerContent.Children.Add(Metric("RAM", ram, 68));
+        var time = new StackPanel { Orientation = Orientation.Horizontal }; time.Children.Add(duration); time.Children.Add(dot);
+        var timeBox = new StackPanel { Width = 62, VerticalAlignment = VerticalAlignment.Center }; timeBox.Children.Add(Ui.Text(" ", 11, "Muted")); timeBox.Children.Add(time); duration.Margin = new Thickness(0, 2, 0, 0);
+        drawerContent.Children.Add(timeBox);
+        toggle = new Button { Style = (Style)System.Windows.Application.Current.FindResource("PlainButton"), Width = 32, Height = 32, Margin = new Thickness(0, 0, 2, 0), VerticalAlignment = VerticalAlignment.Center };
         var round = new Border { Width = 32, Height = 32, CornerRadius = new CornerRadius(16), Child = toggleIcon };
         toggleIcon.HorizontalAlignment = HorizontalAlignment.Center; toggle.Content = round;
         toggle.Click += (_, _) => Toggle();
-        drawerContent.Children.Add(toggle); drawerContent.Children.Add(trace);
-        drawerContent.Children.Add(Metric("CPU Ø", cpu)); drawerContent.Children.Add(Metric("RAM", ram));
-        var time = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(0, 0, 4, 0) };
-        time.Children.Add(duration); time.Children.Add(dot);
-        var timeBox = new StackPanel { VerticalAlignment = VerticalAlignment.Center }; timeBox.Children.Add(Ui.Text(" ", 11, "Muted")); timeBox.Children.Add(time); duration.Margin = new Thickness(0, 2, 0, 0);
-        drawerContent.Children.Add(timeBox);
+        drawerContent.Children.Add(toggle);
+        // The drawer's content hangs on its right edge, so it is revealed from the speedometer outwards.
         drawer = new Border { Child = drawerContent, Width = 0, ClipToBounds = true, Opacity = 0, VerticalAlignment = VerticalAlignment.Center };
         row.Children.Add(drawer);
-        var arrow = Ui.Symbol("", 12); arrow.SetResourceReference(TextBlock.ForegroundProperty, "Muted");
-        arrow.RenderTransformOrigin = new Point(.5, .5); arrow.RenderTransform = arrowTurn;
-        collapser = new Button { Style = (Style)System.Windows.Application.Current.FindResource("PlainButton"), Content = arrow, Padding = new Thickness(6, 10, 8, 10), VerticalAlignment = VerticalAlignment.Center };
-        collapser.Click += (_, _) => Fold(!open);
-        System.Windows.Automation.AutomationProperties.SetName(collapser, "Verbrauchsmessung ein- oder ausklappen");
-        row.Children.Add(collapser);
+        // Speedometer and arrow form one control; on hover a soft white glow and the full ink colour
+        // fade in, and fade back out when the mouse leaves.
+        arrow.Foreground = arrowInk; arrow.RenderTransformOrigin = new Point(.5, .5); arrow.RenderTransform = arrowTurn; arrow.Margin = new Thickness(6, 0, 0, 0);
+        var face = new StackPanel { Orientation = Orientation.Horizontal }; face.Children.Add(gauge); face.Children.Add(arrow);
+        var glow = new Border { CornerRadius = new CornerRadius(12), Background = new SolidColorBrush(Color.FromArgb(0x80, 0xFF, 0xFF, 0xFF)), Opacity = 0, Margin = new Thickness(-8, -7, -8, -7), IsHitTestVisible = false };
+        var plate = new Grid(); plate.Children.Add(glow); plate.Children.Add(face);
+        expander = new Button { Style = (Style)System.Windows.Application.Current.FindResource("PlainButton"), Content = plate, Padding = new Thickness(12, 9, 10, 9), Margin = new Thickness(4, 0, 0, 0), VerticalAlignment = VerticalAlignment.Center, ToolTip = "Verbrauch messen" };
+        expander.Click += (_, _) => Fold(!open);
+        expander.MouseEnter += (_, _) => { SettingsMotion.FadeTo(glow, 1, .2); Tint(true); };
+        expander.MouseLeave += (_, _) => { SettingsMotion.FadeTo(glow, 0, .35); Tint(false); };
+        System.Windows.Automation.AutomationProperties.SetName(expander, "Verbrauchsmessung ein- oder ausklappen");
+        row.Children.Add(expander);
         ToolTip = "Manuell gestartetes Ressourcen-Tracking dieses Prozesses: zeitgewichteter CPU-Durchschnitt über alle logischen Prozessoren; RAM = aktueller Working Set. Die Kurve zeigt die letzten 20 Sekunden, die Durchschnittswerte gelten für die ganze Messung. Stoppen hält die letzten Werte fest; erneutes Starten beginnt eine neue Messung. Bei ausgeblendeter/minimierter Verwaltung wird nicht gemessen.";
         SizeChanged += (_, _) => { if (open) Fold(true, instant: true); };
         timer.Tick += (_, _) => Sample();
         window.IsVisibleChanged += VisibilityChanged; window.StateChanged += StateChanged;
-        Loaded += (_, _) => UpdateRunning();
+        Loaded += (_, _) => { Tint(false, instant: true); UpdateRunning(); };
         System.Windows.Automation.AutomationProperties.SetName(this, "Ressourcen-Tracking von DesktopBubbles");
         UpdateButton();
     }
-    private static UIElement Metric(string label, TextBlock value)
+    private readonly SolidColorBrush arrowInk = new(Colors.Gray);
+    private void Tint(bool hot, bool instant = false)
     {
-        var stack = new StackPanel { Margin = new Thickness(0, 0, 14, 0), VerticalAlignment = VerticalAlignment.Center }; stack.Children.Add(Ui.Text(label, 11, "Muted")); value.Margin = new Thickness(0, 2, 0, 0); stack.Children.Add(value); return stack;
+        var color = ((SolidColorBrush)Ui.Resource(hot ? "Ink" : "Muted")).Color;
+        if (instant || !animate()) { arrowInk.BeginAnimation(SolidColorBrush.ColorProperty, null); arrowInk.Color = color; return; }
+        arrowInk.BeginAnimation(SolidColorBrush.ColorProperty, new ColorAnimation(color, TimeSpan.FromMilliseconds(hot ? 200 : 350)));
+    }
+    // Fixed widths and even-width digits: ticking numbers never push their neighbours around.
+    private static TextBlock Value()
+    {
+        var text = Ui.Text("–", 14, weight: FontWeights.SemiBold); System.Windows.Documents.Typography.SetNumeralAlignment(text, FontNumeralAlignment.Tabular); return text;
+    }
+    private static UIElement Metric(string label, TextBlock value, double width)
+    {
+        var stack = new StackPanel { Width = width, Margin = new Thickness(0, 0, 8, 0), VerticalAlignment = VerticalAlignment.Center }; stack.Children.Add(Ui.Text(label, 11, "Muted")); value.Margin = new Thickness(0, 2, 0, 0); stack.Children.Add(value); return stack;
     }
     // Width follows the content; the curve steps aside when the window is too narrow, so nothing
     // (like the status dot) is ever cut off at the edge.
     private double OpenWidth()
     {
-        double room = Math.Max(0, ActualWidth - expander.ActualWidth - collapser.ActualWidth - 2);
+        double room = Math.Max(0, ActualWidth - expander.ActualWidth - expander.Margin.Left - 2);
         trace.Visibility = Visibility.Visible; drawerContent.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         if (drawerContent.DesiredSize.Width > room) { trace.Visibility = Visibility.Collapsed; drawerContent.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity)); }
         return Math.Min(room, Math.Ceiling(drawerContent.DesiredSize.Width));
@@ -188,7 +204,7 @@ internal sealed class LiveMeasurementBar : Grid, IDisposable
     {
         open = show; double width = show ? OpenWidth() : 0;
         bool smooth = !instant && animate() && IsLoaded;
-        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut }; var time = TimeSpan.FromMilliseconds(420);
+        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut }; var time = TimeSpan.FromMilliseconds(440);
         if (!smooth)
         {
             drawer.BeginAnimation(WidthProperty, null); drawer.Width = width; drawer.BeginAnimation(OpacityProperty, null); drawer.Opacity = show ? 1 : 0;
@@ -197,8 +213,7 @@ internal sealed class LiveMeasurementBar : Grid, IDisposable
         drawer.BeginAnimation(WidthProperty, new DoubleAnimation(width, time) { EasingFunction = ease });
         drawer.BeginAnimation(OpacityProperty, new DoubleAnimation(show ? 1 : 0, TimeSpan.FromMilliseconds(show ? 380 : 240)) { BeginTime = TimeSpan.FromMilliseconds(show ? 80 : 0) });
         arrowTurn.BeginAnimation(RotateTransform.AngleProperty, new DoubleAnimation(show ? 180 : 0, time) { EasingFunction = ease });
-    }
-    private void VisibilityChanged(object sender, DependencyPropertyChangedEventArgs e) => UpdateRunning();
+    }    private void VisibilityChanged(object sender, DependencyPropertyChangedEventArgs e) => UpdateRunning();
     private void StateChanged(object? sender, EventArgs e) => UpdateRunning();
     internal void Toggle()
     {

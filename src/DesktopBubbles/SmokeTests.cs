@@ -103,12 +103,15 @@ internal static class SmokeTests
         SaveImage(settings, Path.Combine(app.DataDirectory, "settings-light.png"));
         await Task.Delay(1200);
         Check("Tracking startet beim Öffnen nicht automatisch", settings.Measurement.SampleCount == 0 && !settings.Measurement.IsSampling && !settings.Measurement.IsTracking && System.Windows.Automation.AutomationProperties.GetName(settings.Measurement.TrackingButton) == "Tracking starten" && !settings.Measurement.IsOpen);
-        settings.Measurement.TrackingButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(1200);
+        settings.Measurement.TrackingButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); for (int wait = 0; wait < 30 && settings.Measurement.SampleCount < 1; wait++) await Task.Delay(100);
         Check("Tracking starten sammelt echte Prozessintervalle", settings.Measurement.SampleCount >= 1 && settings.Measurement.IsSampling && System.Windows.Automation.AutomationProperties.GetName(settings.Measurement.TrackingButton) == "Tracking stoppen");
         settings.Measurement.Toggle(); int samples = settings.Measurement.SampleCount; await Task.Delay(1100);
         Check("Tracking stoppen hält Werte fest und beendet Timer", settings.Measurement.SampleCount == samples && !settings.Measurement.IsSampling && !settings.Measurement.IsTracking);
         settings.Measurement.Toggle();
         Check("Erneuter Tracking-Start beginnt eine neue Messung", settings.Measurement.SampleCount == 0 && settings.Measurement.IsSampling);
+        settings.Measurement.Fold(true, instant: true); await Task.Delay(2600); SaveImage(settings, Path.Combine(app.DataDirectory, "measurement-open.png"));
+        Check("Ausgeklappte Messleiste zeigt Start/Stopp vollständig links vom Tacho", settings.Measurement.IsOpen && settings.Measurement.TrackingButton.TranslatePoint(new Point(), settings.Measurement.Expander).X + settings.Measurement.TrackingButton.ActualWidth <= 1);
+        settings.Measurement.Fold(false, instant: true);
         string originalColor = AppearancePreferences.Color(app.State.Settings, app.State.Groups[0]);
         app.RequestSave(); app.Flush();
         settings.ColorButton!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(250);
