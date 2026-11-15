@@ -47,6 +47,7 @@ internal sealed class SettingsWindow : Window
     internal Slider? RoundingSlider { get; private set; }
     internal Slider? LiquidStrengthSlider { get; private set; }
     internal CheckBox? AutoCloseCheckBox { get; private set; }
+    internal CheckBox? CollectDuplicatesCheckBox { get; private set; }
     internal TextBlock? AutoCloseSeconds { get; private set; }
     internal LiveMeasurementBar Measurement { get; }
     internal ColorPickerPanel? Picker { get; private set; }
@@ -472,12 +473,16 @@ internal sealed class SettingsWindow : Window
             ? "Eine andere DesktopBubbles-Ausgabe oder ein anderer Datenordner ist für den Windows-Start eingetragen. Aktiviere diese Option, um stattdessen diese Ausgabe mit ihren aktuellen Gruppen zu starten."
             : "Startet diese Ausgabe von DesktopBubbles mit genau ihrem aktuellen Datenordner.";
         Check("Desktop-Originale nach Übernahme entfernen", app.State.Settings.MoveDesktopShortcuts, value => { app.State.Settings.MoveDesktopShortcuts = value; app.RequestSave(); });
+        var collect = Check("Von Updates neu angelegte Verknüpfungen einsammeln", app.State.Settings.CollectDesktopDuplicates, value => { app.State.Settings.CollectDesktopDuplicates = value; app.RequestSave(); if (value) app.Duplicates?.Scan(); });
+        collect.ToolTip = "Legt ein Programm-Update eine Desktop-Verknüpfung neu an, obwohl das Programm schon in einer Bubble ist, wandert sie automatisch zurück in die Bubble. Andere Verknüpfungen bleiben unberührt. Wirkt nur, wenn Desktop-Originale entfernt werden.";
+        CollectDuplicatesCheckBox = collect;
         Check("Desktop-Zuordnung verwenden", app.State.Settings.DesktopIntegration, value => { app.State.Settings.DesktopIntegration = value; app.Changed(true); });
         Check("Hintergrund weichzeichnen", app.State.Settings.Blur, value => { app.State.Settings.Blur = value; app.ApplySettings(app.State.Settings); });
         var actions = Ui.Text("Daten & Werkzeuge", 17, weight: FontWeights.SemiBold); actions.Margin = new Thickness(0, 20, 0, 10); root.Children.Add(actions);
         void Action(string label, Action action, string help) { var button = Ui.Button(label, action); button.ToolTip = help; button.Margin = new Thickness(0, 0, 0, 8); button.HorizontalContentAlignment = HorizontalAlignment.Left; root.Children.Add(button); }
         Action("Sicherung exportieren …", app.Export, "Speichert Gruppen, Einstellungen und verwaltete Verknüpfungen als .bubbles-Datei. Programme werden nicht mitkopiert.");
         Action("Sicherung importieren …", app.Import, "Lädt eine Sicherung nach Rückfrage. Der bisherige Zustand wird zusätzlich gesichert.");
+        Action("Doppelte Verknüpfungen vom öffentlichen Desktop entfernen …", app.RemoveSharedDuplicates, "Zeigt Verknüpfungen auf dem öffentlichen Desktop, deren Programm schon in einer Bubble ist, und entfernt sie nach Bestätigung. Windows fragt dafür nach Administratorrechten.");
         Action("Verknüpfungen auf Desktop zurücklegen", app.RestoreAllShortcuts, "Legt gesicherte Desktop-Verknüpfungen zusätzlich auf den Desktop. Die Einträge bleiben in ihren Gruppen. Hilfreich vor dem Entfernen der App.");
         Action("Programmordner öffnen", () => { try { Process.Start(new ProcessStartInfo(AppContext.BaseDirectory) { UseShellExecute = true }); } catch (Exception ex) { Ui.Error(ex); } }, "Öffnet den Ordner mit DesktopBubbles.exe.");
         Action("Datenordner öffnen", () => { try { Process.Start(new ProcessStartInfo(app.DataDirectory) { UseShellExecute = true }); } catch (Exception ex) { Ui.Error(ex); } }, "Öffnet den tatsächlich verwendeten Speicher für Gruppen, Einstellungen und interne Verknüpfungen: " + app.DataDirectory);

@@ -1,5 +1,10 @@
 # Änderungen
 
+## Unveröffentlicht
+
+- **Von Updates neu angelegte Verknüpfungen werden eingesammelt:** Legt ein Programm-Update eine Desktop-Verknüpfung an, deren Programm (Ziel und Parameter, bzw. URL) schon in einer Bubble liegt, übernimmt DesktopBubbles sie automatisch. Die frische Verknüpfung ersetzt die Kopie in der Bubble; Name des Eintrags und gemerkter Desktop-Platz bleiben. Beim Start wird nachgeholt, was während der Pause angelegt wurde. Unberührt bleiben Verknüpfungen ohne passenden Eintrag, auf Wunsch zurückgelegte oder herausgezogene und alles im Kopiermodus. Abschaltbar unter „Von Updates neu angelegte Verknüpfungen einsammeln“.
+- Duplikate auf dem öffentlichen Desktop werden per Tray-Hinweis gemeldet und lassen sich über Einstellungen → „Doppelte Verknüpfungen vom öffentlichen Desktop entfernen …“ nach Bestätigung mit Administratorrechten entfernen.
+
 ## 1.8.1 · 12.11.2026
 
 - Neue Einstellung **Bubble automatisch schließen** unter „Bubble-Farben für alle übernehmen“, mit Sekundenwahl rechts daneben (1–120 s, Standard 5 s, standardmäßig aus). Ein geöffneter Ordner schließt sich nach dieser Zeit ohne Maus auf ihm; mit der Maus darauf läuft keine Zeit ab. Während Sortieren, Ziehen, offener Menüs oder Dialoge schließt nichts.

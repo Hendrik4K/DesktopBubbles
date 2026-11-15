@@ -28,6 +28,10 @@ public interface IShortcutVault
     ParkedShortcut? Park(string target);
     void ConfirmPlacement(string target, int x, int y);
     string? Unpark(string target);
+    // The replacement takes over the old copy's desktop spot; the old one never returns to the desktop.
+    void Supersede(string old, string replacement);
+    // A desktop file the app itself placed there on request (e.g. "Zurück zum Desktop").
+    bool PlacedByRequest(string path);
 }
 
 /// <summary>Use cases commit state before removing originals. The vault keeps recovery copies.</summary>
@@ -155,6 +159,27 @@ public sealed class ShortcutManager(IShortcutVault vault, Action<BubbleState> pe
             { notices.Add("Desktop-Verknüpfung bleibt zusätzlich auf dem Desktop: " + target + " · " + ex.Message); }
         }
         return notices;
+    }
+    /// <summary>
+    /// A program update put a shortcut back on the personal desktop although the same program
+    /// already lives in a bubble. The fresh link replaces the bubble's copy (keeping names and
+    /// places) and leaves the desktop through the verified takeover. Returns false when the
+    /// file is not one the app may take over.
+    /// </summary>
+    public bool Absorb(BubbleState state, string source, IReadOnlyList<AppEntry> entries)
+    {
+        if (entries.Count == 0 || vault.PlacedByRequest(source)) return false;
+        var prepared = vault.Prepare(source, true);
+        if (!prepared.RemoveOriginal) return false;
+        var before = entries.Select(e => (Entry: e, e.Target)).ToList();
+        foreach (var entry in entries) entry.Target = prepared.Target;
+        try { persist(state); }
+        catch { foreach (var (entry, target) in before) entry.Target = target; throw; }
+        var referenced = state.Groups.SelectMany(g => g.Items).Select(e => e.Target).ToHashSet(StringComparer.Ordinal);
+        foreach (var old in before.Select(b => b.Target).Distinct())
+            if (old != prepared.Target && !referenced.Contains(old) && ManagedTargets.IsManaged(old)) vault.Supersede(old, prepared.Target);
+        vault.Complete(prepared);
+        return true;
     }
     private static IEnumerable<string> Managed(BubbleState state)
         => state.Groups.SelectMany(g => g.Items).Select(e => e.Target).Where(ManagedTargets.IsManaged).Distinct(StringComparer.Ordinal);

@@ -81,6 +81,12 @@ public partial class App : System.Windows.Application
             // Test and diagnostic runs never touch the real desktop.
             parkOnExit = !smoke && !visual && !e.Args.Contains("--measure-idle");
             if (parkOnExit) foreach (var notice in Shortcuts.Unpark(State)) Log.Write(notice);
+            if (parkOnExit)
+            {
+                // After unparking: whatever is still a duplicate on the desktop came from an update.
+                Duplicates = new DesktopDuplicates(this, shortcutPlatform.PersonalDesktop);
+                Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () => Duplicates?.Start());
+            }
             saveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
             saveTimer.Tick += (_, _) => { saveTimer.Stop(); Flush(); };
             recoveryTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(900) };
@@ -297,6 +303,40 @@ public partial class App : System.Windows.Application
     internal FlyoutWindow? CurrentFlyout => flyout;
     internal bool Exiting => exiting;
     private ShortcutDrag? activeDrag;
+    private DateTime dragQuietUntil;
+    // During a drag-out and shortly after, links on the desktop are there on purpose.
+    internal bool DragQuiet => activeDrag is not null || DateTime.UtcNow < dragQuietUntil;
+    internal DesktopDuplicates? Duplicates { get; private set; }
+    internal void ReportSharedDuplicates(IReadOnlyList<string> names)
+    {
+        Log.Write("Shared desktop duplicates: " + string.Join(", ", names));
+        tray?.ShowBalloonTip(8000, "DesktopBubbles",
+            $"{string.Join(", ", names)} liegt erneut auf dem öffentlichen Desktop, obwohl es schon in einer Bubble ist. Entfernen: Einstellungen → Daten & Werkzeuge.",
+            Forms.ToolTipIcon.Info);
+    }
+    // The shared desktop needs administrator rights; Windows asks once, for exactly these files.
+    internal void RemoveSharedDuplicates()
+    {
+        Duplicates?.Scan();
+        var found = Duplicates?.Shared ?? [];
+        if (found.Count == 0) { MessageBox.Show("Auf dem öffentlichen Desktop liegen keine Verknüpfungen, die schon in einer Bubble sind.", "DesktopBubbles"); return; }
+        var list = string.Join("\n", found.Select(f => "• " + Path.GetFileNameWithoutExtension(f.Path) + "  (Bubble " + f.Bubble + ")"));
+        if (MessageBox.Show("Diese Verknüpfungen liegen auf dem öffentlichen Desktop und schon in einer Bubble:\n\n" + list +
+            "\n\nVom öffentlichen Desktop entfernen? Windows fragt dafür nach Administratorrechten. Programme und Bubble-Einträge bleiben unverändert.",
+            "Doppelte Verknüpfungen", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
+        string paths = string.Join(",", found.Select(f => "'" + f.Path.Replace("'", "''") + "'"));
+        try
+        {
+            using var process = Process.Start(new ProcessStartInfo("powershell.exe", $"-NoProfile -NonInteractive -Command \"Remove-Item -LiteralPath {paths} -Force\"")
+                { UseShellExecute = true, Verb = "runas", WindowStyle = ProcessWindowStyle.Hidden });
+            process?.WaitForExit(30000);
+        }
+        catch (System.ComponentModel.Win32Exception) { return; } // Administrator prompt declined.
+        Duplicates?.Scan();
+        int left = Duplicates?.Shared.Count ?? 0;
+        Log.Write($"Shared desktop duplicates removed: {found.Count - left} of {found.Count}");
+        if (left > 0) MessageBox.Show($"{left} Verknüpfung(en) konnten nicht entfernt werden.", "DesktopBubbles", MessageBoxButton.OK, MessageBoxImage.Warning);
+    }
     // Effect shown while dragging over a bubble or folder of the given group.
     internal DragDropEffects DropEffect(IDataObject data, BubbleGroup group)
         => IsInternalDrag(data) ? activeDrag?.Group == group ? DragDropEffects.None : DragDropEffects.Move
@@ -333,7 +373,7 @@ public partial class App : System.Windows.Application
             var drag = new ShortcutDrag(this, group, entry); activeDrag = drag; DragDropEffects result;
             Log.Write("Drag out started: " + entry.Name);
             try { result = DragDrop.DoDragDrop(source, drag.Data, DragDropEffects.Copy | DragDropEffects.Move); }
-            finally { activeDrag = null; }
+            finally { activeDrag = null; dragQuietUntil = DateTime.UtcNow.AddSeconds(5); }
             Log.Write($"Drag out ended: effect={result}, internal={drag.Internal}");
             if (drag.Internal || result == DragDropEffects.None) { drag.Cleanup(); return; }
             bool confirmed = await drag.Confirmed(result);
@@ -526,6 +566,7 @@ public partial class App : System.Windows.Application
     protected override void OnExit(ExitEventArgs e)
     {
         exiting = true; Flush(); saveTimer?.Stop(); recoveryTimer?.Stop();
+        Duplicates?.Dispose(); Duplicates = null; // Parked links must not be collected again.
         if (parkOnExit) ParkShortcuts();
         SystemEvents.UserPreferenceChanged -= PreferencesChanged; SystemEvents.DisplaySettingsChanged -= DisplaysChanged;
         CloseFlyout(); foreach (var window in bubbles.ToArray()) { try { window.Finish(); } catch (InvalidOperationException) { } }

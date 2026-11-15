@@ -302,6 +302,25 @@ internal static class ManagedShortcutTests
             assert(manager.Unpark(f.State).Count == 0 && !File.Exists(parked.Path) && File.Exists(manager.Resolve(target)));
             assert(manager.CanRestore(target) && manager.Restore(target) == parked.Path && File.Exists(parked.Path));
         });
+        test("Von einem Update neu angelegte Verknüpfung ersetzt die Bubble-Kopie und erbt ihren Platz", () =>
+        {
+            var f = New(); var source = f.Link(); f.Platform.Positions[source] = (40, 300);
+            f.Manager.Add(f.State, f.Group, source); var entry = f.Group.Items.Single(); var old = entry.Target; entry.Name = "Mein Name";
+            // The update writes a fresh link with a different name and content.
+            var update = Path.Combine(f.Platform.PersonalDesktop, "Launcher (neu).url");
+            File.WriteAllText(update, "[InternetShortcut]\nURL=https://example.com\nIconIndex=1");
+            assert(f.Manager.Absorb(f.State, update, [entry]));
+            assert(!File.Exists(update) && entry.Target != old && entry.Name == "Mein Name" && File.ReadAllText(f.Manager.Resolve(entry.Target)).Contains("IconIndex=1"));
+            assert(f.Store.Load().Groups[0].Items.Single().Target == entry.Target);
+            var parked = f.Manager.Park(f.State).Single(); // Only the fresh copy returns, at the old spot.
+            assert(parked.Target == entry.Target && parked.X == 40 && parked.Y == 300);
+        });
+        test("Auf Wunsch zurückgelegte Verknüpfung wird nicht wieder eingesammelt", () =>
+        {
+            var f = New(); var source = f.Link(); f.Manager.Add(f.State, f.Group, source); var entry = f.Group.Items.Single();
+            var restored = f.Manager.Restore(entry.Target)!;
+            assert(File.Exists(restored) && !f.Manager.Absorb(f.State, restored, [entry]) && File.Exists(restored));
+        });
         test("Kopiermodus und fremde Orte werden beim Beenden nicht auf den Desktop gelegt", () =>
         {
             var f = New(); f.State.Settings.MoveDesktopShortcuts = false; var source = f.Link();

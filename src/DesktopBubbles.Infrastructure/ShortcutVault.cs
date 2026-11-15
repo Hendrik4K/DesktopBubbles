@@ -112,7 +112,8 @@ public sealed class ShortcutVault : IShortcutVault
         if (existing is not null)
         {
             var previous = ReadRecord(existing)!;
-            if (move) { previous.MoveRequested = true; previous.Phase = "Prepared"; RememberPosition(previous, source); WriteRecord(previous); }
+            // A spot remembered earlier wins over wherever an installer just dropped the file.
+            if (move) { previous.MoveRequested = true; previous.Phase = "Prepared"; if (previous.DesktopX is null) RememberPosition(previous, source); WriteRecord(previous); }
             return new(existing, move);
         }
         if (!File.Exists(source)) throw new FileNotFoundException("Desktop-Verknüpfung wurde nicht gefunden.", source);
@@ -187,6 +188,31 @@ public sealed class ShortcutVault : IShortcutVault
         var path = PlaceOnDesktop(target, record);
         record.Phase = "Parked"; record.ParkedPath = path; record.ParkedX = record.ParkedY = null; WriteRecord(record);
         return new(target, path, record.DesktopX, record.DesktopY);
+    }
+    public void Supersede(string old, string replacement)
+    {
+        var previous = ReadRecord(old); var next = ReadRecord(replacement);
+        if (previous is null) return;
+        if (next is not null && previous.DesktopX is not null) { (next.DesktopX, next.DesktopY) = (previous.DesktopX, previous.DesktopY); WriteRecord(next); }
+        // Kept for old backups, but never laid onto the desktop again.
+        previous.MoveRequested = false; previous.Phase = "Superseded"; WriteRecord(previous);
+    }
+    public bool PlacedByRequest(string path)
+    {
+        foreach (var file in Directory.EnumerateFiles(root, "*.json"))
+        {
+            var target = ManagedTargets.Prefix + Path.GetFileNameWithoutExtension(file);
+            if (!ManagedTargets.IsManaged(target)) continue;
+            try
+            {
+                var record = ReadRecord(target);
+                // Laid back on request, or deliberately kept beside a copy-mode bubble entry.
+                if (record is { Phase: "Restored", RestoredPath: { } restored } && string.Equals(restored, path, StringComparison.OrdinalIgnoreCase)) return true;
+                if (record is { Phase: "Copied" } && string.Equals(record.Source, path, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or JsonException) { }
+        }
+        return false;
     }
     public void ConfirmPlacement(string target, int x, int y)
     {

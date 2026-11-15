@@ -26,6 +26,7 @@ public sealed class BubbleSettings
     public double LiquidStrength { get; set; } = .6; // 0..1: bezel depth, bend and color separation.
     public bool AutoCloseFolders { get; set; } // Close an open folder after a pause without the mouse on it.
     public int AutoCloseSeconds { get; set; } = 5;
+    public bool CollectDesktopDuplicates { get; set; } = true; // Re-absorb links that updates put back on the desktop.
     public double FrostedFolderOpacity { get; set; } = .55;
     public double AppCornerRadius { get; set; } = 8;
     public double BubbleCornerRadius { get; set; } = 20;

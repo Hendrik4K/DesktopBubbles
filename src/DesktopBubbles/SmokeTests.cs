@@ -137,7 +137,8 @@ internal static class SmokeTests
         Check("Verwaltung verwendet feste dezente Ecken statt eigenem Rundungsregler", app.State.Settings.AppCornerRadius == Ui.AppRadius && !settings.AllowsTransparency);
         var gear = Descendants(settings).OfType<System.Windows.Controls.Button>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Einstellungen");
         gear.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(100);
-        Check("Zahnrad zeigt App-Darstellung und allgemeine Checkboxen", settings.Scope == AppearanceScope.App && Descendants(settings).OfType<System.Windows.Controls.CheckBox>().Count() == 6);
+        Check("Zahnrad zeigt App-Darstellung und allgemeine Checkboxen", settings.Scope == AppearanceScope.App && Descendants(settings).OfType<System.Windows.Controls.CheckBox>().Count() == 7);
+        Check("Einsammeln neu angelegter Verknüpfungen ist standardmäßig an", settings.CollectDuplicatesCheckBox?.IsChecked == true);
         // Auto close sits right below the shared bubble colors, its seconds on the right.
         var linkOrigin = settings.LinkColorsCheckBox!.TranslatePoint(new Point(), settings); var autoOrigin = settings.AutoCloseCheckBox!.TranslatePoint(new Point(), settings);
         Check("„Bubble automatisch schließen“ steht unter der Farbkopplung, Sekunden rechts daneben, standardmäßig aus",
