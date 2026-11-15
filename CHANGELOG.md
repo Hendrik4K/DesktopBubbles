@@ -47,6 +47,9 @@
 - Einstellungen: App-Farbe und Farbmodus wieder zuerst, dann Allgemein, dann Transparenz und Werkzeuge.
 - **Deutsch und Englisch:** Zwei runde Flaggen rechts neben „Einstellungen“ schalten die ganze App ohne Neustart um: Verwaltung (mit Seitenblende), Tray-Menü, Bubble-Tooltips und -Menüs, Ordner-Menüs, Farbwähler, Dialoge und Fehlermeldungen. Die Wahl wird gespeichert; ohne Wahl gilt die Windows-Anzeigesprache.
 - Seitenblenden ohne Ruck nach unten: Das Bild der alten Seite lag um ihren Abstand zur Überschrift zu tief, sodass beim Start der Blende alles kurz nach unten sprang (Miniatur ↔ Ordner, ebenso beim Zahnrad). Es wird jetzt so aufgenommen, wie es auf dem Bildschirm steht, und genau auf die Seite zugeschnitten; ein Pixeltest vergleicht es mit dem echten Fenster.
+- Sprachwahl als Schalter wie in Pi Relay statt zwei Flaggen: eine Pille mit rundem Flaggenknopf, der die Zielsprache zeigt (im deutschen UI britische Flagge und „English“). Klick, kurzes Ziehen oder die Pfeiltasten schalten um; der Knopf gleitet erst hinüber, dann wechselt die App.
+- Ausklappmenüs: das Feld bleibt unten eckig, bis die Liste ganz eingefahren ist, erst dann rundet es sich wieder (vorher sprangen die Ecken beim Einklappen sofort rund).
+- Farbmodus klappt wie Glas als ein Stück aus der Pille aus (unten eckig, bündig, gleich breit) und steht weiter rechts, etwa ab der Seitenmitte.
 
 ## 1.8.2 · 15.11.2026
 

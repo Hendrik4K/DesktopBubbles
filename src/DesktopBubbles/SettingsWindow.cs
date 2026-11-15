@@ -30,6 +30,7 @@ internal sealed class SettingsWindow : Window
     private ComboBox? themeSelector;
     private bool editingModeColor, editingDarkMode;
     internal Button? ModeColorButton { get; private set; }
+    internal Button? LanguageSwitch { get; private set; }
     private Canvas? folderCanvas;
     private Grid? folderStage;
     private ScrollViewer? folderViewport;
@@ -386,11 +387,54 @@ internal sealed class SettingsWindow : Window
         if (animate && (pageChange ? pane.Content as UIElement : pageBody) is { } arriving) SettingsMotion.PageTransition(pane, at, before, arriving);
         if (scope == AppearanceScope.Window) FitFolderTab();
     }
-    // A round flag: Germany (black, red, gold) or the United Kingdom. The active language wears a
-    // ring in the app colour; the other one is dimmed and comes up on hover, swelling a little.
-    private Button LanguageFlag(bool english)
+    // The language switch (as in Pi Relay): a pill with a round flag knob that shows the language you
+    // switch TO, so in German it reads "English" with the British flag on the right. Click, a drag of
+    // 8 px either way or the arrow keys switch: the knob glides across first, then the window follows.
+    private Button BuildLanguageSwitch()
     {
-        const double size = 22;
+        const double width = 104, height = 33, knob = 27, travel = width - knob - 6;
+        bool english = Loc.English;
+        var face = new Border { Width = knob, Height = knob, CornerRadius = new CornerRadius(knob / 2), BorderThickness = new Thickness(2), Child = FlagFace(!english, knob - 4), HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(2, 0, 0, 0), Effect = new System.Windows.Media.Effects.DropShadowEffect { BlurRadius = 6, ShadowDepth = 2, Direction = 270, Opacity = .35 } };
+        face.SetResourceReference(Border.BorderBrushProperty, "Accent");
+        var knobShift = new TranslateTransform(english ? 0 : travel, 0); face.RenderTransform = knobShift;
+        var name = Ui.Text(english ? "Deutsch" : "English", 12.5, weight: FontWeights.SemiBold); name.VerticalAlignment = VerticalAlignment.Center; name.HorizontalAlignment = HorizontalAlignment.Left; name.IsHitTestVisible = false;
+        var nameShift = new TranslateTransform(english ? 37 : 13, 0); name.RenderTransform = nameShift;
+        var track = new Grid(); track.Children.Add(name); track.Children.Add(face);
+        var pill = new Border { Width = width, Height = height, CornerRadius = new CornerRadius(height / 2), BorderThickness = new Thickness(1), Child = track };
+        pill.SetResourceReference(Border.BackgroundProperty, "ControlFill"); pill.SetResourceReference(Border.BorderBrushProperty, "Line");
+        string label = english ? "Auf Deutsch umstellen" : "Switch to English";
+        var button = new Button { Style = (Style)FindResource("PlainButton"), Content = pill, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 2, 0, 0), ToolTip = label, Focusable = true };
+        System.Windows.Automation.AutomationProperties.SetName(button, label);
+        button.MouseEnter += (_, _) => pill.SetResourceReference(Border.BorderBrushProperty, "Accent");
+        button.MouseLeave += (_, _) => pill.SetResourceReference(Border.BorderBrushProperty, "Line");
+        bool switching = false;
+        void Go()
+        {
+            if (switching) return; switching = true;
+            string target = english ? "de" : "en";
+            if (!SettingsMotion.Enabled(app)) { app.SetLanguage(target); return; }
+            var curve = new CubicEase { EasingMode = EasingMode.EaseOut };
+            var glide = new DoubleAnimation(english ? travel : 0, TimeSpan.FromMilliseconds(280)) { EasingFunction = curve };
+            glide.Completed += (_, _) => app.SetLanguage(target);
+            knobShift.BeginAnimation(TranslateTransform.XProperty, glide);
+            nameShift.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(english ? 13 : 37, TimeSpan.FromMilliseconds(280)) { EasingFunction = curve });
+            SettingsMotion.FadeTo(name, 0, .14);
+        }
+        Point? pressed = null; bool dragged = false;
+        button.PreviewMouseLeftButtonDown += (_, e) => { pressed = e.GetPosition(button); dragged = false; };
+        button.PreviewMouseMove += (_, e) =>
+        {
+            if (pressed is not { } start || dragged || e.LeftButton != MouseButtonState.Pressed || Math.Abs(e.GetPosition(button).X - start.X) < 8) return;
+            dragged = true; Go();
+        };
+        button.Click += (_, _) => { pressed = null; if (!dragged) Go(); dragged = false; };
+        button.PreviewKeyDown += (_, e) => { if (e.Key is Key.Left or Key.Right) { e.Handled = true; Go(); } };
+        LanguageSwitch = button;
+        return button;
+    }
+    // A round flag face: Germany (black, red, gold) or the United Kingdom.
+    private static FrameworkElement FlagFace(bool english, double size)
+    {
         var face = new Grid { Width = size, Height = size, Clip = new EllipseGeometry(new Rect(0, 0, size, size)) };
         if (english)
         {
@@ -412,15 +456,7 @@ internal sealed class SettingsWindow : Window
             foreach (var color in new[] { "#000000", "#DD0000", "#FFCE00" }) stripes.Children.Add(new System.Windows.Shapes.Rectangle { Fill = Ui.Brush(color) });
             face.Children.Add(stripes);
         }
-        bool active = Loc.English == english;
-        var ring = new Border { CornerRadius = new CornerRadius(size / 2 + 3), Padding = new Thickness(2), BorderThickness = new Thickness(1.5), Child = face, Opacity = active ? 1 : .5 };
-        if (active) ring.SetResourceReference(Border.BorderBrushProperty, "Accent"); else ring.BorderBrush = Brushes.Transparent;
-        var button = new Button { Style = (Style)FindResource("PlainButton"), Content = ring, Margin = new Thickness(2, 0, 2, 0), ToolTip = english ? "English" : "Deutsch" };
-        System.Windows.Automation.AutomationProperties.SetName(button, english ? "English" : "Deutsch");
-        SettingsMotion.Swell(ring, 1.15);
-        if (!active) { button.MouseEnter += (_, _) => SettingsMotion.FadeTo(ring, 1, .18); button.MouseLeave += (_, _) => SettingsMotion.FadeTo(ring, .5, .3); }
-        button.Click += (_, _) => app.SetLanguage(english ? "en" : "de");
-        return button;
+        return face;
     }
     // After a language switch: every text of the window in the new language, with a page hand-over.
     internal void Retranslate()
@@ -460,13 +496,8 @@ internal sealed class SettingsWindow : Window
             titleLine.Children.Add(back);
         }
         titleLine.Children.Add(heading);
-        // Right of Loc.T("Einstellungen", "Settings"): the language, as two small round flags.
-        if (Scope == AppearanceScope.App)
-        {
-            var flags = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 2, 0, 0) };
-            flags.Children.Add(LanguageFlag(english: false)); flags.Children.Add(LanguageFlag(english: true));
-            titleLine.Children.Add(flags);
-        }
+        // Right of Loc.T("Einstellungen", "Settings"): the language switch.
+        if (Scope == AppearanceScope.App) titleLine.Children.Add(BuildLanguageSwitch());
         headingRow.Children.Add(titleLine); header.Children.Add(headingRow);
         SetGear(Scope == AppearanceScope.App);
         if (Scope == AppearanceScope.App) lastTabScope = AppearanceScope.Bubbles;
@@ -524,7 +555,7 @@ internal sealed class SettingsWindow : Window
             if (Scope == AppearanceScope.App) AddGeneralList(root);
             if (Scope == AppearanceScope.App)
             {
-                colorRow.ColumnDefinitions[0].Width = new GridLength(154);
+                colorRow.ColumnDefinitions[0].Width = new GridLength(196);
                 colorRow.ColumnDefinitions.Add(new ColumnDefinition());
                 var options = new StackPanel { Margin = new Thickness(8, 0, 0, 0) };
                 options.Children.Add(Ui.Text(Loc.T("Farbmodus", "Color mode"), 15, weight: FontWeights.SemiBold));
@@ -533,7 +564,8 @@ internal sealed class SettingsWindow : Window
                 System.Windows.Automation.AutomationProperties.SetName(theme, Loc.T("Farbmodus der Anwendung", "App color mode"));
                 theme.SelectionChanged += (_, _) => { if (theme.SelectedIndex >= 0) { settings.Theme = values[theme.SelectedIndex]; app.ApplySettings(settings); } }; themeSelector = theme;
                 // Like the app colour: the mode colour as a circle with a pill folded out to its right.
-                // The pill opens its list below itself, exactly as wide as the pill.
+                // The pill opens its list as one piece with itself (like Glas): its lower corners square
+                // off and the list grows out of it, exactly as wide as the pill.
                 modeSwatch = new Border { Width = 34, Height = 34, CornerRadius = new CornerRadius(17), Background = Ui.Brush(ThemePalette.Color(settings, Ui.Dark)), BorderBrush = Brushes.White, BorderThickness = new Thickness(1) };
                 ModeColorButton = Ui.Button("", () => { if (!editingModeColor) { CancelColorEdit(); OpenPicker(modeColor: true); } }); ModeColorButton.Content = modeSwatch;
                 ModeColorButton.Style = (Style)FindResource("PlainButton"); ModeColorButton.Width = ModeColorButton.Height = 34; ModeColorButton.Padding = new Thickness(0); SettingsMotion.Swell(modeSwatch, 1.08);
@@ -543,7 +575,7 @@ internal sealed class SettingsWindow : Window
                 var modeRow = new StackPanel { Orientation = Orientation.Horizontal }; modeRow.Children.Add(ModeColorButton); modeRow.Children.Add(modeAction);
                 var pill = new Border { CornerRadius = new CornerRadius(18), BorderThickness = new Thickness(1), Height = 36, Child = modeRow, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 12, 0, 0) };
                 pill.SetResourceReference(Border.BackgroundProperty, "ControlFill"); pill.SetResourceReference(Border.BorderBrushProperty, "Line");
-                modePill = pill;
+                modePill = pill; SettingsMotion.ShapeWith(theme, pill);
                 theme.Loaded += (_, _) =>
                 {
                     if (theme.Template?.FindName("PART_Popup", theme) is System.Windows.Controls.Primitives.Popup popup) popup.PlacementTarget = pill;

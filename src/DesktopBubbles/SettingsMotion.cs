@@ -152,6 +152,9 @@ internal static class SettingsMotion
     private sealed class DropWatch { public EventHandler? Changed; public bool Watching; }
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ComboBox, DropWatch> smoothed = new();
     private static readonly System.ComponentModel.DependencyPropertyDescriptor openState = System.ComponentModel.DependencyPropertyDescriptor.FromProperty(ComboBox.IsDropDownOpenProperty, typeof(ComboBox));
+    // The surface the list grows out of: the template's own field, or a pill around the box.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<ComboBox, Border> shapes = new();
+    internal static void ShapeWith(ComboBox box, Border field) => shapes.AddOrUpdate(box, field);
     internal static void SmoothDropDown(ComboBox box)
     {
         if (!smoothed.TryGetValue(box, out var watch)) watch = Hook(box);
@@ -177,10 +180,17 @@ internal static class SettingsMotion
             reveal.BeginAnimation(ScaleTransform.ScaleYProperty, motion);
         }
         box.PreviewMouseLeftButtonDown += (_, e) => { if (opening) e.Handled = true; };
+        // While the list is out, the field's lower corners are square so both read as one piece; they
+        // round again only once the list has folded all the way back in.
+        CornerRadius? rounded = null;
+        Border? Field() => shapes.TryGetValue(box, out var pill) ? pill : box.Template?.FindName("Field", box) as Border;
+        void Square() { if (Field() is not { } field) return; rounded ??= field.CornerRadius; field.CornerRadius = new CornerRadius(rounded.Value.TopLeft, rounded.Value.TopRight, 0, 0); }
+        void Round() { if (Field() is { } field && rounded is { } corners) field.CornerRadius = corners; }
+        void Hide() { popup.IsOpen = false; Round(); }
         void Open()
         {
             int run = ++generation;
-            drop.IsHitTestVisible = true;
+            drop.IsHitTestVisible = true; Square();
             if (!Animate()) { drop.Clip = null; popup.IsOpen = true; return; }
             // Closed before the first frame (or still folding up: it continues from where it is).
             if (!popup.IsOpen) { reveal.BeginAnimation(ScaleTransform.ScaleYProperty, null); reveal.ScaleY = 0; }
@@ -199,14 +209,14 @@ internal static class SettingsMotion
         void Close()
         {
             int run = ++generation; opening = false;
-            if (!popup.IsOpen) return;
-            if (!Animate()) { popup.IsOpen = false; return; }
+            if (!popup.IsOpen) { Round(); return; }
+            if (!Animate()) { Hide(); return; }
             drop.IsHitTestVisible = false;
             if (drop.Clip != mask) { reveal.BeginAnimation(ScaleTransform.ScaleYProperty, null); reveal.ScaleY = drop.ActualHeight + 2; drop.Clip = mask; }
-            Glide(0, 280, () => { if (run == generation && !box.IsDropDownOpen) popup.IsOpen = false; });
+            Glide(0, 280, () => { if (run == generation && !box.IsDropDownOpen) Hide(); });
         }
         watch.Changed = (_, _) => { if (box.IsDropDownOpen) Open(); else Close(); };
-        if (box.IsDropDownOpen) popup.IsOpen = true; // Opened before it was hooked.
+        if (box.IsDropDownOpen) { Square(); popup.IsOpen = true; } // Opened before it was hooked.
         return watch;
     }
     internal static BitmapSource? Snapshot(FrameworkElement element)

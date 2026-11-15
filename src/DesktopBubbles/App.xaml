@@ -90,11 +90,8 @@
             <Border x:Name="Drop" Width="{Binding ActualWidth, ElementName=ComboRoot}" Background="{DynamicResource ControlFill}" BorderBrush="{DynamicResource Line}" BorderThickness="1,0,1,1" CornerRadius="0,0,12,12" Padding="4,2,4,6" ClipToBounds="True"><ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer></Border>
           </Popup>
         </Grid>
-        <ControlTemplate.Triggers>
-          <Trigger Property="IsDropDownOpen" Value="True">
-            <Setter TargetName="Field" Property="CornerRadius" Value="12,12,0,0"/>
-          </Trigger>
-        </ControlTemplate.Triggers>
+        <!-- The field's lower corners square off and round again from code (SettingsMotion), so they
+             stay square until the list has fully folded back into the field. -->
       </ControlTemplate></Setter.Value></Setter>
     </Style>
     <Style TargetType="ComboBoxItem">
@@ -120,8 +117,8 @@
         </ControlTemplate.Triggers>
       </ControlTemplate></Setter.Value></Setter>
     </Style>
-    <!-- Farbmodus: the right-hand segment of a pill. Its list opens below the whole pill (placed and
-         sized from code), with the same text-swell hover as the other pill segments. -->
+    <!-- Farbmodus: the right-hand segment of a pill. Its list grows out of the whole pill as one piece
+         (placed, sized and shaped from code), with the same text-swell hover as the other segments. -->
     <Style x:Key="PillCombo" TargetType="ComboBox"><EventSetter Event="Loaded" Handler="ComboLoaded"/>
       <Setter Property="FocusVisualStyle" Value="{x:Null}"/><Setter Property="Foreground" Value="{DynamicResource Ink}"/><Setter Property="Cursor" Value="Hand"/><Setter Property="MinWidth" Value="0"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ComboBox">
@@ -135,8 +132,8 @@
               <ContentPresenter Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" VerticalAlignment="Center"/>
             </Grid>
           </DockPanel>
-          <Popup x:Name="PART_Popup" Placement="Bottom" VerticalOffset="6" AllowsTransparency="True" Focusable="False" PopupAnimation="None">
-            <Border x:Name="Drop" Background="{DynamicResource ControlFill}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="14" Padding="4,4,4,6"><ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer></Border>
+          <Popup x:Name="PART_Popup" Placement="Bottom" VerticalOffset="-1" AllowsTransparency="True" Focusable="False" PopupAnimation="None">
+            <Border x:Name="Drop" Background="{DynamicResource ControlFill}" BorderBrush="{DynamicResource Line}" BorderThickness="1,0,1,1" CornerRadius="0,0,18,18" Padding="4,2,4,6" ClipToBounds="True"><ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto"><ItemsPresenter/></ScrollViewer></Border>
           </Popup>
         </Grid>
         <ControlTemplate.Triggers>

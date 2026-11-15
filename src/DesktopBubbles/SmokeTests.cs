@@ -158,14 +158,26 @@ internal static class SmokeTests
         Check("Zahnrad zeigt App-Darstellung und allgemeine Checkboxen", settings.Scope == AppearanceScope.App && Descendants(settings).OfType<System.Windows.Controls.CheckBox>().Count() == 7);
         var modeCombo = Descendants(settings).OfType<System.Windows.Controls.ComboBox>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Farbmodus der Anwendung");
         Check("Modusfarbe sitzt als runder Kreis links neben dem Farbmodus", settings.ModeColorButton!.TranslatePoint(new Point(settings.ModeColorButton.ActualWidth, 0), modeCombo).X <= 0);
+        // Farbmodus opens like Glas: one piece, the list hangs flush under the pill, as wide as it.
+        var modePillBorder = (System.Windows.Controls.Border)((FrameworkElement)settings.ModeColorButton.Parent).Parent;
+        modeCombo.IsDropDownOpen = true; await Task.Delay(700);
+        var modeDrop = (System.Windows.Controls.Border)modeCombo.Template.FindName("Drop", modeCombo);
+        var pillBottom = modePillBorder.PointToScreen(new Point(0, modePillBorder.ActualHeight)); var dropTop = modeDrop.PointToScreen(new Point());
+        Check("Farbmodus-Menü wächst verbunden aus der Pille (unten eckig, bündig, gleich breit)", modePillBorder.CornerRadius.BottomLeft == 0 && Math.Abs(dropTop.Y - pillBottom.Y) <= 2 && Math.Abs(dropTop.X - pillBottom.X) <= 1 && Math.Abs(modeDrop.ActualWidth - modePillBorder.ActualWidth) <= 1, $"Abstand={dropTop.Y - pillBottom.Y:0.0}, x={dropTop.X - pillBottom.X:0.0}");
+        modeCombo.IsDropDownOpen = false; await Task.Delay(600);
+        Check("Farbmodus-Pille ist nach dem Einfahren wieder rund", modePillBorder.CornerRadius.BottomLeft > 0);
+        Check("Farbmodus steht weiter rechts (etwa ab der Seitenmitte)", modePillBorder.TranslatePoint(new Point(), settings.PageBody!).X >= 190, $"x={modePillBorder.TranslatePoint(new Point(), settings.PageBody!).X:0}");
         var generalBoxes = Descendants(settings).OfType<System.Windows.Controls.CheckBox>().ToList();
         Check("Einstellungen: erst App-Farbe und Farbmodus, dann Allgemein (Windows-Start oben, Bubble-Farben zuletzt), dann Transparenz", generalBoxes.First().Content is System.Windows.Controls.TextBlock { Text: "Mit Windows starten" } && ReferenceEquals(generalBoxes.Last(), settings.LinkColorsCheckBox) && settings.ColorButton!.TranslatePoint(new Point(), settings).Y < generalBoxes.First().TranslatePoint(new Point(), settings).Y && settings.TransparencySlider!.TranslatePoint(new Point(), settings).Y > settings.LinkColorsCheckBox!.TranslatePoint(new Point(), settings).Y);
-        // Language: the English flag switches the whole window (and saves the choice), the German one switches back.
-        Descendants(settings).OfType<System.Windows.Controls.Button>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "English").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(700);
+        // Language: the switch shows the target language (British flag, "English" in the German UI);
+        // a click glides the knob across, then switches the whole window and saves the choice.
+        Check("Sprachschalter zeigt im deutschen UI die Zielsprache English", System.Windows.Automation.AutomationProperties.GetName(settings.LanguageSwitch!) == "Switch to English" && Descendants(settings.LanguageSwitch!).OfType<System.Windows.Controls.TextBlock>().Any(text => text.Text == "English"));
+        settings.LanguageSwitch!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(1000);
         SaveImage(settings, Path.Combine(app.DataDirectory, "app-settings-english.png"));
-        Check("Englisch-Flagge stellt die Verwaltung auf Englisch um und merkt es sich", Loc.English && app.State.Settings.Language == "en" && Descendants(settings).OfType<System.Windows.Controls.TextBlock>().Any(text => text.Text == "Settings") && (string)settings.ColorButton!.Content == "Change" && Descendants(settings).OfType<System.Windows.Controls.Button>().Any(b => b.Content is string label && label == "New") && settings.Title.Contains("mode"));
-        Descendants(settings).OfType<System.Windows.Controls.Button>().Single(b => System.Windows.Automation.AutomationProperties.GetName(b) == "Deutsch").RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(700);
-        Check("Deutsch-Flagge stellt alles wieder auf Deutsch", !Loc.English && app.State.Settings.Language == "de" && (string)settings.ColorButton!.Content == "Ändern" && Descendants(settings).OfType<System.Windows.Controls.TextBlock>().Any(text => text.Text == "Einstellungen"));        Check("Einsammeln neu angelegter Verknüpfungen ist standardmäßig an", settings.CollectDuplicatesCheckBox?.IsChecked == true);
+        Check("Sprachschalter stellt die Verwaltung auf Englisch um und merkt es sich", Loc.English && app.State.Settings.Language == "en" && Descendants(settings).OfType<System.Windows.Controls.TextBlock>().Any(text => text.Text == "Settings") && (string)settings.ColorButton!.Content == "Change" && Descendants(settings).OfType<System.Windows.Controls.Button>().Any(b => b.Content is string label && label == "New") && settings.Title.Contains("mode"));
+        Check("Im englischen UI zeigt der Schalter Deutsch", System.Windows.Automation.AutomationProperties.GetName(settings.LanguageSwitch!) == "Auf Deutsch umstellen");
+        settings.LanguageSwitch!.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); await Task.Delay(1000);
+        Check("Sprachschalter stellt alles wieder auf Deutsch", !Loc.English && app.State.Settings.Language == "de" && (string)settings.ColorButton!.Content == "Ändern" && Descendants(settings).OfType<System.Windows.Controls.TextBlock>().Any(text => text.Text == "Einstellungen"));        Check("Einsammeln neu angelegter Verknüpfungen ist standardmäßig an", settings.CollectDuplicatesCheckBox?.IsChecked == true);
         // Auto close sits second to last, right above the shared bubble colors; its seconds on the right.
         var linkOrigin = settings.LinkColorsCheckBox!.TranslatePoint(new Point(), settings); var autoOrigin = settings.AutoCloseCheckBox!.TranslatePoint(new Point(), settings);
         Check("„Bubble automatisch schließen“ steht direkt über der Farbkopplung, Sekunden rechts daneben, standardmäßig aus",
@@ -257,8 +269,11 @@ internal static class SmokeTests
         var glassPopup = (System.Windows.Controls.Primitives.Popup)settings.GlassSelector.Template.FindName("PART_Popup", settings.GlassSelector);
         bool unfolding = !SettingsMotion.Enabled(app) || glassPopup.IsOpen && glassDrop.Clip is not null; await Task.Delay(700);
         Check("Glas-Menü fährt weich auf und zeigt danach alle Einträge", unfolding && glassDrop.IsVisible && glassDrop.ActualHeight > 3 * 30 && glassDrop.Clip is null, $"Höhe={glassDrop.ActualHeight:0}");
-        settings.GlassSelector.IsDropDownOpen = false; await Task.Delay(90); bool folding = !SettingsMotion.Enabled(app) || glassPopup.IsOpen; await Task.Delay(600);
+        var glassField = (System.Windows.Controls.Border)settings.GlassSelector.Template.FindName("Field", settings.GlassSelector);
+        bool squareOpen = glassField.CornerRadius.BottomLeft == 0;
+        settings.GlassSelector.IsDropDownOpen = false; await Task.Delay(90); bool folding = !SettingsMotion.Enabled(app) || glassPopup.IsOpen; bool squareWhileFolding = !SettingsMotion.Enabled(app) || glassField.CornerRadius.BottomLeft == 0; await Task.Delay(600);
         Check("Glas-Menü fährt weich wieder ein und schließt danach", folding && !glassPopup.IsOpen);
+        Check("Glas-Feld bleibt unten eckig, bis das Menü ganz eingefahren ist, und rundet dann", squareOpen && squareWhileFolding && glassField.CornerRadius.BottomLeft > 0, $"offen={squareOpen}, beim Einfahren={squareWhileFolding}, danach={glassField.CornerRadius.BottomLeft}");
         settings.GlassSelector!.SelectedIndex = 1; settings.RoundingSlider!.Value = 18;
         Check("Gemeinsame Rundung skaliert Miniatur und Ordner proportional", Math.Abs(app.State.Settings.BubbleCornerRadius - 76 * .18) < .001 && app.State.Settings.CornerRoundness == 18);
         // The picture used for the hand-over must sit exactly on the page it shows: compared pixel by
