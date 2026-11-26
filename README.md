@@ -4,8 +4,7 @@
 
 <p align="center"><img src="https://img.shields.io/badge/Windows-11-0078D6" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="https://img.shields.io/github/v/release/Hendrik4K/DesktopBubbles?label=Version&color=7a5cff" alt="Version"></a> <img src="https://img.shields.io/badge/Adminrechte-nicht%20n%C3%B6tig-555" alt="Adminrechte nicht nötig"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://img.shields.io/github/actions/workflow/status/Hendrik4K/DesktopBubbles/windows.yml?label=CI" alt="CI"></a></p>
 
-<!-- Platz für das Titel-GIF (Ordner öffnen, Liquid Glass), später ersetzen -->
-<p align="center"><img src="docs/screenshots/desktopbubbles-liquid-glass-desktop.webp" width="820" alt="DesktopBubbles mit Liquid Glass auf einem Windows-11-Desktop: gläserne App-Ordner mit Gaming-Launchern und Adobe-Apps, daneben die Verwaltung"></p>
+<!-- Titelvideo: hier die GitHub-Video-Adresse (https://github.com/user-attachments/assets/…) als eigene Zeile einsetzen -->
 
 Ordner wie auf dem Smartphone, nur für deinen PC: Steam, Epic, Photoshop und Co. ziehst du in eine Bubble, ein Klick öffnet sie, du wählst die App, und zurück bleibt eine kleine Miniatur. Die Programme selbst bleiben, wo sie sind. Dazu Liquid Glass, das den echten Hintergrund an den Kanten bricht wie eine Linse, weil ein aufgeräumter Desktop ruhig auch gut aussehen darf.
 
@@ -58,6 +57,8 @@ Die App wartet danach im Infobereich der Taskleiste; ein Klick auf das Seifenbla
 <summary><b>📷 Mehr Bilder</b></summary>
 
 <!-- Platz für weitere GIFs: 1:3 ↔ 1:1, Farbwähler mit Pipette, Sprachschalter, Messleiste -->
+<p align="center"><img src="docs/screenshots/desktopbubbles-liquid-glass-desktop.webp" width="820" alt="DesktopBubbles mit Liquid Glass auf einem Windows-11-Desktop: gläserne App-Ordner mit Gaming-Launchern und Adobe-Apps, daneben die Verwaltung"></p>
+
 <p align="center"><img src="docs/screenshots/desktopbubbles-desktop-settings.png" width="820" alt="Zwei transparente Desktop-Ordner neben der Verwaltung mit Gruppenliste und Reglern für Transparenz, Größe und runde Ecken"></p>
 
 </details>

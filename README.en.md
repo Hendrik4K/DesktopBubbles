@@ -4,8 +4,7 @@
 
 <p align="center"><img src="https://img.shields.io/badge/Windows-11-0078D6" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="https://img.shields.io/github/v/release/Hendrik4K/DesktopBubbles?label=Version&color=7a5cff" alt="Version"></a> <img src="https://img.shields.io/badge/admin%20rights-not%20needed-555" alt="Admin rights not needed"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://img.shields.io/github/actions/workflow/status/Hendrik4K/DesktopBubbles/windows.yml?label=CI" alt="CI"></a></p>
 
-<!-- Room for the title GIF (opening a folder, Liquid Glass); replace later -->
-<p align="center"><img src="docs/screenshots/desktopbubbles-liquid-glass-desktop.webp" width="820" alt="DesktopBubbles with Liquid Glass on a Windows 11 desktop: glass app folders with game launchers and Adobe apps, next to the settings window"></p>
+<!-- Title video: put the GitHub video address (https://github.com/user-attachments/assets/…) here on its own line -->
 
 Folders like on your phone, just for your PC: drag Steam, Epic, Photoshop and friends into a bubble, click it, pick the app, and all that stays behind is a small preview. The programs themselves stay where they are. On top of that, Liquid Glass bends the real background at the edges like a lens, because a tidy desktop may as well look good.
 
@@ -60,6 +59,8 @@ The app speaks German and English: switch with the language toggle in the settin
 <summary><b>📷 More pictures</b></summary>
 
 <!-- Room for more GIFs: 1:3 ↔ 1:1, color picker with eyedropper, language toggle, measurement bar -->
+<p align="center"><img src="docs/screenshots/desktopbubbles-liquid-glass-desktop.webp" width="820" alt="DesktopBubbles with Liquid Glass on a Windows 11 desktop: glass app folders with game launchers and Adobe apps, next to the settings window"></p>
+
 <p align="center"><img src="docs/screenshots/desktopbubbles-desktop-settings.png" width="820" alt="Two transparent desktop folders next to the settings window with the group list and sliders for transparency, size and rounded corners"></p>
 
 </details>
