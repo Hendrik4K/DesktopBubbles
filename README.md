@@ -1,12 +1,12 @@
 # DesktopBubbles <a href="README.en.md"><img align="right" src="docs/screenshots/flag-gb.svg" height="22" alt="English" title="English"></a><a href="README.md"><img align="right" src="docs/screenshots/flag-de.svg" height="22" alt="Deutsch" title="Deutsch"></a><img align="right" src="docs/screenshots/sprache.svg" height="22" alt="Sprache" title="Sprache wählen">
 
-**App-Ordner für den Windows-11-Desktop: Viele Verknüpfungen, eine gläserne Bubble, und dein Desktop hat wieder Luft.**
+**Handy-Ordner für Windows. Im Liquid-Glass-Style von iOS 27.**
 
 <p align="center"><img src="docs/badges/windows.svg" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="docs/badges/version.svg" alt="Version 1.9.0"></a> <a href="LICENSE"><img src="docs/badges/lizenz.svg" alt="Lizenz MIT"></a> <img src="docs/badges/ohne-admin.svg" alt="ohne Adminrechte"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml/badge.svg?branch=main" alt="CI"></a></p>
 
 <p align="center"><img src="docs/screenshots/desktopbubbles-demo.webp" width="820" alt="Demo: Photoshop-Verknüpfung in eine Bubble ziehen, Ordner öffnen, Symbole tauschen und wieder schließen"></p>
 
-Ordner wie auf dem Smartphone, nur für deinen PC: Steam, Epic, Photoshop und Co. ziehst du in eine Bubble, ein Klick öffnet sie, du wählst die App, und zurück bleibt eine kleine Miniatur. Die Programme selbst bleiben, wo sie sind. Dazu Liquid Glass, das den echten Hintergrund an den Kanten bricht wie eine Linse, weil ein aufgeräumter Desktop ruhig auch gut aussehen darf.
+Ordner wie auf dem Smartphone, nur für deinen PC. Pack all deine Launcher oder Kreativprogramme in eine Bubble: Ein Klick öffnet sie, du wählst die App, und sobald du mit der Maus weg bist, schließt sie sich auf Wunsch von selbst. Liquid Glass, Matt oder Milchglas als Hintergrund, Intensität, Größe, Name an oder aus: Du wählst frei.
 
 <table>
   <tr>
@@ -27,6 +27,18 @@ Ordner wie auf dem Smartphone, nur für deinen PC: Steam, Epic, Photoshop und Co
 3. Verknüpfungen vom Desktop auf die Bubble ziehen.
 4. Bubble anklicken, App auswählen. Fertig.
 
+**Du bist ein entspannter Typ oder ein entspanntes Girl?** Dann gib einfach diesen Prompt an deinen KI-Agenten (z. B. Claude Code oder Codex auf deinem PC). Er prüft, was schon da ist, holt den Installer, vergleicht die Prüfsumme und fragt dich bei allem, was er ändern will.
+
+```text
+Hilf mir, DesktopBubbles (github.com/Hendrik4K/DesktopBubbles) auf diesem Windows-PC zu installieren.
+Prüfe zuerst nur und frag mich vor jeder Änderung:
+1. Läuft hier Windows 11 64 Bit? Ist DesktopBubbles schon installiert oder läuft eine portable Version?
+2. Lade den neuesten Installer (DesktopBubbles-Setup-*.exe) aus den GitHub-Releases, vergleiche seine SHA256 mit der .sha256-Datei daneben und starte ihn erst nach meinem OK. Adminrechte braucht er nicht.
+3. Läuft schon eine ältere Version, sag mir, dass ich sie vorher über das Tray-Symbol beende. Meine Bubbles bleiben dabei erhalten.
+4. Verschiebe, kopiere oder lösche keine Verknüpfungen auf meinem Desktop, das mache ich selbst per Drag & Drop.
+5. Sag mir am Ende, wie ich DesktopBubbles starte, eine Bubble anlege und Verknüpfungen hineinziehe.
+```
+
 Die App wartet danach im Infobereich der Taskleiste; ein Klick auf das Seifenblasen-Symbol öffnet die Verwaltung. **Tray → Beenden** beendet sie ganz. Lieber ohne Installation? Das **portable ZIP** aus den Releases in einen beschreibbaren Ordner entpacken und `DesktopBubbles.exe` starten.
 
 **Selbst bauen (für Bastler):** Windows 11 x64 und das .NET-8-SDK (oder Visual Studio mit .NET-Desktopentwicklung). Keine NuGet-Abhängigkeiten von Drittanbietern.
@@ -45,18 +57,13 @@ Die App wartet danach im Infobereich der Taskleiste; ein Klick auf das Seifenbla
 <details>
 <summary><b>💡 Was es kann</b></summary>
 
-- **App-Ordner auf dem Desktop.** Verknüpfungen, Programme, Ordner, Webadressen und Store-Apps in Bubbles gruppieren: Gaming, Arbeit, Kreativ, was du willst.
-- **Liquid Glass und Milchglas.** Liquid Glass bricht den echten Hintergrund an den Kanten wie eine Linse, die Stärke ist einstellbar. Milchglas zeichnet ihn weich. Die Symbole bleiben dabei immer scharf.
-- **Ordner mit Schwung.** Ordner springen aus der Miniatur auf, die Symbole fliegen an ihren Platz und beim Schließen wieder zurück.
-- **Halten, wackeln, tauschen.** Ein Symbol eine halbe Sekunde halten, bis alles wackelt, dann auf ein anderes ziehen: Die beiden tauschen die Plätze.
-- **Drag & Drop überall.** Rein in die Bubble, raus auf den Desktop, rüber in eine andere Bubble.
-- **Aufgeräumt bleibt aufgeräumt.** Legt ein Programm-Update seine Verknüpfung wieder auf den Desktop, wandert sie automatisch zurück in ihre Bubble.
-- **Farben nach Geschmack.** Farbe je Bubble oder für alle gemeinsam, Farbkreis, HEX-Eingabe und Pipette, die eine Farbe direkt vom Bildschirm aufnimmt. Hell, Dunkel oder wie Windows.
-- **Größe und Transparenz.** Miniatur und Ordner getrennt einstellbar, Transparenz bis 100 Prozent, Ordnervorschau 1:3 oder 1:1.
-- **Schließt von selbst.** Auf Wunsch schließt ein Ordner nach einstellbaren Sekunden ohne Maus.
-- **Deutsch oder Englisch.** Ein Klick auf den Sprachschalter in den Einstellungen, und alles wechselt die Sprache.
-- **Messleiste.** Wer wissen will, was die App kostet: CPU und RAM als kleiner Tacho mit Verlauf, nur wenn du sie startest.
-- **Dezent.** Kein Konto, keine Telemetrie, keine Adminrechte. Die App wartet still im Infobereich.
+- **Bedienung wie vom Smartphone gewohnt**<br><sub>Bubble anklicken, App wählen, fertig. Verknüpfungen, Programme, Ordner, Webadressen und Store-Apps nach Gaming, Arbeit, Kreativ oder was du willst gruppieren. Die Programme selbst bleiben, wo sie sind.</sub>
+- **Style-Auswahl: Liquid Glass, Matt, Klar oder Milchglas**<br><sub>Liquid Glass bricht den echten Hintergrund an den Kanten wie eine Linse, die Stärke ist einstellbar. Milchglas zeichnet ihn weich. Die Symbole bleiben immer scharf.</sub>
+- **Anpassbare Ordner**<br><sub>Halten, bis alles wackelt, dann Symbole tauschen. Ordner springen mit Schwung aus der Miniatur auf. Farbe je Bubble oder für alle (Farbkreis, HEX, Pipette), Größe und Transparenz bis 100 Prozent, Vorschau 1:3 oder 1:1, Name an oder aus, Hell, Dunkel oder wie Windows.</sub>
+- **Automation**<br><sub>Verlässt du den Ordner, fällt er nach einstellbaren Sekunden wie eine Tür hinter dir zu. Legt ein Programm-Update seine Verknüpfung wieder auf den Desktop, wandert sie von selbst zurück in ihre Bubble.</sub>
+- **Drag & Drop**<br><sub>Rein in die Bubble, raus auf den Desktop, rüber in eine andere Bubble.</sub>
+- **Sprache**<br><sub>Deutsch und Englisch, umschaltbar mit einem Klick in den Einstellungen.</sub>
+- **Dezent**<br><sub>Kein Konto, keine Telemetrie, keine Adminrechte, still im Infobereich. Wer wissen will, was die App kostet, startet die Messleiste für CPU und RAM.</sub>
 
 <ins>Warum es das gibt:</ins> Mein Desktop war voller Launcher, und eine schlichte Ordnerlösung wie auf dem Handy gab es für Windows nicht. Also habe ich sie gebaut und stelle sie allen zur Verfügung.
 
@@ -137,21 +144,8 @@ Vorschau, portable und installierte Version können verschiedene Datenordner hab
 </details>
 
 <details>
-<summary><b>❓ Häufige Fragen</b></summary>
-
-**Gibt es Ordner wie auf dem iPhone auch für Windows?** Ja, so ähnlich: Eine kleine Vorschau öffnet sich zu einem Raster aus Verknüpfungen. DesktopBubbles ist eine eigene App, die Bubbles sind keine Explorer-Ordner.
-
-**Werden meine Programme verschoben?** Nein. Nur Verknüpfungen wandern in die Bubble, die Programme bleiben installiert, wo sie sind.
-
-**Ist das ein Game-Launcher oder Ersatz fürs Startmenü?** Weder noch. DesktopBubbles öffnet deine vorhandenen Verknüpfungen, es installiert keine Spiele und ersetzt weder Startmenü noch Windows-Suche.
-
-**Kostet das was?** Nein. MIT-Lizenz, Installer und portable Version, kein Konto.
-
-</details>
-
-<details>
 <summary><b>🖼️ Bilder und Marken</b></summary>
 
-Der Quellcode steht unter der [MIT-Lizenz](LICENSE). Das Seifenblasen-Logo, die Demo-GIFs und Desktop-Aufnahmen gehören **nicht** dazu. App-Symbole in den Bildern stammen aus der Windows-Shell; Steam, Epic Games, Adobe und weitere Namen sind Marken ihrer Inhaber. DesktopBubbles ist ein privates Hobbyprojekt und mit keinem dieser Unternehmen verbunden. Die portable Ausgabe enthält die Lizenzhinweise ihrer .NET-Laufzeit. [Branding](src/DesktopBubbles/Assets/README.md), [Änderungen](CHANGELOG.md).
+Der Quellcode steht unter der [MIT-Lizenz](LICENSE). Das Seifenblasen-Logo, die Demo-GIFs und Desktop-Aufnahmen gehören **nicht** dazu. App-Symbole in den Bildern stammen aus der Windows-Shell; Steam, Epic Games, Adobe, Apple, iOS und weitere Namen sind Marken ihrer Inhaber. DesktopBubbles ist ein privates Hobbyprojekt und mit keinem dieser Unternehmen verbunden. Die portable Ausgabe enthält die Lizenzhinweise ihrer .NET-Laufzeit. [Branding](src/DesktopBubbles/Assets/README.md), [Änderungen](CHANGELOG.md).
 
 </details>

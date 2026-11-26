@@ -1,12 +1,12 @@
 # DesktopBubbles <a href="README.en.md"><img align="right" src="docs/screenshots/flag-gb.svg" height="22" alt="English" title="English"></a><a href="README.md"><img align="right" src="docs/screenshots/flag-de.svg" height="22" alt="Deutsch" title="Deutsch"></a><img align="right" src="docs/screenshots/sprache.svg" height="22" alt="Language" title="Choose language">
 
-**App folders for the Windows 11 desktop: many shortcuts, one glass bubble, and your desktop can breathe again.**
+**Phone-style folders for Windows. In the Liquid Glass style of iOS 27.**
 
 <p align="center"><img src="docs/badges/windows.svg" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="docs/badges/version.svg" alt="Version 1.9.0"></a> <a href="LICENSE"><img src="docs/badges/license.svg" alt="License MIT"></a> <img src="docs/badges/no-admin.svg" alt="no admin rights"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml/badge.svg?branch=main" alt="CI"></a></p>
 
 <p align="center"><img src="docs/screenshots/desktopbubbles-demo.webp" width="820" alt="Demo: dragging the Photoshop shortcut into a bubble, opening the folder, swapping icons and closing it again"></p>
 
-Folders like on your phone, just for your PC: drag Steam, Epic, Photoshop and friends into a bubble, click it, pick the app, and all that stays behind is a small preview. The programs themselves stay where they are. On top of that, Liquid Glass bends the real background at the edges like a lens, because a tidy desktop may as well look good.
+Folders like on your phone, just for your PC. Pack all your launchers or creative apps into one bubble: a click opens it, you pick the app, and once your mouse leaves, it can close by itself. Liquid Glass, matte or frosted background, intensity, size, name on or off: your choice.
 
 <table>
   <tr>
@@ -26,6 +26,18 @@ Folders like on your phone, just for your PC: drag Steam, Epic, Photoshop and fr
 2. Start **DesktopBubbles** from Windows Search and create a bubble with **New**.
 3. Drag shortcuts from your desktop onto the bubble.
 4. Click the bubble, pick an app. Done.
+
+**Laid-back type?** Then just hand this prompt to your AI agent (e.g. Claude Code or Codex on your PC). It checks what's already there, fetches the installer, verifies the checksum and asks you before every change.
+
+```text
+Help me install DesktopBubbles (github.com/Hendrik4K/DesktopBubbles) on this Windows PC.
+Check first and ask me before every change:
+1. Is this Windows 11 64-bit? Is DesktopBubbles already installed, or is a portable version running?
+2. Download the latest installer (DesktopBubbles-Setup-*.exe) from the GitHub releases, compare its SHA256 with the .sha256 file next to it and only run it after my OK. It needs no admin rights.
+3. If an older version is running, tell me to quit it from the tray icon first. My bubbles are kept.
+4. Don't move, copy or delete any shortcuts on my desktop; I'll drag them in myself.
+5. At the end, tell me how to start DesktopBubbles, create a bubble and drag shortcuts into it.
+```
 
 The app then waits in the notification area; a click on the soap-bubble icon opens the settings. **Tray → Quit** quits it completely. Rather not install? Extract the **portable ZIP** from Releases into a writable folder and start `DesktopBubbles.exe`.
 
@@ -47,18 +59,13 @@ The app speaks German and English: switch with the language toggle in the settin
 <details>
 <summary><b>💡 What it does</b></summary>
 
-- **App folders on the desktop.** Group shortcuts, programs, folders, web links and Store apps into bubbles: gaming, work, creative, whatever you like.
-- **Liquid Glass and frosted glass.** Liquid Glass bends the real background at the edges like a lens, with adjustable strength. Frosted glass blurs it softly. The icons always stay sharp.
-- **Folders with bounce.** Folders spring open out of the preview, the icons fly into place and back again when closing.
-- **Hold, wiggle, swap.** Hold an icon for half a second until everything wiggles, then drag it onto another: the two swap places.
-- **Drag & drop everywhere.** Into a bubble, out onto the desktop, over into another bubble.
-- **Tidy stays tidy.** If a program update puts its shortcut back on the desktop, it moves back into its bubble by itself.
-- **Your colors.** A color per bubble or one for all, color wheel, HEX input and an eyedropper that picks a color straight from the screen. Light, dark or like Windows.
-- **Size and transparency.** Preview and folder adjust separately, transparency up to 100 percent, folder preview 1:3 or 1:1.
-- **Closes by itself.** If you like, a folder closes after a set number of seconds without the mouse.
-- **German or English.** One click on the language toggle in the settings and everything switches.
-- **Measurement bar.** Curious what the app costs? CPU and RAM as a small gauge with history, only when you start it.
-- **Unobtrusive.** No account, no telemetry, no admin rights. The app waits quietly in the notification area.
+- **Works like on your phone**<br><sub>Click the bubble, pick the app, done. Group shortcuts, programs, folders, web links and Store apps by gaming, work, creative or whatever you like. The programs themselves stay where they are.</sub>
+- **Styles: Liquid Glass, Matte, Clear or Frosted**<br><sub>Liquid Glass bends the real background at the edges like a lens, with adjustable strength. Frosted blurs it softly. The icons always stay sharp.</sub>
+- **Customizable folders**<br><sub>Hold until everything wiggles, then swap icons. Folders spring open out of the preview. A color per bubble or one for all (color wheel, HEX, eyedropper), size and transparency up to 100 percent, preview 1:3 or 1:1, name on or off, light, dark or like Windows.</sub>
+- **Automation**<br><sub>Leave the folder and after a set number of seconds it shuts behind you like a door. If a program update puts its shortcut back on the desktop, it moves back into its bubble by itself.</sub>
+- **Drag & drop**<br><sub>Into a bubble, out onto the desktop, over into another bubble.</sub>
+- **Language**<br><sub>German and English, switched with one click in the settings.</sub>
+- **Unobtrusive**<br><sub>No account, no telemetry, no admin rights, quiet in the notification area. Curious what the app costs? Start the measurement bar for CPU and RAM.</sub>
 
 <ins>Why it exists:</ins> My desktop was full of launchers, and there was no simple phone-style folder solution for Windows. So I built one and am sharing it with everyone.
 
@@ -139,21 +146,8 @@ Preview, portable and installed versions can use different data folders, which a
 </details>
 
 <details>
-<summary><b>❓ FAQ</b></summary>
-
-**Can I get iPhone-style app folders on Windows?** Pretty much: a small preview opens into a grid of shortcuts. DesktopBubbles is an app of its own; the bubbles are not Explorer folders.
-
-**Will my programs be moved?** No. Only shortcuts go into the bubble; the programs stay installed where they are.
-
-**Is it a game launcher or a Start menu replacement?** Neither. DesktopBubbles opens your existing shortcuts; it installs no games and replaces neither the Start menu nor Windows Search.
-
-**Does it cost anything?** No. MIT license, installer and portable version, no account.
-
-</details>
-
-<details>
 <summary><b>🖼️ Pictures and trademarks</b></summary>
 
-The source code is under the [MIT license](LICENSE). The soap-bubble logo, the demo GIFs and the desktop captures are **not** part of it. App icons in the pictures come from the Windows shell; Steam, Epic Games, Adobe and other names are trademarks of their owners. DesktopBubbles is a private hobby project and not affiliated with any of these companies. The portable output includes the license notices of its .NET runtime. [Branding](src/DesktopBubbles/Assets/README.md), [Changes](CHANGELOG.md) (German).
+The source code is under the [MIT license](LICENSE). The soap-bubble logo, the demo GIFs and the desktop captures are **not** part of it. App icons in the pictures come from the Windows shell; Steam, Epic Games, Adobe, Apple, iOS and other names are trademarks of their owners. DesktopBubbles is a private hobby project and not affiliated with any of these companies. The portable output includes the license notices of its .NET runtime. [Branding](src/DesktopBubbles/Assets/README.md), [Changes](CHANGELOG.md) (German).
 
 </details>
