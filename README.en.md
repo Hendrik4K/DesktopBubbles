@@ -4,7 +4,7 @@
 
 <p align="center"><img src="https://img.shields.io/badge/Windows-11-0078D6" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="https://img.shields.io/github/v/release/Hendrik4K/DesktopBubbles?label=Version&color=7a5cff" alt="Version"></a> <img src="https://img.shields.io/badge/admin%20rights-not%20needed-555" alt="Admin rights not needed"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://img.shields.io/github/actions/workflow/status/Hendrik4K/DesktopBubbles/windows.yml?label=CI" alt="CI"></a></p>
 
-<!-- Title video: put the GitHub video address (https://github.com/user-attachments/assets/…) here on its own line -->
+https://github.com/user-attachments/assets/5dd3d94e-b064-435b-87e1-8b0c4a2d4701
 
 Folders like on your phone, just for your PC: drag Steam, Epic, Photoshop and friends into a bubble, click it, pick the app, and all that stays behind is a small preview. The programs themselves stay where they are. On top of that, Liquid Glass bends the real background at the edges like a lens, because a tidy desktop may as well look good.
 

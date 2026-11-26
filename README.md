@@ -4,7 +4,7 @@
 
 <p align="center"><img src="https://img.shields.io/badge/Windows-11-0078D6" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="https://img.shields.io/github/v/release/Hendrik4K/DesktopBubbles?label=Version&color=7a5cff" alt="Version"></a> <img src="https://img.shields.io/badge/Adminrechte-nicht%20n%C3%B6tig-555" alt="Adminrechte nicht nötig"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://img.shields.io/github/actions/workflow/status/Hendrik4K/DesktopBubbles/windows.yml?label=CI" alt="CI"></a></p>
 
-<!-- Titelvideo: hier die GitHub-Video-Adresse (https://github.com/user-attachments/assets/…) als eigene Zeile einsetzen -->
+https://github.com/user-attachments/assets/5dd3d94e-b064-435b-87e1-8b0c4a2d4701
 
 Ordner wie auf dem Smartphone, nur für deinen PC: Steam, Epic, Photoshop und Co. ziehst du in eine Bubble, ein Klick öffnet sie, du wählst die App, und zurück bleibt eine kleine Miniatur. Die Programme selbst bleiben, wo sie sind. Dazu Liquid Glass, das den echten Hintergrund an den Kanten bricht wie eine Linse, weil ein aufgeräumter Desktop ruhig auch gut aussehen darf.
 
