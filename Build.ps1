@@ -52,6 +52,7 @@ foreach ($framework in $runtimeConfig.runtimeOptions.includedFrameworks) {
 }
 Set-Content -LiteralPath (Join-Path $portableOutput 'portable.flag') -Value 'Store settings in the adjacent data folder.' -Encoding utf8
 Copy-Item -LiteralPath 'README.md' -Destination $portableOutput
+Copy-Item -LiteralPath 'README.en.md' -Destination $portableOutput
 foreach ($projectNotice in @('LICENSE', 'CHANGELOG.md')) {
     if (Test-Path -LiteralPath $projectNotice) { Copy-Item -LiteralPath $projectNotice -Destination $portableOutput }
 }

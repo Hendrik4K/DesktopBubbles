@@ -28,7 +28,7 @@ $sourceFiles = @()
 foreach ($folder in @('src', 'tests', 'tools', 'docs', '.github')) {
     $sourceFiles += Get-ChildItem -LiteralPath (Join-Path $projectRoot $folder) -Recurse -File | Where-Object { $_.FullName -notmatch '\\(bin|obj)\\' }
 }
-foreach ($file in @('DesktopBubbles.sln', 'Directory.Build.props', 'global.json', 'NuGet.Config', '.gitignore', 'Build.ps1', 'Test-Windows.ps1', 'README.md', 'design-qa.md')) {
+foreach ($file in @('DesktopBubbles.sln', 'Directory.Build.props', 'global.json', 'NuGet.Config', '.gitignore', 'Build.ps1', 'Test-Windows.ps1', 'README.md', 'README.en.md', 'design-qa.md')) {
     $sourceFiles += Get-Item -LiteralPath (Join-Path $projectRoot $file) -Force
 }
 foreach ($file in @('LICENSE', 'CHANGELOG.md')) {

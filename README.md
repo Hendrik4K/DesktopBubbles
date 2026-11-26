@@ -1,171 +1,149 @@
-# DesktopBubbles — App folders & desktop organizer for Windows 11
+# DesktopBubbles <a href="README.en.md"><img align="right" src="docs/screenshots/flag-gb.svg" height="22" alt="English" title="English"></a><a href="README.md"><img align="right" src="docs/screenshots/flag-de.svg" height="22" alt="Deutsch" title="Deutsch"></a><img align="right" src="docs/screenshots/sprache.svg" height="22" alt="Sprache" title="Sprache wählen">
 
-<img src="src/DesktopBubbles/Assets/DesktopBubbles.png" width="88" height="88" alt="DesktopBubbles Logo mit schillernden Regenbogen-Seifenblasen">
+**App-Ordner für den Windows-11-Desktop: Viele Verknüpfungen, eine gläserne Bubble, und dein Desktop hat wieder Luft.**
 
-**Many shortcuts. One bubble. More room for your desktop. ✨**
+<p align="center"><img src="https://img.shields.io/badge/Windows-11-0078D6" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="https://img.shields.io/github/v/release/Hendrik4K/DesktopBubbles?label=Version&color=7a5cff" alt="Version"></a> <img src="https://img.shields.io/badge/Adminrechte-nicht%20n%C3%B6tig-555" alt="Adminrechte nicht nötig"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://img.shields.io/github/actions/workflow/status/Hendrik4K/DesktopBubbles/windows.yml?label=CI" alt="CI"></a></p>
 
-**Free, open-source app folders for Windows 11.** Organize desktop shortcuts into compact glass bubbles: click a bubble, choose an app, and return to a less cluttered desktop. Think iPhone-style folders for your PC, with drag-and-drop shortcuts and adjustable colors, sizes and transparency.
+<!-- Platz für das Titel-GIF (Ordner öffnen, Liquid Glass), später ersetzen -->
+<p align="center"><img src="docs/screenshots/desktopbubbles-liquid-glass-desktop.webp" width="820" alt="DesktopBubbles mit Liquid Glass auf einem Windows-11-Desktop: gläserne App-Ordner mit Gaming-Launchern und Adobe-Apps, daneben die Verwaltung"></p>
 
-**Desktop aufräumen und Verknüpfungen gruppieren.** Steam, Epic, Battle.net und Co. müssen nicht einzeln den Desktop belegen. Pack sie in einen App-Ordner, öffne ihn mit einem Klick und wähle, was du starten möchtest. Danach bleibt wieder die kleine Miniatur. So bekommst du Smartphone-ähnliche Ordner für deinen Windows-Desktop. 🚀
+Ordner wie auf dem Smartphone, nur für deinen PC: Steam, Epic, Photoshop und Co. ziehst du in eine Bubble, ein Klick öffnet sie, du wählst die App, und zurück bleibt eine kleine Miniatur. Die Programme selbst bleiben, wo sie sind. Dazu Liquid Glass, das den echten Hintergrund an den Kanten bricht wie eine Linse, weil ein aufgeräumter Desktop ruhig auch gut aussehen darf.
 
-**Version 1.8.2 · Windows 11 x64 · MIT license**
+<p align="center"><img src="docs/screenshots/desktopbubbles-before-after.gif" width="820" alt="Desktop aufräumen: sieben einzelne Gaming-Launcher landen in einem kompakten App-Ordner, der per Klick seine Verknüpfungen zeigt"></p>
 
-**[Windows-11-Installer herunterladen](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.8.2/DesktopBubbles-Setup-1.8.2.exe)** · [Portable ZIP](https://github.com/Hendrik4K/DesktopBubbles/releases/download/v1.8.2/DesktopBubbles-win-x64-v1.8.2.zip) · [Release](https://github.com/Hendrik4K/DesktopBubbles/releases/latest) · [MIT-Lizenz](LICENSE) · [Fehler melden](https://github.com/Hendrik4K/DesktopBubbles/issues)
+<details>
+<summary><b>🚀 Schnellstart</b></summary>
 
-<img src="docs/screenshots/desktopbubbles-liquid-glass-desktop.webp" width="100%" alt="DesktopBubbles mit Liquid Glass auf einem Windows-11-Desktop: zwei gläserne App-Ordner mit Gaming-Launchern und Adobe-Apps vor einem Berg-Hintergrund, daneben die Verwaltung mit Glasstil Liquid, Transparenz, Liquid-Stärke und Größe.">
+1. Den Installer unter **[Releases](https://github.com/Hendrik4K/DesktopBubbles/releases/latest)** herunterladen und starten. Er installiert nur für dich, ohne Adminrechte, und bringt die .NET-Laufzeit gleich mit. Meldet Windows SmartScreen „Der Computer wurde durch Windows geschützt“: **Weitere Informationen → Trotzdem ausführen** (der Installer ist nicht code-signiert).
+2. **DesktopBubbles** über die Windows-Suche starten und mit **Neu** eine Bubble anlegen.
+3. Verknüpfungen vom Desktop auf die Bubble ziehen.
+4. Bubble anklicken, App auswählen. Fertig.
 
-<table>
-  <tr>
-    <th>Vorher → Nachher</th>
-    <th>Desktop-Bubbles &amp; Einstellungen</th>
-  </tr>
-  <tr>
-    <td width="34%" valign="middle"><img src="docs/screenshots/desktopbubbles-before-after.gif" width="100%" alt="Desktop aufräumen: sieben einzelne Gaming-Launcher werden in einem kompakten App-Ordner gruppiert, der per Klick seine Verknüpfungen zeigt."></td>
-    <td width="66%" valign="middle"><img src="docs/screenshots/desktopbubbles-desktop-settings.png" width="100%" alt="DesktopBubbles für Windows 11: zwei transparente Desktop-Ordner neben der Verwaltung mit Gruppenliste und Reglern für Transparenz, Größe und runde Ecken."></td>
-  </tr>
-</table>
+Die App wartet danach im Infobereich der Taskleiste; ein Klick auf das Seifenblasen-Symbol öffnet die Verwaltung. **Tray → Beenden** beendet sie ganz. Lieber ohne Installation? Das **portable ZIP** aus den Releases in einen beschreibbaren Ordner entpacken und `DesktopBubbles.exe` starten.
 
-## Organize shortcuts, launchers and workspaces
-
-- **Gaming launcher organization:** keep shortcuts to Steam, Epic Games, Battle.net and other launchers together; the launchers themselves stay installed in their original locations.
-- **Work and hobby groups:** separate coding tools, creative apps, folders and web links into desktop shortcut groups.
-- **Desktop customization:** choose compact previews, folder sizes, colors and transparency for a minimalist desktop. An optional frosted-glass folder effect blurs the background once when opened, rather than continuously.
-- **Drag and drop:** add shortcuts, move them between bubbles or return them to the desktop. Hold an icon until it wiggles, then drop it onto another to swap their positions.
-
-## Funktionen: App-Ordner und Desktop-Anpassung
-
-- **Neu in 1.8.2:** Verknüpfungen, die ein Programm-Update erneut auf den Desktop legt, wandern automatisch zurück in ihre Bubble. Ein Klick aufs Tray-Symbol öffnet die App, das Tray-Menü trägt das DesktopBubbles-Design und sucht auf Wunsch nach Updates. Die Verwaltung bewegt sich weicher: gleitender Miniatur/Ordner-Schalter, sanfte Hover- und Auswahleffekte, Regler auf der ganzen Zeile.
-- **Neu in 1.8.1:** Ordner auf Wunsch nach einstellbaren Sekunden ohne Maus automatisch schließen. Symbole lassen sich wieder direkt auf den Desktop ziehen, und getauschte Symbole gleiten an ihren neuen Platz. Verknüpfungen finden auch nach dem Verlegen des Desktop-Ordners zurück.
-- **Neu in 1.8.0: Liquid Glass.** Neuer Glasstil, der den echten Hintergrund an den Kanten wie eine Linse bricht, mit einstellbarer Stärke. Ordner öffnen und schließen mit Federanimation aus der Miniatur heraus; die Symbole fliegen an ihren Platz. Vom Desktop übernommene Verknüpfungen liegen wieder an ihrem Platz auf dem Desktop, solange DesktopBubbles nicht läuft.
-- **Neu in 1.7.1:** schillernde Seifenblasen als App-, Taskleisten-, Tray- und Installer-Symbol.
-
-- **Neu in 1.7.0: installieren und loslegen.** Benutzer-Installer mit Startmenüeintrag, optionaler Desktop-Verknüpfung und geprüfter Datensicherung bei Updates. Persönliche Daten bleiben bei der Deinstallation erhalten.
-- **Milchglas für Ordner:** eigener zuschaltbarer Effekt mit sauberen runden Ecken. Der Hintergrund wird beim Öffnen einmal weichgezeichnet übernommen; die Symbole bleiben scharf.
-- **Korrigiert in 1.6.1:** „Mit Windows starten“ erkennt die tatsächlich eingetragene Programmdatei und ihren Datenordner. Eine ältere Ausgabe gilt nicht mehr fälschlich als Autostart der aktuellen. [Sicher umsteigen](docs/STARTUP.md).
-- **Neu in 1.6.0: Halten. Wackeln. Tauschen.** Ein Symbol etwa eine halbe Sekunde gedrückt halten und auf ein anderes ziehen. Genau diese beiden tauschen ihre Plätze; die Reihenfolge bleibt gespeichert.
-- Defekte Einträge über **Aus Gruppe löschen** entfernen, auch wenn das Ziel fehlt. Dateien und interne Sicherungskopien bleiben erhalten.
-- Verknüpfungen, Programme, Ordner, Webadressen und installierte Store-Apps in Desktop-Bubbles organisieren.
-- Einträge per Drag & Drop hinzufügen, sortieren, zwischen Gruppen verschieben und zurück auf den Desktop ziehen.
-- Über **Zurück zum Desktop** eine geprüfte Verknüpfung zurücklegen. Programme werden nicht verschoben; bestehende Dateien bleiben erhalten.
-- Miniaturgröße und Ordnergröße global anpassen; getrennte globale Transparenzen bis 100 Prozent und gemeinsame proportionale Rundung.
-- Farben je Bubble oder optional für alle Bubbles gemeinsam wählen. Hell und Dunkel haben eigene anpassbare Grundfarben; Windows-Standard folgt dem Systemmodus.
-- Ordner-Vorschau zwischen 1:3 und 1:1 umschalten; eingebetteter Farbeditor mit Farbkreis und HEX-Eingabe.
-- Gruppen sichern/importieren, optional mit Windows starten und Ressourcen-Tracking ausdrücklich einschalten.
-
-C# / WPF / Win32, ohne Browser-Runtime oder Administratorrechte. Keine Konten, Telemetrie oder automatischen Uploads. Das Öffnen gewählter Programme, Weblinks oder des Repositorys kann Netzwerkzugriffe auslösen.
-
-## Download & installation / In wenigen Schritten loslegen
-
-**English quick start:** download the Windows installer above, quit any running copy from its tray menu before updating, then install and launch **DesktopBubbles** from Windows Search. Click **Neu** to create a group, drag shortcuts onto it, and click its desktop bubble to choose an app. The interface currently uses German labels. The installer includes the .NET runtime; no separate runtime installation is needed. See the update and unsigned-app notes below before switching from a portable copy.
-
-1. Den Installer von der [Release-Seite](https://github.com/Hendrik4K/DesktopBubbles/releases/latest) starten. Er installiert für dein Benutzerkonto und legt **DesktopBubbles** im Startmenü an. Die .NET-Desktop-Laufzeit ist enthalten.
-2. **DesktopBubbles** über die Windows-Suche starten und mit **Neu** eine Bubble erstellen. Rechtsklick auf den Suchtreffer → **An Start anheften** funktioniert wie bei anderen Windows-Apps.
-3. Verknüpfungen auf die Miniatur, ins geöffnete Raster oder auf die Gruppenzeile ziehen.
-4. Miniatur anklicken und eine App auswählen. Zum Positionieren die geschlossene Bubble ziehen.
-
-Das **X** schließt die Verwaltung; die Desktop-Bubbles bleiben aktiv. Ein Doppelklick auf das Tray-Symbol öffnet die Verwaltung. **Tray → Beenden** beendet die App vollständig. Das Tray-Menü enthält außerdem Version, Repository und Desktop-Verbindung erneuern.
-
-Alternativ das portable ZIP vollständig in einen beschreibbaren Ordner entpacken und **DesktopBubbles.exe** starten. Es richtet keinen Startmenüeintrag automatisch ein.
-
-**Bereits portable unterwegs?** Ein Installer-Update erhält vorhandene Daten unter `%LOCALAPPDATA%\Programs\DesktopBubbles\data`. Bei Daten an einem anderen Ort zuerst in der bisherigen App exportieren und den vollständigen Datenordner sichern; unterschiedliche portable Datenstände werden nicht automatisch zusammengeführt. [Sicher umsteigen](docs/STARTUP.md), [Installer und Datenerhalt](docs/INSTALLER.md).
-
-Setup und App sind nicht signiert; Windows kann einen Hinweis auf einen unbekannten Herausgeber anzeigen. Es gibt keinen automatischen Updater. **Desktop-Anbindung ist experimentell**: normale Fenster dürfen die Bubbles überdecken. [Prüfstand und Plattformgrenzen](docs/TESTS.md).
-
-## FAQ / Häufige Fragen zu Desktop-Ordnern
-
-### Can I get iPhone-style app folders on Windows?
-
-DesktopBubbles offers a similar interaction on Windows 11: a compact preview opens into a grid of shortcuts. It is an independent Windows app; the bubbles are its own windows rather than native Explorer folder icons.
-
-### Wie kann ich meinen Desktop aufräumen, ohne Programme zu verschieben?
-
-Ziehe die Verknüpfungen in eine Bubble für Gaming, Arbeit oder andere Aufgaben. Die installierten Programme bleiben an ihrem Ort. Persönliche Desktop-Verknüpfungen werden zunächst geprüft kopiert und standardmäßig danach vom Desktop entfernt. Diese Übernahme lässt sich in den Einstellungen auf reines Kopieren umstellen. Details stehen unter [Bedienung](#bedienung).
-
-### Is this a game launcher or a replacement for the Windows Start menu?
-
-It groups and opens your existing shortcuts. It does not install games, combine launcher accounts or replace Windows Search or the Start menu. You can also organize non-gaming apps, folders and web links.
-
-### Ist der Desktop-Organizer kostenlos und auch portabel nutzbar?
-
-Ja. DesktopBubbles ist unter MIT veröffentlicht. Es gibt einen Benutzer-Installer und eine portable ZIP; beide sind oben verlinkt. Zum Ausprobieren ist kein Konto erforderlich. Beachte die Hinweise zu Datensicherung, unsignierten Downloads und experimenteller Desktop-Anbindung unter Installation und [Bekannte Grenzen](#bekannte-grenzen).
-
-## Bedienung
-
-| Aktion | Bedienung |
-| --- | --- |
-| Öffnen / schließen | Miniatur anklicken; Raster mit Esc oder Klick außerhalb schließen |
-| Gruppe finden | Rechtsklick auf Gruppenzeile → Auf dem Desktop finden; zeigt den Desktop und setzt die Bubble in die Hauptmonitormitte |
-| Gruppe bearbeiten | Rechtsklick auf Miniatur oder Gruppenzeile; Umbenennen und Name unter Bubble anzeigen stehen oben |
-| Einträge hinzufügen | Drag & Drop oder Gruppenmenü → Hinzufügen |
-| Plätze tauschen | Symbol etwa ½ Sekunde halten, bis die Symbole wackeln; auf einem anderen Symbol loslassen |
-| Sortieren beenden | Esc oder eine freie Stelle im Ordner anklicken |
-| Andere Bubble / Desktop | Ohne Haltepause direkt auf die Ziel-Bubble beziehungsweise den Desktop ziehen |
-| Zurück auf den Desktop | Symbol hinausziehen oder Rechtsklick → Zurück zum Desktop |
-| Nur aus der Gruppe entfernen | Rechtsklick auf Symbol → Aus Gruppe löschen; funktioniert auch bei fehlendem oder defektem Ziel |
-| Einstellungen verlassen | Erneut Zahnrad unten rechts oder Zurück-Pfeil → Miniaturansicht |
-| Tastatur | Tab / Umschalt+Tab, Enter / Leertaste; Strg+N erstellt eine Gruppe |
-
-Persönliche Desktop-`.lnk/.url` erhalten zuerst eine geprüfte eigene Kopie. Standardmäßig entfernt die App danach das geprüfte Desktop-Original. **Einstellungen → Desktop-Originale nach Übernahme entfernen** ausschalten, um neue Links nur zu kopieren. Programme, Dateien, Ordner und gemeinsame Desktop-Originale bleiben am Ort. Bei der Rückgabe wird zuerst eine unabhängige Verknüpfung auf dem persönlichen Desktop angelegt und erst danach der Eintrag entfernt. Namenskonflikte erhalten einen neuen Namen. Bei Fehlern bleibt der Eintrag erhalten. [Verknüpfungen und Rückgabe](docs/SHORTCUTS.md).
-
-## Aussehen
-
-Gruppe links auswählen. **Miniatur** enthält Farbe, Glas, globale Miniaturtransparenz und -größe sowie die gemeinsame Eckenrundung. **Ordner** enthält die getrennte globale Ordnertransparenz, Ordnergröße und Live-Vorschau mit 1:3-/1:1-Umschaltung. Bei 100 Prozent Transparenz verschwinden Fläche und Rahmen; die Symbole bleiben sichtbar.
-
-![DesktopBubbles – Miniatur und Einstellungen](docs/screenshots/v1.5.0-host.png)
-
-**Ändern** öffnet den Farbeditor über den unteren Reglern. Der Entwurf verändert keine gespeicherten Farben. **Anwenden** übernimmt, **Abbrechen** oder Esc verwirft die Auswahl. HEX akzeptiert sechs RGB-Stellen. Andere Regler wirken sofort und werden automatisch gespeichert.
-
-Das Zahnrad enthält App-Farbe, Farbmodus und App-Transparenz. Die **quadratische Farbkachel neben Farbmodus** bearbeitet die Grundfarbe von Hell oder Dunkel. Bei Windows-Standard wird das aktuell aktive Profil bearbeitet. Diese Farben betreffen DesktopBubbles, nicht die Windows-Systemfarben. Unter **Allgemein** koppelt **Bubble-Farben für alle übernehmen** die Gruppenfarben. **Farben zurücksetzen** setzt App-, Bubble- und Modusfarben zurück; Größen, Transparenzen und Kopplungswahl bleiben erhalten.
-
-**Klar** ist leichter und farbiger, **Matt** dichter. Die Verwaltung nutzt DWM-Unschärfe, sofern verfügbar und eingeschaltet. Unter **Ordner → Milchglas** lässt sich ein eigener Effekt einschalten: Grün bedeutet aktiv, der normale Transparenzregler wird ausgeblendet. Beim Ausschalten kehren der normale Stil und der bisherige Transparenzwert zurück. Milchglas übernimmt nur beim Öffnen einen kleinen Hintergrundbereich im Arbeitsspeicher und weichzeichnet ihn. Bewegungen dahinter erscheinen beim nächsten Öffnen; die App speichert oder überträgt diese Aufnahme nicht. Hoher Kontrast verwendet Systemfarben. [Milchglas und Grenzen](docs/FROSTED-FOLDERS.md).
-
-## Ressourcen und Daten
-
-**Tracking starten** aktiviert zeitgewichteten CPU-Durchschnitt über alle logischen Prozessoren, aktuellen RAM (Working Set), Verlauf und aktive Dauer. **Tracking stoppen** hält die Werte fest; erneuter Start beginnt eine neue Messung. Ausblenden/Minimieren unterbricht die Messung, Schließen beendet sie. Standardmäßig läuft kein Tracking. Die angezeigte Schwankung ist keine Messgenauigkeit. [Methodik](docs/PERFORMANCE.md).
-
-**Einstellungen → Daten & Werkzeuge** enthält Sicherung exportieren/importieren, Verknüpfungen auf Desktop zurücklegen, Programmordner öffnen, Desktop-Bubbles neu verbinden und Diagnosebericht speichern. Der Diagnosebericht misst den eigenen Prozess zehn Sekunden lang und bleibt lokal.
-
-## Aktualisieren, sichern und entfernen
-
-Den aktiven Speicher unter **Einstellungen → Datenordner öffnen** ermitteln, dann die bisherige App **im Tray beenden**. Die neue Version in einen eigenen Ordner entpacken und den **vollständigen aktiven Datenordner** übernehmen oder mit --data-dir weiterverwenden. Alternativ eine `.bubbles`-Sicherung importieren. Release-ZIPs enthalten keine Benutzerdaten.
-
-**Beim Wechsel zwischen Ausgaben:** Vorschau und installierte Version können unterschiedliche Datenordner verwenden. Wähle den Stand mit deinen neuesten Gruppen und übernimm diesen vollständig. Aktiviere anschließend in der gewünschten Ausgabe **Mit Windows starten**, damit Windows genau diese Programmdatei mit diesem Datenordner öffnet. Version 1.6.1 zeigt einen abweichenden vorhandenen Eintrag als ausgeschaltet und erklärt ihn im Tooltip. Datenstände werden nicht automatisch zusammengeführt. [Autostart und Datenübernahme](docs/STARTUP.md).
-
-Version 1.5.0 migriert ältere Konfigurationen auf **Schema 6**. Beide Transparenzen gelten danach global; bei alten Einzelwerten wird je Ansicht der wirksame Wert der ersten Gruppe übernommen. Gruppen und Verknüpfungen bleiben erhalten. Migrierte Daten anschließend nicht mit älteren Ausgaben öffnen. Alte Einträge werden beim Upgrade nicht automatisch vom Desktop verschoben.
-
-`portable.flag` bevorzugt `data/groups.json` neben der EXE. Ist dieser Ordner nicht beschreibbar, etwa unter Program Files, übernimmt die App vorhandene Daten nach `%LOCALAPPDATA%\DesktopBubbles\profiles\<Kennung>`. Die Kennung trennt unterschiedliche Ausgangsordner; deren Daten werden nicht vermischt. Einmal umgeleitete Ordner verwenden weiter ihre neuere Kopie. Die Quelle bleibt unverändert. Ohne Flag/`--portable` liegt der Zustand unter `%LOCALAPPDATA%\DesktopBubbles`. Eigene Datenpfade sind über `--data-dir "D:\Meine Einstellungen\DesktopBubbles"` möglich; auch diese werden bei fehlenden Schreibrechten umgeleitet. `--background` startet ohne Verwaltung.
-
-**Einstellungen → Datenordner öffnen** zeigt den tatsächlich aktiven Speicher. Diesen vollständigen Ordner vor einem Umzug oder Upgrade sichern und mitnehmen beziehungsweise über --data-dir weiterverwenden. Im Hell-/Dunkel-Farbeditor steuert **Deckkraft** die Transparenz der Steuerelement-Hintergründe getrennt von Helligkeit und App-/Bubble-Transparenz. Nutzer älterer Ausgaben mit blockierter Speicherung sollten noch ungespeicherte Änderungen vor dem Beenden zusätzlich exportieren.
-
-Export enthält Gruppen, Einstellungen und referenzierte interne Verknüpfungen. Import ersetzt den Zustand nach Rückfrage und sichert den bisherigen Stand zusätzlich. Programme, externe Ziele und die ganze Rückgabehistorie sind nicht vollständig enthalten. Für eine vollständige Sicherung bei beendeter App den gesamten `data`-Ordner kopieren.
-
-Vor Löschen der App **Einstellungen → Verknüpfungen auf Desktop zurücklegen** ausführen, bei Bedarf Daten sichern, Autostart ausschalten und im Tray beenden. Löschen des Datenordners kann die einzige Kopie übernommener Links entfernen. Autostart schreibt auf ausdrückliche Bedienung nach `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`; vor einem Umzug ausschalten und am neuen Ort bei Bedarf neu aktivieren.
-
-## Bauen und mitarbeiten
-
-Windows 11 x64 und .NET-8-SDK beziehungsweise Visual Studio mit .NET-Desktopentwicklung. Keine Drittanbieter-NuGet-Laufzeitabhängigkeiten.
+**Selbst bauen (für Bastler):** Windows 11 x64 und das .NET-8-SDK (oder Visual Studio mit .NET-Desktopentwicklung). Keine NuGet-Abhängigkeiten von Drittanbietern.
 
 ```powershell
-.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64-v1.8.2
-# Mit vorhandenem SDK:
-.\Build.ps1 -OutputName DesktopBubbles-win-x64-v1.8.2
-# Native Tests mit isolierten Testdaten auf interaktivem Windows-Desktop:
-.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64-v1.8.2\DesktopBubbles.exe
-# Optionaler Installer-Build:
+.\Build.ps1 -InstallSdk -OutputName DesktopBubbles-win-x64
+.\Test-Windows.ps1 -Executable .\artifacts\DesktopBubbles-win-x64\DesktopBubbles.exe
 .\tools\Get-InnoSetup.ps1
-.\tools\Build-Installer.ps1 -Payload .\artifacts\DesktopBubbles-win-x64-v1.8.2
+.\tools\Build-Installer.ps1 -Payload .\artifacts\DesktopBubbles-win-x64
 ```
 
-Build erstellt die portable Ausgabe, führt die Kernprüfungen aus und packt ZIPs sowie SHA-256-Prüfsummen. Native Tests laufen separat. `dotnet test` ist nicht der Einstieg für die ausführbare Konsolensuite. CI baut App und Installer und prüft Core sowie isolierte Installer-Abläufe auf GitHub Actions. Inno Setup ist nur ein zusätzliches Buildwerkzeug. [Architektur](docs/ARCHITECTURE.md), [Entwicklerregeln](docs/DEVELOPMENT.md), [Release](docs/RELEASE.md), [Design-QA](design-qa.md).
+`Build.ps1` baut die portable Ausgabe, führt die Kernprüfungen aus und packt ZIP und SHA-256-Prüfsummen. `Test-Windows.ps1` prüft die echte App auf einem interaktiven Desktop mit eigenen Testdaten. Mehr unter [Architektur](docs/ARCHITECTURE.md), [Entwicklerregeln](docs/DEVELOPMENT.md) und [Release](docs/RELEASE.md).
 
-Feedback zu Bugs, Bedienung und Tests auf weiteren Windows-Systemen ist unter [Issues](https://github.com/Hendrik4K/DesktopBubbles/issues) willkommen. Bitte Konfigurationen oder Logs mit privaten Pfaden vor dem Upload prüfen.
+</details>
 
-## Bekannte Grenzen
+<details>
+<summary><b>💡 Was es kann</b></summary>
 
-- Bubbles sind eigene Desktop-Toolfenster mit Desktop-Besitzer, keine Explorer-Icons. Keine Hooks, Explorer-Patches oder Topmost-Overlays.
-- Mehrere Monitore, gemischte DPI, virtuelle Desktops, echter Explorer-Neustart und physisches Win+D benötigen weitere Plattformtests.
-- Physisches Explorer-Drag-&-Drop, Cloud-/Netzwerkpfade, Sonderlinks, Store-Starts und UAC-Fälle sind nicht umfassend abgenommen. Ohne verlässliche Übergabebestätigung bleibt ein herausgezogener Eintrag erhalten.
-- WPF-Aufnahmen erfassen nicht den vom Desktop zusammengesetzten Hintergrund. Hoher Kontrast und verschiedene Skalierungen müssen zusätzlich visuell geprüft werden.
-- WPF hat einen Speichergrundbedarf. CPU-/RAM-Messungen belegen keine Spiele-Frametimes oder GPU-Leistung.
+- **App-Ordner auf dem Desktop.** Verknüpfungen, Programme, Ordner, Webadressen und Store-Apps in Bubbles gruppieren: Gaming, Arbeit, Kreativ, was du willst.
+- **Liquid Glass und Milchglas.** Liquid Glass bricht den echten Hintergrund an den Kanten wie eine Linse, die Stärke ist einstellbar. Milchglas zeichnet ihn weich. Die Symbole bleiben dabei immer scharf.
+- **Ordner mit Schwung.** Ordner springen aus der Miniatur auf, die Symbole fliegen an ihren Platz und beim Schließen wieder zurück.
+- **Halten, wackeln, tauschen.** Ein Symbol eine halbe Sekunde halten, bis alles wackelt, dann auf ein anderes ziehen: Die beiden tauschen die Plätze.
+- **Drag & Drop überall.** Rein in die Bubble, raus auf den Desktop, rüber in eine andere Bubble.
+- **Aufgeräumt bleibt aufgeräumt.** Legt ein Programm-Update seine Verknüpfung wieder auf den Desktop, wandert sie automatisch zurück in ihre Bubble.
+- **Farben nach Geschmack.** Farbe je Bubble oder für alle gemeinsam, Farbkreis, HEX-Eingabe und Pipette, die eine Farbe direkt vom Bildschirm aufnimmt. Hell, Dunkel oder wie Windows.
+- **Größe und Transparenz.** Miniatur und Ordner getrennt einstellbar, Transparenz bis 100 Prozent, Ordnervorschau 1:3 oder 1:1.
+- **Schließt von selbst.** Auf Wunsch schließt ein Ordner nach einstellbaren Sekunden ohne Maus.
+- **Deutsch oder Englisch.** Ein Klick auf den Sprachschalter in den Einstellungen, und alles wechselt die Sprache.
+- **Messleiste.** Wer wissen will, was die App kostet: CPU und RAM als kleiner Tacho mit Verlauf, nur wenn du sie startest.
+- **Dezent.** Kein Konto, keine Telemetrie, keine Adminrechte. Die App wartet still im Infobereich.
 
-Eigener Projektcode unter MIT. Das Seifenblasen-Logo, das Demo-GIF und die Desktop-Aufnahme wurden vom Projektinhaber bereitgestellt und unverändert übernommen; App-Symbole stammen aus der lokalen Windows-Shell. Die portable Ausgabe enthält die Lizenzhinweise ihrer .NET-Laufzeit. [Branding](src/DesktopBubbles/Assets/README.md).
+<ins>Warum es das gibt:</ins> Mein Desktop war voller Launcher, und eine schlichte Ordnerlösung wie auf dem Handy gab es für Windows nicht. Also habe ich sie gebaut und stelle sie allen zur Verfügung.
+
+</details>
+
+<details>
+<summary><b>📷 Mehr Bilder</b></summary>
+
+<!-- Platz für weitere GIFs: 1:3 ↔ 1:1, Farbwähler mit Pipette, Sprachschalter, Messleiste -->
+<p align="center"><img src="docs/screenshots/desktopbubbles-desktop-settings.png" width="820" alt="Zwei transparente Desktop-Ordner neben der Verwaltung mit Gruppenliste und Reglern für Transparenz, Größe und runde Ecken"></p>
+
+</details>
+
+<details>
+<summary><b>🖱️ Bedienung</b></summary>
+
+| Aktion | So geht's |
+| --- | --- |
+| Öffnen / schließen | Miniatur anklicken; Esc oder Klick daneben schließt |
+| Bubble verschieben | Geschlossene Miniatur ziehen |
+| Einträge hinzufügen | Per Drag & Drop oder Rechtsklick auf die Miniatur → Hinzufügen |
+| Plätze tauschen | Symbol ½ Sekunde halten, bis alles wackelt, dann auf einem anderen Symbol loslassen |
+| In eine andere Bubble | Ohne Haltepause direkt auf die andere Bubble ziehen |
+| Zurück auf den Desktop | Symbol hinausziehen oder Rechtsklick → Zurück zum Desktop |
+| Nur aus der Gruppe entfernen | Rechtsklick auf Symbol → Aus Gruppe löschen (klappt auch bei defektem Ziel) |
+| Bubble wiederfinden | Rechtsklick auf die Gruppenzeile → Auf dem Desktop finden |
+| Einstellungen | Zahnrad unten rechts; erneut klicken oder Zurück-Pfeil führt zurück |
+| Tastatur | Tab / Umschalt+Tab, Enter / Leertaste; Strg+N legt eine Bubble an |
+
+Persönliche Desktop-Verknüpfungen werden zuerst geprüft kopiert, danach entfernt die App das Original vom Desktop. Wer nur kopieren will, schaltet **Einstellungen → Desktop-Originale nach Übernahme entfernen** aus. Programme, Dateien und Ordner werden nie verschoben. Beim Zurücklegen entsteht zuerst die neue Verknüpfung auf dem Desktop, erst dann verschwindet der Eintrag. Details: [Verknüpfungen und Rückgabe](docs/SHORTCUTS.md).
+
+</details>
+
+<details>
+<summary><b>🧰 Voraussetzungen, Daten und Updates</b></summary>
+
+**Voraussetzungen:** Windows 11 x64. Der Installer bringt alles mit, was die App braucht.
+
+**Deine Daten** liegen bei der installierten Version unter `%LOCALAPPDATA%\Programs\DesktopBubbles\data`. **Einstellungen → Datenordner öffnen** zeigt immer den tatsächlich genutzten Ordner. Unter **Einstellungen → Daten & Werkzeuge** kannst du Sicherungen (`.bubbles`) exportieren und importieren, alle Verknüpfungen auf den Desktop zurücklegen und einen lokalen Diagnosebericht speichern.
+
+**Updates:** Die laufende App im Tray beenden, dann den neuen Installer starten. Deine Bubbles bleiben erhalten, der Installer sichert sie vorher. Eine automatische Update-Installation gibt es nicht; das Tray-Menü kann aber nach neuen Versionen suchen.
+
+**Deinstallieren:** Vorher **Einstellungen → Verknüpfungen auf Desktop zurücklegen** ausführen, sonst liegen übernommene Verknüpfungen nur noch im Datenordner. Die Deinstallation lässt deine Daten stehen.
+
+<details>
+<summary>🆘 <b>Für Umsteiger:</b> portable Version, eigene Datenordner und Autostart</summary>
+
+Die portable Version speichert neben der EXE in `data\` (über `portable.flag`). Ist dieser Ordner nicht beschreibbar, etwa unter Program Files, weicht sie nach `%LOCALAPPDATA%\DesktopBubbles\profiles\<Kennung>` aus. Eigene Speicherorte gehen mit `--data-dir "D:\Mein Ordner"`, `--background` startet ohne Verwaltung.
+
+Vorschau, portable und installierte Version können verschiedene Datenordner haben, die nie automatisch zusammengeführt werden. Beim Umstieg den Ordner mit deinen neuesten Bubbles komplett übernehmen oder vorher exportieren und danach importieren. **Mit Windows starten** danach in genau der Version einschalten, die bleiben soll. Mehr dazu: [Sicher umsteigen](docs/STARTUP.md), [Installer und Datenerhalt](docs/INSTALLER.md).
+
+</details>
+
+</details>
+
+<details>
+<summary><b>⚡ Technik und Sicherheit</b></summary>
+
+**So funktioniert's**
+
+- C# mit WPF und Win32, ohne Browser-Runtime. Die Bubbles sind eigene kleine Fenster, die dem Desktop gehören, keine Explorer-Icons. Keine Hooks, keine Explorer-Patches, nichts, was immer im Vordergrund klebt.
+- **Glas-Effekte:** Für Liquid Glass und Milchglas nimmt die App beim Öffnen einen kleinen Ausschnitt des Bildschirms hinter dem Ordner auf und verarbeitet ihn im Arbeitsspeicher. Die Stelle unter der eigenen Miniatur füllt sie mit dem Desktopbild, das Windows ohne die Bubbles liefert. So bleibt die Miniatur auch in Bildschirmaufnahmen wie OBS durchgehend sichtbar.
+- **Messleiste:** misst nur den eigenen Prozess und nur, solange du sie laufen lässt. Methodik: [Leistung](docs/PERFORMANCE.md).
+
+**Sicherheit und Privatsphäre**
+
+- Kein Konto, keine Telemetrie, keine automatischen Uploads. Netzwerkzugriffe entstehen nur, wenn du einen Weblink öffnest oder im Tray nach Updates suchst.
+- Bildschirmausschnitte für die Glas-Effekte bleiben im Arbeitsspeicher. Sie werden nie gespeichert oder übertragen.
+- Installation nur im eigenen Benutzerprofil, ohne Adminrechte. Autostart nur auf deinen Klick, über `HKCU\…\Run`.
+- Verknüpfungen werden geprüft kopiert, bevor ein Original verschwindet. Bei Namenskonflikten gibt es einen neuen Namen, bei Fehlern bleibt alles, wie es war.
+- Diagnoseberichte bleiben lokal. Wenn du einen in ein Issue hängst, schau vorher nach privaten Pfaden.
+
+**Bekannte Grenzen**
+
+- Normale Fenster dürfen die Bubbles überdecken; die Desktop-Anbindung gilt noch als experimentell.
+- Mehrere Monitore mit gemischter Skalierung, virtuelle Desktops, Cloud- und Netzwerkpfade sowie UAC-Sonderfälle sind noch nicht umfassend getestet. Erfahrungen dazu gern unter [Issues](https://github.com/Hendrik4K/DesktopBubbles/issues).
+
+</details>
+
+<details>
+<summary><b>❓ Häufige Fragen</b></summary>
+
+**Gibt es Ordner wie auf dem iPhone auch für Windows?** Ja, so ähnlich: Eine kleine Vorschau öffnet sich zu einem Raster aus Verknüpfungen. DesktopBubbles ist eine eigene App, die Bubbles sind keine Explorer-Ordner.
+
+**Werden meine Programme verschoben?** Nein. Nur Verknüpfungen wandern in die Bubble, die Programme bleiben installiert, wo sie sind.
+
+**Ist das ein Game-Launcher oder Ersatz fürs Startmenü?** Weder noch. DesktopBubbles öffnet deine vorhandenen Verknüpfungen, es installiert keine Spiele und ersetzt weder Startmenü noch Windows-Suche.
+
+**Kostet das was?** Nein. MIT-Lizenz, Installer und portable Version, kein Konto.
+
+</details>
+
+<details>
+<summary><b>🖼️ Bilder und Marken</b></summary>
+
+Der Quellcode steht unter der [MIT-Lizenz](LICENSE). Das Seifenblasen-Logo, die Demo-GIFs und Desktop-Aufnahmen gehören **nicht** dazu. App-Symbole in den Bildern stammen aus der Windows-Shell; Steam, Epic Games, Adobe und weitere Namen sind Marken ihrer Inhaber. DesktopBubbles ist ein privates Hobbyprojekt und mit keinem dieser Unternehmen verbunden. Die portable Ausgabe enthält die Lizenzhinweise ihrer .NET-Laufzeit. [Branding](src/DesktopBubbles/Assets/README.md), [Änderungen](CHANGELOG.md).
+
+</details>
