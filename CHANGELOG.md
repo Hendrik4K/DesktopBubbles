@@ -2,6 +2,7 @@
 
 ## Unveröffentlicht
 
+- Bildschirmaufnahmen (OBS, Snipping Tool): Miniaturen blinken beim Öffnen eines Ordners, im Leerlauf und beim Ziehen nicht mehr kurz weg. Die Glasprobe holt den Hintergrund jetzt direkt vom Desktop, statt die Miniatur dafür vor Aufnahmen zu verstecken.
 - Farbe: Farbkreis mit angesetzter Pille fester Breite; „Ändern“ und „Anwenden“ blenden nur den Text über, der Farbwähler blendet weich mit Weichzeichner ein und aus.
 - Glas-Auswahl klappt als zusammenhängendes Menü nach unten aus, Beschriftung bleibt stehen.
 - Ordnervorschau: runder 1:3/1:1-Knopf mit dauerhaft angesetztem „Milchglas“; Wechsel 1:3 ↔ 1:1 mit weicher Größenänderung und Überblendung.

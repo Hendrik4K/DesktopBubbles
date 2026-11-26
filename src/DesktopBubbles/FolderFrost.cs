@@ -15,6 +15,20 @@ namespace DesktopBubbles;
 // never gets a second rectangular backdrop to draw outside our corner geometry.
 internal static class FolderFrost
 {
+    private static readonly List<nint> without = [];
+    // Samples made in this scope show the desktop in the window's own spot, from Explorer's
+    // rendering, instead of the window. Null when no rendering is at hand yet; the caller then
+    // falls back to hiding the window from capture.
+    internal static IDisposable? Without(Window window)
+    {
+        if (!DesktopBackdrop.Ready) return null;
+        var handle = Native.Handle(window); without.Add(handle); return new Scope(handle);
+    }
+    private sealed class Scope(nint handle) : IDisposable
+    {
+        private bool done;
+        public void Dispose() { if (done) return; done = true; without.Remove(handle); if (!without.Contains(handle)) DesktopBackdrop.Forget(handle); }
+    }
     internal static BitmapSource? Capture(PixelRect bounds)
         => CaptureSharp(bounds, out var crop) is { } source ? Blur(source, crop) : null;
 
@@ -49,6 +63,8 @@ internal static class FolderFrost
                 }
                 finally { if (desktop != 0) Native.ReleaseDC(0, desktop); graphics.ReleaseHdc(destination); }
             }
+            foreach (var window in without.Distinct())
+                if (!DesktopBackdrop.Fill(bitmap, sample, window)) Log.Write("Desktop backdrop did not cover the sampled window.");
             var locked = bitmap.LockBits(new System.Drawing.Rectangle(0, 0, sample.Width, sample.Height),
                 System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppRgb);
             BitmapSource source;

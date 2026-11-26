@@ -369,8 +369,16 @@ internal static class SmokeTests
         Check("Milchglas übernimmt weder Miniaturfarbe noch gemeinsamen Klar-Matt-Stil", ((LinearGradientBrush)Ui.WindowGlass(app.State.Settings, app.State.Groups[0])).GradientStops.Select(s => s.Color).SequenceEqual(frostStops));
         app.State.Settings.Glass = sharedGlass; app.State.Groups[0].Color = groupColor; app.ApplyAppearance();
         settings.Left += 40; settings.Top += 24; await Dispatcher.Yield(DispatcherPriority.ApplicationIdle); double closedLeft = settings.Left, closedTop = settings.Top;
-        settings.Close(); app.Open(app.Bubbles[0]); await Task.Delay(250); await SettleMotion();
+        bool desktopRendered = DesktopBackdrop.RefreshNow();
+        Check("Explorer liefert den Desktop ohne eigene Fenster für die Glasprobe", desktopRendered);
+        settings.Close(); await Task.Delay(300);
+        double? backdropError = await BackdropMismatch(app.Bubbles[0]);
+        Check("Desktop-Füllung deckt sich pixelgenau mit dem Bildschirm", backdropError is not { } mismatch || mismatch < 4,
+            backdropError is { } shown ? $"mittlere Abweichung {shown:0.00}" : "übersprungen: Miniatur nicht frei sichtbar oder keine Probe");
+        int exclusionsBefore = BubbleWindow.CaptureExclusions;
+        app.Open(app.Bubbles[0]); await Task.Delay(250); await SettleMotion();
         var frosted = app.CurrentFlyout!;
+        Check("Ordner öffnen sperrt die Miniatur nie für Bildschirmaufnahmen (kein Aufblinken in OBS)", !desktopRendered || BubbleWindow.CaptureExclusions == exclusionsBefore);
         Check("Milchglas verwendet eine einzige Alpha-Fläche ohne rechteckigen DWM-Glaslayer", frosted.Frosted && frosted.AllowsTransparency && ((long)Native.GetWindowLongPtr(Native.Handle(frosted), Native.GwlExStyle) & 0x80000) != 0 && Native.DwmGetWindowAttribute(Native.Handle(frosted), 38, out int frostBackdrop, 4) == 0 && frostBackdrop == 1);
         bool samplingEnabled = !SystemParameters.HighContrast && Microsoft.Win32.Registry.GetValue(@"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "EnableTransparency", 1) is not 0;
         Check("Milchglas übernimmt den tatsächlichen Hintergrund bei erlaubter Windows-Transparenz", !samplingEnabled || frosted.HasFrostSample);
@@ -762,6 +770,28 @@ internal static class SmokeTests
             pixels[at] = pixels[at + 1] = pixels[at + 2] = value; pixels[at + 3] = 255;
         }
         var result = BitmapSource.Create(160, 160, 96, 96, PixelFormats.Pbgra32, null, pixels, 160 * 4); result.Freeze(); return result;
+    }
+    // The desktop rendering must line up with the real screen: the tile's spot filled from it
+    // matches a capture that hides the tile the old way. Only numbers leave this check, never pixels.
+    private static async Task<double?> BackdropMismatch(BubbleWindow bubble)
+    {
+        var bounds = Native.Bounds(bubble);
+        bool exposed = new[] { (.2, .2), (.8, .2), (.5, .5), (.2, .8), (.8, .8) }.All(p =>
+            Native.WindowFromPoint(new Native.Point { X = (int)(bounds.X + bounds.Width * p.Item1), Y = (int)(bounds.Y + bounds.Height * p.Item2) }) == Native.Handle(bubble));
+        BitmapSource? filled;
+        using (FolderFrost.Without(bubble)) filled = FolderFrost.CaptureSharp(bounds, out var _);
+        bool excluded = bubble.ExcludeFromCapture(true);
+        await Task.Delay(150); Native.DwmFlush();
+        var hidden = FolderFrost.CaptureSharp(bounds, out var crop);
+        if (excluded) bubble.ExcludeFromCapture(false);
+        if (!exposed || filled is null || hidden is null || !excluded) return null;
+        int stride = filled.PixelWidth * 4; var a = new byte[stride * filled.PixelHeight]; var b = new byte[a.Length];
+        filled.CopyPixels(a, stride, 0); hidden.CopyPixels(b, stride, 0);
+        double sum = 0; int count = 0;
+        for (int y = crop.Y; y < crop.Y + crop.Height; y++)
+            for (int x = crop.X; x < crop.X + crop.Width; x++)
+                for (int c = 0; c < 3; c++) { int i = y * stride + x * 4 + c; sum += Math.Abs(a[i] - b[i]); count++; }
+        return count == 0 ? 0 : sum / count;
     }
     private static Color BitmapPixel(BitmapSource bitmap, int x, int y)
     {

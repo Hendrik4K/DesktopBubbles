@@ -112,6 +112,7 @@ public partial class App : System.Windows.Application
             });
             SystemEvents.UserPreferenceChanged += PreferencesChanged;
             SystemEvents.DisplaySettingsChanged += DisplaysChanged;
+            DesktopBackdrop.Refresh();
             SessionEnding += (_, _) => { sessionEnding = true; Flush(); };
             DispatcherUnhandledException += (_, args) => { Log.Write(args.Exception.ToString()); args.Handled = true; Ui.Error(args.Exception); };
             SetupTray();
@@ -150,8 +151,8 @@ public partial class App : System.Windows.Application
         try { await Task.Delay(2000); await Diagnostics.Measure(this, 15); Quit(); }
         catch (Exception ex) { Log.Write(ex.ToString()); Shutdown(3); }
     }
-    private void PreferencesChanged(object sender, UserPreferenceChangedEventArgs e) => Dispatcher.BeginInvoke(() => { Ui.ApplyTheme(State.Settings); ScheduleRecovery(); settings?.RefreshPage(); });
-    private void DisplaysChanged(object? sender, EventArgs e) => Dispatcher.BeginInvoke(ScheduleRecovery);
+    private void PreferencesChanged(object sender, UserPreferenceChangedEventArgs e) => Dispatcher.BeginInvoke(() => { DesktopBackdrop.Invalidate(); Ui.ApplyTheme(State.Settings); ScheduleRecovery(); settings?.RefreshPage(); });
+    private void DisplaysChanged(object? sender, EventArgs e) => Dispatcher.BeginInvoke(() => { DesktopBackdrop.Invalidate(); ScheduleRecovery(); });
     internal void ScheduleRecovery()
     { if (exiting || recoveryTimer is null) return; recoveryTimer.Stop(); recoveryTimer.Start(); }
 

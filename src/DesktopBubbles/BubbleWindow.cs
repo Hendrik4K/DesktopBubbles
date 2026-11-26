@@ -130,19 +130,21 @@ internal sealed class BubbleWindow : Window
         if (bounds.Width < 4 || Covered(bounds)) { ScheduleLiquid(4000); return; }
         sampling = true;
         var content = (UIElement)Content;
-        bool excluded = ExcludeFromCapture(true);
+        // The tile's own spot comes from Explorer's desktop rendering. Without one, the tile is
+        // excluded from capture for the moment (it stays on screen, recordings see it blink); an
+        // embedded child window cannot be excluded and turns transparent instead.
+        var cover = FolderFrost.Without(this);
+        bool excluded = cover is null && ExcludeFromCapture(true);
         try
         {
-            // Excluded from capture, the tile stays on screen; an embedded child window cannot be
-            // excluded and turns transparent for the moment of the sample instead.
-            if (!excluded) content.Opacity = 0;
+            if (cover is null && !excluded) content.Opacity = 0;
             await System.Windows.Threading.Dispatcher.Yield(System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             if (closing) return;
             if (dragging || pressed || FolderMotion.Active || app.HasFlyout) { ScheduleLiquid(); return; }
             Native.DwmFlush();
             RenderLens(bounds);
         }
-        finally { sampling = false; if (excluded && !live) ExcludeFromCapture(false); if (!closing) content.Opacity = 1; }
+        finally { cover?.Dispose(); sampling = false; if (excluded && !live) ExcludeFromCapture(false); if (!closing) content.Opacity = 1; }
     }
     private bool RenderLens(PixelRect bounds)
     {
@@ -152,12 +154,15 @@ internal sealed class BubbleWindow : Window
         lens = LiquidGlass.Render(sample, crop, Ui.LiquidOptions(app.State.Settings, Group, app.State.Settings.BubbleCornerRadius * scale, scale));
         ApplyMaterial(); return true;
     }
-    // While dragging, a tile excluded from capture can re-render its lens from what lies beneath
+    // While dragging, a tile covered by the desktop rendering (or excluded from capture) can re-render its lens from what lies beneath
     // at its current spot: one small capture and refraction pass, at most every 33 ms.
     // An embedded tile cannot be excluded and keeps its last lens until it is dropped.
+    private IDisposable? liveCover;
     private void BeginLiveGlass()
     {
-        live = app.State.Settings.LiquidGlass && ExcludeFromCapture(true);
+        if (!app.State.Settings.LiquidGlass) return;
+        liveCover = FolderFrost.Without(this);
+        live = liveCover is not null || ExcludeFromCapture(true);
         liveClock.Restart(); liveFrame = TimeSpan.FromSeconds(-1); // First move renders at once.
     }
     private void LiveGlass()
@@ -169,12 +174,18 @@ internal sealed class BubbleWindow : Window
     private void EndLiveGlass()
     {
         if (!live) return;
-        live = false; ExcludeFromCapture(false);
+        live = false;
+        if (liveCover is not null) { liveCover.Dispose(); liveCover = null; } else ExcludeFromCapture(false);
     }
     // WDA_EXCLUDEFROMCAPTURE: screen captures see what lies behind, the screen still shows the tile.
     // Only top-level windows support it; returns false for a tile embedded in the desktop.
+    internal static int CaptureExclusions { get; private set; }
     internal bool ExcludeFromCapture(bool value)
-        => !closing && Native.SetWindowDisplayAffinity(Native.Handle(this), value ? 0x11u : 0u);
+    {
+        bool done = !closing && Native.SetWindowDisplayAffinity(Native.Handle(this), value ? 0x11u : 0u);
+        if (done && value) CaptureExclusions++;
+        return done;
+    }
     // The icon grid in physical pixels, from the same numbers the tile is laid out with.
     internal FolderMotion.MiniatureLayout GridLayout(PixelRect glassBounds)
     {
