@@ -2,7 +2,7 @@
 
 **App folders for the Windows 11 desktop: many shortcuts, one glass bubble, and your desktop can breathe again.**
 
-<p align="center"><img src="https://img.shields.io/badge/Windows-11-0078D6" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="https://img.shields.io/github/v/release/Hendrik4K/DesktopBubbles?label=Version&color=7a5cff" alt="Version"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-555" alt="License MIT"></a> <img src="https://img.shields.io/badge/no_admin_rights-555" alt="no admin rights"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml/badge.svg" alt="CI"></a></p>
+<p align="center"><img src="docs/badges/windows.svg" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="docs/badges/version.svg" alt="Version 1.9.0"></a> <a href="LICENSE"><img src="docs/badges/license.svg" alt="License MIT"></a> <img src="docs/badges/no-admin.svg" alt="no admin rights"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml/badge.svg" alt="CI"></a></p>
 
 <p align="center"><img src="docs/screenshots/desktopbubbles-demo.webp" width="820" alt="Demo: dragging the Photoshop shortcut into a bubble, opening the folder, swapping icons and closing it again"></p>
 

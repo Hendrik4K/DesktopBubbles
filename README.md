@@ -2,7 +2,7 @@
 
 **App-Ordner für den Windows-11-Desktop: Viele Verknüpfungen, eine gläserne Bubble, und dein Desktop hat wieder Luft.**
 
-<p align="center"><img src="https://img.shields.io/badge/Windows-11-0078D6" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="https://img.shields.io/github/v/release/Hendrik4K/DesktopBubbles?label=Version&color=7a5cff" alt="Version"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/Lizenz-MIT-555" alt="Lizenz MIT"></a> <img src="https://img.shields.io/badge/ohne_Adminrechte-555" alt="ohne Adminrechte"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml/badge.svg" alt="CI"></a></p>
+<p align="center"><img src="docs/badges/windows.svg" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="docs/badges/version.svg" alt="Version 1.9.0"></a> <a href="LICENSE"><img src="docs/badges/lizenz.svg" alt="Lizenz MIT"></a> <img src="docs/badges/ohne-admin.svg" alt="ohne Adminrechte"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml/badge.svg" alt="CI"></a></p>
 
 <p align="center"><img src="docs/screenshots/desktopbubbles-demo.webp" width="820" alt="Demo: Photoshop-Verknüpfung in eine Bubble ziehen, Ordner öffnen, Symbole tauschen und wieder schließen"></p>
 
