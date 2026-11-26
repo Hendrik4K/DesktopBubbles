@@ -167,11 +167,15 @@ internal sealed class VersionItem : Forms.ToolStripMenuItem
             releasePage = null; SlideTo(Loc.T("Suche nach Updates …", "Checking for updates …"), TrayMenu.Text); await Task.Delay(400);
             var (latest, page) = await Latest();
             if (latest is null) { SlideTo(Loc.T("Prüfung nicht möglich (offline?)", "Check not possible (offline?)"), TrayMenu.Muted); await Task.Delay(2400); SlideTo(Home, TrayMenu.Text); return; }
-            if (Version.TryParse(current, out var mine) && latest > mine) { releasePage = page; SlideTo(Loc.T($"DesktopBubbles {latest} verfügbar", $"DesktopBubbles {latest} available"), TrayMenu.Amber); return; }
+            if (Version.TryParse(current, out var mine) && latest > mine) { releasePage = page; SlideTo(Loc.T($"DesktopBubbles {DateVersion(latest)} verfügbar", $"DesktopBubbles {DateVersion(latest)} available"), TrayMenu.Amber); return; }
             SlideTo(Home, TrayMenu.Text); await Task.Delay(TimeSpan.FromMilliseconds(OutMs + InMs)); glow.Restart(); frame.Start();
         }
         finally { checking = false; }
     }
+    // Releases are named by date, YY.MM.DD (26.12.01); Version drops the zeros (26.12.1), so pad them back.
+    // Old numbers such as 1.9.0 stay as they are.
+    internal static string DateVersion(Version v) => v.Major < 20 || v.Build < 0 ? v.ToString()
+        : $"{v.Major}.{v.Minor:00}.{v.Build:00}" + (v.Revision > 0 ? "." + v.Revision : "");
     private static async Task<(Version?, string?)> Latest()
     {
         try
