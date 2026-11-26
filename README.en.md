@@ -59,13 +59,13 @@ The app speaks German and English: switch with the language toggle in the settin
 <details>
 <summary><b>💡 What it does</b></summary>
 
-- **Works like on your phone**<br><sub>Click the bubble, pick the app, done. Group shortcuts, programs, folders, web links and Store apps by gaming, work, creative or whatever you like. The programs themselves stay where they are.</sub>
-- **Styles: Liquid Glass, Matte, Clear or Frosted**<br><sub>Liquid Glass bends the real background at the edges like a lens, with adjustable strength. Frosted blurs it softly. The icons always stay sharp.</sub>
-- **Customizable folders**<br><sub>Hold until everything wiggles, then swap icons. Folders spring open out of the preview. A color per bubble or one for all (color wheel, HEX, eyedropper), size and transparency up to 100 percent, preview 1:3 or 1:1, name on or off, light, dark or like Windows.</sub>
-- **Automation**<br><sub>Leave the folder and after a set number of seconds it shuts behind you like a door. If a program update puts its shortcut back on the desktop, it moves back into its bubble by itself.</sub>
-- **Drag & drop**<br><sub>Into a bubble, out onto the desktop, over into another bubble.</sub>
-- **Language**<br><sub>German and English, switched with one click in the settings.</sub>
-- **Unobtrusive**<br><sub>No account, no telemetry, no admin rights, quiet in the notification area. Curious what the app costs? Start the measurement bar for CPU and RAM.</sub>
+- **Works like on your phone**<br>Click the bubble, pick the app, done. Group shortcuts, programs, folders, web links and Store apps by gaming, work, creative or whatever you like. The programs themselves stay where they are.
+- **Styles: Liquid Glass, Matte, Clear or Frosted**<br>Liquid Glass bends the real background at the edges like a lens, with adjustable strength. Frosted blurs it softly. The icons always stay sharp.
+- **Customizable folders**<br>Hold until everything wiggles, then swap icons. Folders spring open out of the preview. A color per bubble or one for all (color wheel, HEX, eyedropper), size and transparency up to 100 percent, preview 1:3 or 1:1, name on or off, light, dark or like Windows.
+- **Automation**<br>Leave the folder and after a set number of seconds it shuts behind you like a door. If a program update puts its shortcut back on the desktop, it moves back into its bubble by itself.
+- **Drag & drop**<br>Into a bubble, out onto the desktop, over into another bubble.
+- **Language**<br>German and English, switched with one click in the settings.
+- **Unobtrusive**<br>No account, no telemetry, no admin rights, quiet in the notification area. Curious what the app costs? Start the measurement bar for CPU and RAM.
 
 <ins>Why it exists:</ins> My desktop was full of launchers, and there was no simple phone-style folder solution for Windows. So I built one and am sharing it with everyone.
 

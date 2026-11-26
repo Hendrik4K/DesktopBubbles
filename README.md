@@ -57,13 +57,13 @@ Die App wartet danach im Infobereich der Taskleiste; ein Klick auf das Seifenbla
 <details>
 <summary><b>💡 Was es kann</b></summary>
 
-- **Bedienung wie vom Smartphone gewohnt**<br><sub>Bubble anklicken, App wählen, fertig. Verknüpfungen, Programme, Ordner, Webadressen und Store-Apps nach Gaming, Arbeit, Kreativ oder was du willst gruppieren. Die Programme selbst bleiben, wo sie sind.</sub>
-- **Style-Auswahl: Liquid Glass, Matt, Klar oder Milchglas**<br><sub>Liquid Glass bricht den echten Hintergrund an den Kanten wie eine Linse, die Stärke ist einstellbar. Milchglas zeichnet ihn weich. Die Symbole bleiben immer scharf.</sub>
-- **Anpassbare Ordner**<br><sub>Halten, bis alles wackelt, dann Symbole tauschen. Ordner springen mit Schwung aus der Miniatur auf. Farbe je Bubble oder für alle (Farbkreis, HEX, Pipette), Größe und Transparenz bis 100 Prozent, Vorschau 1:3 oder 1:1, Name an oder aus, Hell, Dunkel oder wie Windows.</sub>
-- **Automation**<br><sub>Verlässt du den Ordner, fällt er nach einstellbaren Sekunden wie eine Tür hinter dir zu. Legt ein Programm-Update seine Verknüpfung wieder auf den Desktop, wandert sie von selbst zurück in ihre Bubble.</sub>
-- **Drag & Drop**<br><sub>Rein in die Bubble, raus auf den Desktop, rüber in eine andere Bubble.</sub>
-- **Sprache**<br><sub>Deutsch und Englisch, umschaltbar mit einem Klick in den Einstellungen.</sub>
-- **Dezent**<br><sub>Kein Konto, keine Telemetrie, keine Adminrechte, still im Infobereich. Wer wissen will, was die App kostet, startet die Messleiste für CPU und RAM.</sub>
+- **Bedienung wie vom Smartphone gewohnt**<br>Bubble anklicken, App wählen, fertig. Verknüpfungen, Programme, Ordner, Webadressen und Store-Apps nach Gaming, Arbeit, Kreativ oder was du willst gruppieren. Die Programme selbst bleiben, wo sie sind.
+- **Style-Auswahl: Liquid Glass, Matt, Klar oder Milchglas**<br>Liquid Glass bricht den echten Hintergrund an den Kanten wie eine Linse, die Stärke ist einstellbar. Milchglas zeichnet ihn weich. Die Symbole bleiben immer scharf.
+- **Anpassbare Ordner**<br>Halten, bis alles wackelt, dann Symbole tauschen. Ordner springen mit Schwung aus der Miniatur auf. Farbe je Bubble oder für alle (Farbkreis, HEX, Pipette), Größe und Transparenz bis 100 Prozent, Vorschau 1:3 oder 1:1, Name an oder aus, Hell, Dunkel oder wie Windows.
+- **Automation**<br>Verlässt du den Ordner, fällt er nach einstellbaren Sekunden wie eine Tür hinter dir zu. Legt ein Programm-Update seine Verknüpfung wieder auf den Desktop, wandert sie von selbst zurück in ihre Bubble.
+- **Drag & Drop**<br>Rein in die Bubble, raus auf den Desktop, rüber in eine andere Bubble.
+- **Sprache**<br>Deutsch und Englisch, umschaltbar mit einem Klick in den Einstellungen.
+- **Dezent**<br>Kein Konto, keine Telemetrie, keine Adminrechte, still im Infobereich. Wer wissen will, was die App kostet, startet die Messleiste für CPU und RAM.
 
 <ins>Warum es das gibt:</ins> Mein Desktop war voller Launcher, und eine schlichte Ordnerlösung wie auf dem Handy gab es für Windows nicht. Also habe ich sie gebaut und stelle sie allen zur Verfügung.
 
