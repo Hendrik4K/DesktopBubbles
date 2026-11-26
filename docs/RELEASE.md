@@ -6,6 +6,18 @@ Windows-11-x64-Ausgabe als Benutzer-Installer und portable ZIP, Projektcode unte
 
 Ab dem nächsten Release ist die Version das Release-Datum in der Form Jahr.Monat.Tag (YY.MM.DD): 26.12.01 ist der 1. Dezember 2026. Das Jahr steht vorn, damit Update-Prüfung, GitHub und Installer neuer immer als größer erkennen. Ein zweiter Release am selben Tag bekommt eine vierte Zahl (26.12.01.2). `tools/Bump-Version.ps1` setzt die Version auf heute: `<Version>` im Projekt in schlichter Form (26.12.1), weil .NET keine führenden Nullen annimmt, `<InformationalVersion>` mit Nullen (26.12.01) für App, Installer, Dateinamen und Tag (v26.12.01). Den Versions-Badge `docs/badges/version.svg` von Hand mitziehen.
 
+## Ablauf je Release
+
+1. `tools/Bump-Version.ps1` setzt die Version auf heute; `docs/badges/version.svg` und den CHANGELOG-Kopf („## 26.12.01 · 01.12.2026“) mitziehen.
+2. Bauen, Konsolensuite, `Test-Windows.ps1` und Installer-Test laufen lassen. Hendrik testet die Version selbst auf seinem Desktop; weiter erst nach seinem „passt“.
+3. Push und Release nur mit Hendriks ausdrücklichem OK, jedes Mal einzeln.
+4. Vor dem Upload Ausgabe, ZIPs und Installer nach privaten Resten durchsuchen: Name, Mailadresse, IP-Adressen, lokale Pfade, Schlüssel, Tokens. Keine .pdb-Dateien hochladen.
+5. Commit mit der noreply-Identität und der Co-Authored-By-Zeile, dann pushen.
+6. `gh release create v26.12.01 <Setup> <portable ZIP> <Source-ZIP> <je .sha256> --target <volle Commit-SHA> --latest --title "DesktopBubbles 26.12.01"`. Release-Text zweisprachig (**Deutsch:** … / **English:** …) mit einer Installer-Zeile: pro Benutzer, keine Adminrechte, nicht signiert, SmartScreen fragt eventuell einmal.
+7. Hochgeladene Dateien wieder herunterladen und die SHA-256 vergleichen.
+8. Das vorherige Release mit `gh release delete <alter-tag> --cleanup-tag --yes` löschen; auf GitHub bleibt nur das neueste.
+9. Archiv in `D:\Desktop\Eigene Coding Projekte` durch „DesktopBubbles 26.12.01.zip“ ersetzen (Quellcode und aktueller Installer, keine Build-Ausgaben, keine Testdaten); die alte ZIP in den Papierkorb.
+
 ## Paket und Prüfung
 
 `Build.ps1 -OutputName DesktopBubbles-win-x64-v<Version>` kompiliert die Lösung, führt die Konsolensuite aus und erzeugt portable Ausgabe, ZIP, Source-ZIP und SHA-256-Prüfsummen. `tools/Get-InnoSetup.ps1` stellt den geprüften Compiler bereit. `tools/Build-Installer.ps1 -Payload <Buildordner> -FixtureRoot <neuer Projekt-Testordner>` baut Setup, Vorschau und die nicht zu veröffentlichende Test-Fixture. `tools/Test-Installer.ps1` prüft Installation, Update, Sicherung und Deinstallation. Native Prüfungen laufen separat auf dem interaktiven Windows-Desktop über Test-Windows.ps1. Ergebnisse und Grenzen: [TESTS.md](TESTS.md).

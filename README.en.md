@@ -2,7 +2,7 @@
 
 **Phone-style folders for Windows. In the Liquid Glass style of iOS 27.**
 
-<p align="center"><img src="docs/badges/windows.svg" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="docs/badges/version.svg" alt="Version 1.9.0"></a> <a href="LICENSE"><img src="docs/badges/license.svg" alt="License MIT"></a> <img src="docs/badges/no-admin.svg" alt="no admin rights"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml/badge.svg?branch=main" alt="CI"></a></p>
+<p align="center"><img src="docs/badges/windows.svg" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="docs/badges/version.svg" alt="Version 26.11.26"></a> <a href="LICENSE"><img src="docs/badges/license.svg" alt="License MIT"></a> <img src="docs/badges/no-admin.svg" alt="no admin rights"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml/badge.svg?branch=main" alt="CI"></a></p>
 
 <p align="center"><img src="docs/screenshots/desktopbubbles-demo.webp" width="820" alt="Demo: dragging the Photoshop shortcut into a bubble, opening the folder, swapping icons and closing it again"></p>
 

@@ -6,7 +6,8 @@
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>DesktopBubbles</AssemblyName>
-    <Version>1.9.0</Version>
+    <Version>26.11.26</Version>
+    <InformationalVersion>26.11.26</InformationalVersion>
     <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
     <ApplicationIcon>Assets\DesktopBubbles.ico</ApplicationIcon>
   </PropertyGroup>

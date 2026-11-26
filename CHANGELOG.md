@@ -1,5 +1,9 @@
 # Änderungen
 
+## 26.11.26 · 26.11.2026
+
+- Neue Versionsnummern: Jede Version heißt jetzt nach ihrem Release-Datum, Jahr.Monat.Tag (26.11.26 = 26. November 2026). Inhaltlich entspricht sie 1.9.0; der Update-Hinweis im Tray zeigt die neue Form.
+
 ## 1.9.0 · 26.11.2026
 
 - Bildschirmaufnahmen (OBS, Snipping Tool): Miniaturen blinken beim Öffnen eines Ordners, im Leerlauf und beim Ziehen nicht mehr kurz weg. Die Glasprobe holt den Hintergrund jetzt direkt vom Desktop, statt die Miniatur dafür vor Aufnahmen zu verstecken.
