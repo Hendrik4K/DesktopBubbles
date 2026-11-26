@@ -2,13 +2,22 @@
 
 **App-Ordner für den Windows-11-Desktop: Viele Verknüpfungen, eine gläserne Bubble, und dein Desktop hat wieder Luft.**
 
-<p align="center"><img src="https://img.shields.io/badge/Windows-11-0078D6" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="https://img.shields.io/github/v/release/Hendrik4K/DesktopBubbles?label=Version&color=7a5cff" alt="Version"></a> <img src="https://img.shields.io/badge/Adminrechte-nicht%20n%C3%B6tig-555" alt="Adminrechte nicht nötig"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://img.shields.io/github/actions/workflow/status/Hendrik4K/DesktopBubbles/windows.yml?label=CI" alt="CI"></a></p>
+<p align="center"><img src="https://img.shields.io/badge/Windows-11-0078D6" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="https://img.shields.io/github/v/release/Hendrik4K/DesktopBubbles?label=Version&color=7a5cff" alt="Version"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/Lizenz-MIT-555" alt="Lizenz MIT"></a> <img src="https://img.shields.io/badge/ohne_Adminrechte-555" alt="ohne Adminrechte"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml/badge.svg" alt="CI"></a></p>
 
-https://github.com/user-attachments/assets/5dd3d94e-b064-435b-87e1-8b0c4a2d4701
+<p align="center"><img src="docs/screenshots/desktopbubbles-demo.webp" width="820" alt="Demo: Photoshop-Verknüpfung in eine Bubble ziehen, Ordner öffnen, Symbole tauschen und wieder schließen"></p>
 
 Ordner wie auf dem Smartphone, nur für deinen PC: Steam, Epic, Photoshop und Co. ziehst du in eine Bubble, ein Klick öffnet sie, du wählst die App, und zurück bleibt eine kleine Miniatur. Die Programme selbst bleiben, wo sie sind. Dazu Liquid Glass, das den echten Hintergrund an den Kanten bricht wie eine Linse, weil ein aufgeräumter Desktop ruhig auch gut aussehen darf.
 
-<p align="center"><img src="docs/screenshots/desktopbubbles-before-after.gif" width="820" alt="Desktop aufräumen: sieben einzelne Gaming-Launcher landen in einem kompakten App-Ordner, der per Klick seine Verknüpfungen zeigt"></p>
+<table>
+  <tr>
+    <th>Vorher → Nachher</th>
+    <th>Bubbles &amp; Verwaltung</th>
+  </tr>
+  <tr>
+    <td width="34%" valign="middle"><img src="docs/screenshots/desktopbubbles-before-after.gif" width="100%" alt="Desktop aufräumen: sieben einzelne Gaming-Launcher landen in einem kompakten App-Ordner, der per Klick seine Verknüpfungen zeigt"></td>
+    <td width="66%" valign="middle"><img src="docs/screenshots/desktopbubbles-desktop-settings.png" width="100%" alt="Zwei transparente Desktop-Ordner neben der Verwaltung mit Gruppenliste und Reglern für Transparenz, Größe und runde Ecken"></td>
+  </tr>
+</table>
 
 <details>
 <summary><b>🚀 Schnellstart</b></summary>
@@ -58,8 +67,6 @@ Die App wartet danach im Infobereich der Taskleiste; ein Klick auf das Seifenbla
 
 <!-- Platz für weitere GIFs: 1:3 ↔ 1:1, Farbwähler mit Pipette, Sprachschalter, Messleiste -->
 <p align="center"><img src="docs/screenshots/desktopbubbles-liquid-glass-desktop.webp" width="820" alt="DesktopBubbles mit Liquid Glass auf einem Windows-11-Desktop: gläserne App-Ordner mit Gaming-Launchern und Adobe-Apps, daneben die Verwaltung"></p>
-
-<p align="center"><img src="docs/screenshots/desktopbubbles-desktop-settings.png" width="820" alt="Zwei transparente Desktop-Ordner neben der Verwaltung mit Gruppenliste und Reglern für Transparenz, Größe und runde Ecken"></p>
 
 </details>
 

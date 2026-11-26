@@ -2,13 +2,22 @@
 
 **App folders for the Windows 11 desktop: many shortcuts, one glass bubble, and your desktop can breathe again.**
 
-<p align="center"><img src="https://img.shields.io/badge/Windows-11-0078D6" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="https://img.shields.io/github/v/release/Hendrik4K/DesktopBubbles?label=Version&color=7a5cff" alt="Version"></a> <img src="https://img.shields.io/badge/admin%20rights-not%20needed-555" alt="Admin rights not needed"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://img.shields.io/github/actions/workflow/status/Hendrik4K/DesktopBubbles/windows.yml?label=CI" alt="CI"></a></p>
+<p align="center"><img src="https://img.shields.io/badge/Windows-11-0078D6" alt="Windows 11"> <a href="https://github.com/Hendrik4K/DesktopBubbles/releases/latest"><img src="https://img.shields.io/github/v/release/Hendrik4K/DesktopBubbles?label=Version&color=7a5cff" alt="Version"></a> <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-555" alt="License MIT"></a> <img src="https://img.shields.io/badge/no_admin_rights-555" alt="no admin rights"> <a href="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml"><img src="https://github.com/Hendrik4K/DesktopBubbles/actions/workflows/windows.yml/badge.svg" alt="CI"></a></p>
 
-https://github.com/user-attachments/assets/5dd3d94e-b064-435b-87e1-8b0c4a2d4701
+<p align="center"><img src="docs/screenshots/desktopbubbles-demo.webp" width="820" alt="Demo: dragging the Photoshop shortcut into a bubble, opening the folder, swapping icons and closing it again"></p>
 
 Folders like on your phone, just for your PC: drag Steam, Epic, Photoshop and friends into a bubble, click it, pick the app, and all that stays behind is a small preview. The programs themselves stay where they are. On top of that, Liquid Glass bends the real background at the edges like a lens, because a tidy desktop may as well look good.
 
-<p align="center"><img src="docs/screenshots/desktopbubbles-before-after.gif" width="820" alt="Tidying the desktop: seven separate game launchers end up in one compact app folder that shows its shortcuts with a click"></p>
+<table>
+  <tr>
+    <th>Before → After</th>
+    <th>Bubbles &amp; settings</th>
+  </tr>
+  <tr>
+    <td width="34%" valign="middle"><img src="docs/screenshots/desktopbubbles-before-after.gif" width="100%" alt="Tidying the desktop: seven separate game launchers end up in one compact app folder that shows its shortcuts with a click"></td>
+    <td width="66%" valign="middle"><img src="docs/screenshots/desktopbubbles-desktop-settings.png" width="100%" alt="Two transparent desktop folders next to the settings window with the group list and sliders for transparency, size and rounded corners"></td>
+  </tr>
+</table>
 
 <details>
 <summary><b>🚀 Quick start</b></summary>
@@ -60,8 +69,6 @@ The app speaks German and English: switch with the language toggle in the settin
 
 <!-- Room for more GIFs: 1:3 ↔ 1:1, color picker with eyedropper, language toggle, measurement bar -->
 <p align="center"><img src="docs/screenshots/desktopbubbles-liquid-glass-desktop.webp" width="820" alt="DesktopBubbles with Liquid Glass on a Windows 11 desktop: glass app folders with game launchers and Adobe apps, next to the settings window"></p>
-
-<p align="center"><img src="docs/screenshots/desktopbubbles-desktop-settings.png" width="820" alt="Two transparent desktop folders next to the settings window with the group list and sliders for transparency, size and rounded corners"></p>
 
 </details>
 
